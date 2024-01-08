@@ -552,16 +552,18 @@ func (space *Space) RemoveShape(shape *Shape) {
 	shape.hashid = 0
 }
 
-// AddBody adds a rigid body to the simulation.
+// AddBody adds a body to the space if not in space.
 func (space *Space) AddBody(body *Body) *Body {
 	assert(body.space != space, "Already added to this space")
 	assert(body.space == nil, "Already added to another space")
-	if body.GetType() == BODY_STATIC {
-		space.staticBodies = append(space.staticBodies, body)
-	} else {
-		space.dynamicBodies = append(space.dynamicBodies, body)
+	if !space.ContainsBody(body) {
+		if body.GetType() == BODY_STATIC {
+			space.staticBodies = append(space.staticBodies, body)
+		} else {
+			space.dynamicBodies = append(space.dynamicBodies, body)
+		}
+		body.space = space
 	}
-	body.space = space
 	return body
 }
 
@@ -588,6 +590,14 @@ func (space *Space) RemoveBody(body *Body) {
 		}
 	}
 	body.space = nil
+}
+
+// RemoveBodyWithShapes removes a body and body's shapes from the simulation
+func (space *Space) RemoveBodyWithShapes(body *Body) {
+	body.EachShape(func(s *Shape) {
+		space.RemoveShape(s)
+	})
+	space.RemoveBody(body)
 }
 
 func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
@@ -994,25 +1004,25 @@ func (space *Space) UseSpatialHash(dim float64, count int) {
 }
 
 // EachBody calls func f for each body in the space
-func (space *Space) EachBody(f func(body *Body)) {
+func (space *Space) EachBody(f func(b *Body)) {
 	space.Lock()
 	defer space.Unlock(true)
 
-	for _, body := range space.dynamicBodies {
-		f(body)
+	for _, b := range space.dynamicBodies {
+		f(b)
 	}
 
-	for _, body := range space.staticBodies {
-		f(body)
+	for _, b := range space.staticBodies {
+		f(b)
 	}
 
 	for _, root := range space.sleepingComponents {
-		body := root
+		b := root
 
-		for body != nil {
-			next := body.sleepingNext
-			f(body)
-			body = next
+		for b != nil {
+			next := b.sleepingNext
+			f(b)
+			b = next
 		}
 	}
 }

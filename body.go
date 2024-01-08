@@ -66,7 +66,17 @@ type Body struct {
 
 // String returns body id as string
 func (b Body) String() string {
-	return fmt.Sprint("Body ", b.id)
+	return fmt.Sprint("Body ", b.id, ", Shapes ", b.shapeList)
+}
+
+// Shapes returns shapes attached to this body
+func (b *Body) Shapes() []*Shape {
+	return b.shapeList
+}
+
+// FirstShape returns first shape attached to this body
+func (b *Body) FirstShape() *Shape {
+	return b.shapeList[0]
 }
 
 // NewBody Initializes a rigid body with the given mass and moment of inertia.
