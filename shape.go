@@ -140,7 +140,9 @@ func (s *Shape) Friction() float64 {
 }
 
 func (s *Shape) SetFriction(u float64) {
-	assert(s.u >= 0, "Must be positive")
+	if s.u <= 0 {
+		logErr.Fatalln("Friction must be positive")
+	}
 	s.body.Activate()
 	s.u = u
 }
@@ -154,7 +156,9 @@ func (s *Shape) Elasticity() float64 {
 }
 
 func (s *Shape) SetElasticity(e float64) {
-	assert(s.e >= 0, "Must be positive")
+	if s.e <= 0 {
+		logErr.Fatalln("Friction must be positive")
+	}
 	s.body.Activate()
 	s.e = e
 }

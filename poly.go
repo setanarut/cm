@@ -18,7 +18,9 @@ func (poly PolyShape) Count() int {
 }
 
 func (poly PolyShape) Vert(i int) Vector {
-	assert(i >= 0 && i < poly.count)
+	if i <= 0 && i > poly.count {
+		logErr.Fatalln("Vert index error")
+	}
 
 	return poly.planes[i+poly.count].v0
 }

@@ -554,25 +554,33 @@ func (space *Space) RemoveShape(shape *Shape) {
 
 // AddBody adds a body to the space if not in space.
 func (space *Space) AddBody(body *Body) *Body {
-	assert(body.space != space, "Already added to this space")
-	assert(body.space == nil, "Already added to another space")
-	if !space.ContainsBody(body) {
-		if body.GetType() == BODY_STATIC {
-			space.staticBodies = append(space.staticBodies, body)
-		} else {
-			space.dynamicBodies = append(space.dynamicBodies, body)
-		}
-		body.space = space
+	if space.ContainsBody(body) {
+		logErr.Fatalln("Body already added to space")
 	}
+
+	if body.space != nil {
+		logErr.Fatalln("Body already added to another space")
+	}
+	if body.GetType() == BODY_STATIC {
+		space.staticBodies = append(space.staticBodies, body)
+	} else {
+		space.dynamicBodies = append(space.dynamicBodies, body)
+	}
+	body.space = space
 	return body
 }
 
 // RemoveBody removes a body from the simulation
 func (space *Space) RemoveBody(body *Body) {
-	assert(body != space.StaticBody)
-	assert(space.ContainsBody(body))
-	assert(space.locked == 0)
-
+	if body == space.StaticBody {
+		logErr.Fatalln("Body is space.Staticbody")
+	}
+	if !space.ContainsBody(body) {
+		logErr.Fatalln("Body is not in space")
+	}
+	if space.locked != 0 {
+		logErr.Fatalln("space locked is not zero")
+	}
 	body.Activate()
 	if body.GetType() == BODY_STATIC {
 		for i, b := range space.staticBodies {
@@ -616,7 +624,6 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 	// Push onto the heads of the bodies' constraint lists
 	constraint.next_a = a.constraintList
 	// possible nil pointer dereference (SA5011)
-	// space.go:306:9: this check suggests that the pointer can be nil go-staticcheck
 	a.constraintList = constraint
 	constraint.next_b = b.constraintList
 	b.constraintList = constraint

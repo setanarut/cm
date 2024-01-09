@@ -2,6 +2,7 @@ package cm
 
 import (
 	"fmt"
+	"log"
 	"math"
 )
 
@@ -187,7 +188,9 @@ func (body *Body) SetType(newType int) {
 	if body.space == nil {
 		return
 	}
-	assert(body.space.locked == 0, "Space is locked")
+	if body.space.locked != 0 {
+		log.Fatalln("Space is locked")
+	}
 
 	if oldType != BODY_STATIC {
 		body.Activate()
@@ -392,6 +395,7 @@ func (body *Body) Activate() {
 	root := body.ComponentRoot()
 	if root != nil && root.IsSleeping() {
 		assert(root.GetType() == BODY_DYNAMIC, "Non-dynamic root")
+
 		space := root.space
 		// in the chipmunk code they shadow body, so here I am not
 		bodyToo := root

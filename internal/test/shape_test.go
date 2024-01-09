@@ -1,13 +1,15 @@
-package cm
+package cm_test
 
 import (
 	"math"
 	"testing"
+
+	"github.com/setanarut/cm"
 )
 
 func TestShapeMass(t *testing.T) {
-	body := NewBody(0, 0)
-	circle := NewCircle(body, 5, Vector{0, 0})
+	body := cm.NewBody(0, 0)
+	circle := cm.NewCircle(body, 5, cm.Vector{0, 0})
 
 	mass := 10.0
 	circle.SetMass(mass)
@@ -19,8 +21,8 @@ func TestShapeMass(t *testing.T) {
 }
 
 func TestShapeCircleArea(t *testing.T) {
-	body := NewBody(0, 0)
-	circle := NewCircle(body, 2, Vector{0, 0})
+	body := cm.NewBody(0, 0)
+	circle := cm.NewCircle(body, 2, cm.Vector{0, 0})
 
 	if circle.Area() != 4*math.Pi {
 		t.Fail()
@@ -28,8 +30,8 @@ func TestShapeCircleArea(t *testing.T) {
 }
 
 func TestShapeCircleDensity(t *testing.T) {
-	body := NewBody(0, 0)
-	circle := NewCircle(body, 1, Vector{0, 0})
+	body := cm.NewBody(0, 0)
+	circle := cm.NewCircle(body, 1, cm.Vector{0, 0})
 
 	circle.SetMass(math.Pi)
 

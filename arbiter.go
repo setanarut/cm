@@ -1,6 +1,9 @@
 package cm
 
-import "math"
+import (
+	"log"
+	"math"
+)
 
 var WILDCARD_COLLISION_TYPE CollisionType = ^CollisionType(0)
 
@@ -507,8 +510,9 @@ func (arb *Arbiter) ContactPointSet() ContactPointSet {
 // This can be a very powerful feature, but use it with caution!
 func (arb *Arbiter) SetContactPointSet(set *ContactPointSet) {
 	count := set.Count
-	assert(count == int(arb.count))
-
+	if count != int(arb.count) {
+		log.Fatalln("contact point set count is not equal")
+	}
 	swapped := arb.swapped
 	if swapped {
 		arb.n = set.Normal.Neg()
