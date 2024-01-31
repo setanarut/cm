@@ -1,6 +1,9 @@
 package cm
 
-import "math"
+import (
+	"log"
+	"math"
+)
 
 type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
 
@@ -50,7 +53,11 @@ func (spring *DampedSpring) PreStep(dt float64) {
 	}
 
 	k := k_scalar(a, b, spring.r1, spring.r2, spring.n)
-	assert(k != 0, "Unsolvable spring")
+
+	if k == 0 {
+		log.Fatalln("Unsolvable spring")
+	}
+
 	spring.nMass = 1.0 / k
 
 	spring.targetVrn = 0

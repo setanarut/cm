@@ -4,30 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 )
-
-var logErr = log.New(os.Stdout, "ERROR: ", log.LstdFlags|log.Lshortfile)
-
-// type aggLogger struct {
-// 	infoLogger, warnLogger, errorLogger *log.Logger
-// }
-
-// func (l *aggLogger) info(v ...interface{}) {
-// 	l.infoLogger.Println(v)
-// }
-// func (l *aggLogger) warn(v ...interface{}) {
-// 	l.warnLogger.Println(v)
-// }
-// func (l *aggLogger) error(v ...interface{}) {
-// 	l.errorLogger.Fatalln(v)
-// }
-
-// var al = aggLogger{
-// 	infoLogger:  log.New(os.Stdout, "INFO: ", log.LstdFlags|log.Lshortfile),
-// 	warnLogger:  log.New(os.Stdout, "WARN: ", log.LstdFlags|log.Lshortfile),
-// 	errorLogger: log.New(os.Stdout, "ERRO: ", log.LstdFlags|log.Lshortfile),
-// }
 
 const (
 	INFINITY      = math.MaxFloat64
@@ -144,7 +121,9 @@ type CollisionInfo struct {
 }
 
 func (info *CollisionInfo) PushContact(p1, p2 Vector, hash HashValue) {
-	assert(info.count < MAX_CONTACTS_PER_ARBITER, "Internal error: Tried to push too many contacts.")
+	if info.count > MAX_CONTACTS_PER_ARBITER {
+		log.Fatalln("Internal error: Tried to push too many contacts.")
+	}
 
 	con := &info.arr[info.count]
 	con.r1 = p1
@@ -404,7 +383,9 @@ func k_tensor(a, b *Body, r1, r2 Vector) Mat2x2 {
 
 	// invert
 	det := k11*k22 - k12*k21
-	assert(det != 0.0, "Unsolvable constraint")
+	if det == 0.0 {
+		log.Fatalln("Unsolvable constraint")
+	}
 
 	det_inv := 1.0 / det
 	return Mat2x2{
@@ -418,9 +399,3 @@ func bias_coef(errorBias, dt float64) float64 {
 }
 
 var maxArbiters, maxPoints, maxConstraints int
-
-func assert(truth bool, msg ...interface{}) {
-	if !truth {
-		log.Fatalln(fmt.Sprint("Assertion failed: ", msg))
-	}
-}

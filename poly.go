@@ -1,6 +1,9 @@
 package cm
 
-import "math"
+import (
+	"log"
+	"math"
+)
 
 type PolyShape struct {
 	*Shape
@@ -18,8 +21,8 @@ func (poly PolyShape) Count() int {
 }
 
 func (poly PolyShape) Vert(i int) Vector {
-	if i <= 0 && i > poly.count {
-		logErr.Fatalln("Vert index error")
+	if i < 0 && i > poly.count {
+		log.Fatalln("Vert index error")
 	}
 
 	return poly.planes[i+poly.count].v0

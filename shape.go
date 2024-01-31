@@ -1,6 +1,9 @@
 package cm
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type Shaper interface {
 	Body() *Body
@@ -149,8 +152,8 @@ func (s *Shape) Friction() float64 {
 }
 
 func (s *Shape) SetFriction(u float64) {
-	if s.friction <= 0 {
-		logErr.Fatalln("Friction must be positive")
+	if s.friction < 0 {
+		log.Fatalln("Friction must be positive")
 	}
 	s.body.Activate()
 	s.friction = u
@@ -173,8 +176,8 @@ func (s *Shape) Elasticity() float64 {
 
 // SetElasticity sets elasticity (0-1 range)
 func (s *Shape) SetElasticity(e float64) {
-	if s.elasticity <= 0 {
-		logErr.Fatalln("Friction must be positive")
+	if s.elasticity < 0 {
+		log.Fatalln("Elasticity must be positive")
 	}
 	s.body.Activate()
 	s.elasticity = e

@@ -1,6 +1,7 @@
 package cm
 
 import (
+	"log"
 	"math"
 	"sync"
 	"unsafe"
@@ -185,7 +186,9 @@ func FloodFillComponent(root *Body, body *Body) {
 			}
 		}
 	} else {
-		assert(other_root == root, "Inconsistency detected in the contact graph (FFC)")
+		if other_root != root {
+			log.Fatalln("Inconsistency detected in the contact graph (FFC)")
+		}
 	}
 }
 
@@ -385,7 +388,9 @@ func (space *Space) Damping() float64 {
 // The default value is 1.0, meaning no damping is applied.
 // @note This damping value is different than those of DampedSpring and DampedRotarySpring.
 func (space *Space) SetDamping(damping float64) {
-	assert(damping >= 0)
+	if damping < 0 {
+		log.Fatalln("Must be positive")
+	}
 	space.damping = damping
 }
 
@@ -403,7 +408,9 @@ func (space *Space) SetStaticBody(body *Body) {
 }
 
 func (space *Space) Activate(body *Body) {
-	assert(body.GetType() == BODY_DYNAMIC, "Attempting to activate a non-dynamic body")
+	if body.GetType() != BODY_DYNAMIC {
+		log.Fatalln("Attempting to activate a non-dynamic body")
+	}
 
 	if space.locked != 0 {
 		if !Contains(space.rousedBodies, body) {
@@ -412,7 +419,9 @@ func (space *Space) Activate(body *Body) {
 		return
 	}
 
-	assert(body.sleepingRoot == nil && body.sleepingNext == nil, "Activating body non-NULL node pointers.")
+	if body.sleepingRoot != nil && body.sleepingNext != nil {
+		log.Fatalln("Activating body non-NULL node pointers.")
+	}
 
 	space.dynamicBodies = append(space.dynamicBodies, body)
 
@@ -460,8 +469,9 @@ func (space *Space) Activate(body *Body) {
 }
 
 func (space *Space) Deactivate(body *Body) {
-	assert(body.GetType() == BODY_DYNAMIC, "Attempting to deactivate non-dynamic body.")
-
+	if body.GetType() != BODY_DYNAMIC {
+		log.Fatalln("Attempting to deactivate non-dynamic body.")
+	}
 	for i, v := range space.dynamicBodies {
 		if v == body {
 			space.dynamicBodies = append(space.dynamicBodies[:i], space.dynamicBodies[i+1:]...)
@@ -504,9 +514,15 @@ func (space *Space) Deactivate(body *Body) {
 func (space *Space) AddShape(shape *Shape) *Shape {
 	var body *Body = shape.Body()
 
-	assert(shape.space != space, "You have already added this shape to this space. You must not add it a second time.")
-	assert(shape.space == nil, "You have already added this shape to another space. You cannot add it to a second.")
-	assert(space.locked == 0, "This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
+	if shape.space == space {
+		log.Fatalln("You have already added this shape to this space. You must not add it a second time.")
+	}
+	if shape.space != nil {
+		log.Fatalln("You have already added this shape to another space. You cannot add it to a second.")
+	}
+	if space.locked != 0 {
+		log.Fatalln("This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
+	}
 
 	isStatic := body.GetType() == BODY_STATIC
 	if !isStatic {
@@ -531,8 +547,14 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 // RemoveShape removes a collision shape from the simulation.
 func (space *Space) RemoveShape(shape *Shape) {
 	body := shape.body
-	assert(space.ContainsShape(shape))
-	assert(space.locked == 0)
+
+	if !space.ContainsShape(shape) {
+		log.Fatalln("Shape is not in space")
+	}
+
+	if space.locked != 0 {
+		log.Fatalln("space.locked is not zero")
+	}
 
 	isStatic := body.GetType() == BODY_STATIC
 	if isStatic {
@@ -555,11 +577,11 @@ func (space *Space) RemoveShape(shape *Shape) {
 // AddBody adds a body to the space if not in space.
 func (space *Space) AddBody(body *Body) *Body {
 	if space.ContainsBody(body) {
-		logErr.Fatalln("Body already added to space")
+		log.Fatalln("Body already added to space")
 	}
 
 	if body.space != nil {
-		logErr.Fatalln("Body already added to another space")
+		log.Fatalln("Body already added to another space")
 	}
 	if body.GetType() == BODY_STATIC {
 		space.staticBodies = append(space.staticBodies, body)
@@ -573,13 +595,13 @@ func (space *Space) AddBody(body *Body) *Body {
 // RemoveBody removes a body from the simulation
 func (space *Space) RemoveBody(body *Body) {
 	if body == space.StaticBody {
-		logErr.Fatalln("Body is space.Staticbody")
+		log.Fatalln("Body is space.Staticbody")
 	}
 	if !space.ContainsBody(body) {
-		logErr.Fatalln("Body is not in space")
+		log.Fatalln("Body is not in space")
 	}
 	if space.locked != 0 {
-		logErr.Fatalln("space locked is not zero")
+		log.Fatalln("Space is locked")
 	}
 	body.Activate()
 	if body.GetType() == BODY_STATIC {
@@ -609,13 +631,22 @@ func (space *Space) RemoveBodyWithShapes(body *Body) {
 }
 
 func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
-	assert(constraint.space != space, "Already added to this space")
-	assert(constraint.space == nil, "Already added to another space")
-	assert(space.locked == 0, "Space is locked")
+	if constraint.space == space {
+		log.Fatalln("Already added to this space")
+	}
+	if constraint.space != nil {
+		log.Fatalln("Already added to another space")
+	}
+	if space.locked != 0 {
+		log.Fatalln("Space is locked")
+	}
 
 	a := constraint.a
 	b := constraint.b
-	assert(a != nil && b != nil, "Constraint is attached to a null body")
+
+	if a == nil && b == nil {
+		log.Fatalln("Constraint is attached to a null body")
+	}
 
 	a.Activate()
 	b.Activate()
@@ -633,8 +664,14 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 }
 
 func (space *Space) RemoveConstraint(constraint *Constraint) {
-	assert(space.ContainsConstraint(constraint), "Constraint not found")
-	assert(space.locked == 0, "Space is locked")
+
+	if !space.ContainsConstraint(constraint) {
+		log.Fatalln("Constraint not found")
+	}
+
+	if space.locked != 0 {
+		log.Fatalln("Space is locked")
+	}
 
 	constraint.a.Activate()
 	constraint.b.Activate()
@@ -905,7 +942,9 @@ func (space *Space) Lock() {
 func (space *Space) Unlock(runPostStep bool) {
 	space.locked--
 
-	assert(space.locked >= 0, "Space lock underflow")
+	if space.locked < 0 {
+		log.Fatalln("Space lock underflow")
+	}
 
 	if space.locked != 0 {
 		return
@@ -957,7 +996,9 @@ func (space *Space) UncacheArbiter(arb *Arbiter) {
 }
 
 func (space *Space) PushContacts(count int) {
-	assert(count <= MAX_CONTACTS_PER_ARBITER, "Contact buffer overflow")
+	if count > MAX_CONTACTS_PER_ARBITER {
+		log.Fatalln("Contact buffer overflow")
+	}
 	space.contactBuffersHead.numContacts += count
 }
 

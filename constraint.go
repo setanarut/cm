@@ -1,6 +1,9 @@
 package cm
 
-import "math"
+import (
+	"log"
+	"math"
+)
 
 type Constrainer interface {
 	PreStep(dt float64)
@@ -55,7 +58,9 @@ func (c Constraint) MaxForce() float64 {
 }
 
 func (c *Constraint) SetMaxForce(max float64) {
-	assert(max >= 0.0, "Must be positive")
+	if max < 0.0 {
+		log.Fatalln("Must be positive")
+	}
 	c.ActivateBodies()
 	c.maxForce = max
 }
@@ -65,7 +70,9 @@ func (c Constraint) MaxBias() float64 {
 }
 
 func (c *Constraint) SetMaxBias(max float64) {
-	assert(max >= 0, "Must be positive")
+	if max < 0 {
+		log.Fatalln("Must be positive")
+	}
 	c.ActivateBodies()
 	c.maxBias = max
 }
@@ -75,7 +82,9 @@ func (c Constraint) ErrorBias() float64 {
 }
 
 func (c *Constraint) SetErrorBias(errorBias float64) {
-	assert(errorBias >= 0, "Must be positive")
+	if errorBias < 0 {
+		log.Fatalln("Must be positive")
+	}
 	c.ActivateBodies()
 	c.errorBias = errorBias
 }

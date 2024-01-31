@@ -330,8 +330,9 @@ func (body *Body) UpdateVelocity(gravity Vector, damping, dt float64) {
 	if body.GetType() == BODY_KINEMATIC {
 		return
 	}
-
-	assert(body.m > 0 && body.i > 0, "Body's mass and moment must be positive")
+	if body.m < 0 && body.i < 0 {
+		log.Fatalln("Body's mass and moment must be positive")
+	}
 
 	body.v = body.v.Mult(damping).Add(gravity.Add(body.f.Mult(body.m_inv)).Mult(dt))
 	body.w = body.w*damping + body.t*body.i_inv*dt
@@ -394,7 +395,10 @@ func (body *Body) Activate() {
 
 	root := body.ComponentRoot()
 	if root != nil && root.IsSleeping() {
-		assert(root.GetType() == BODY_DYNAMIC, "Non-dynamic root")
+
+		if root.GetType() != BODY_DYNAMIC {
+			log.Fatalln("Non-dynamic root")
+		}
 
 		space := root.space
 		// in the chipmunk code they shadow body, so here I am not
@@ -434,7 +438,9 @@ func (body *Body) Activate() {
 
 // ActivateStatic wakes up any sleeping or idle bodies touching a static body.
 func (body *Body) ActivateStatic(filter *Shape) {
-	assert(body.GetType() == BODY_STATIC)
+	if body.GetType() != BODY_STATIC {
+		log.Fatalln("Body is not static")
+	}
 
 	for arb := body.arbiterList; arb != nil; arb = arb.Next(body) {
 		if filter == nil || filter == arb.a || filter == arb.b {
