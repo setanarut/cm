@@ -174,6 +174,6 @@ func (a BB) Proximity(b BB) float64 {
 
 // Corners returns corner coords of BBox.
 // LeftBottom, RightBottom, RightTop, LelftTop
-func (bb BB) Corners() (LB, RB, RT, LT cm.Vector) {
+func (bb BB) Corners() (LB, RB, RT, LT Vector) {
 	return Vector{bb.L, bb.B}, Vector{bb.R, bb.B}, Vector{bb.R, bb.T}, Vector{bb.L, bb.T}
 }
