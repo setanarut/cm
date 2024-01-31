@@ -230,10 +230,10 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	arb.count = info.count
 	arb.n = info.n
 
-	arb.e = a.e * b.e
-	arb.u = a.u * b.u
+	arb.e = a.elasticity * b.elasticity
+	arb.u = a.friction * b.friction
 
-	surfaceVr := b.surfaceV.Sub(a.surfaceV)
+	surfaceVr := b.surfaceVelocity.Sub(a.surfaceVelocity)
 	arb.surface_vr = surfaceVr.Sub(info.n.Mult(surfaceVr.Dot(info.n)))
 
 	typeA := info.a.collisionType

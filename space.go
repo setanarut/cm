@@ -974,6 +974,11 @@ func (space *Space) LookupHandler(a, b CollisionType, defaultHandler *CollisionH
 	return defaultHandler
 }
 
+// NewCollisionHandler sets a collision handler to handle specific collision types.
+//
+// The methods are called only when shapes with the specified CollisionTypeA and CollisionTypeB collide.
+//
+// Use Shape.SetCollisionType() to set type.
 func (space *Space) NewCollisionHandler(collisionTypeA, collisionTypeB CollisionType) *CollisionHandler {
 	hash := HashPair(HashValue(collisionTypeA), HashValue(collisionTypeB))
 	handler := &CollisionHandler{collisionTypeA, collisionTypeB, DefaultBegin, DefaultPreSolve, DefaultPostSolve, DefaultSeparate, nil}
@@ -1118,6 +1123,13 @@ func (space *Space) PostStepCallback(key interface{}) *PostStepCallback {
 	return nil
 }
 
+// AddPostStepCallback defines a callback to be run just before Space.Step() finishes.
+//
+// The main reason you want to define post-step callbacks is to get around
+// the restriction that you cannot call the add/remove methods from a collision handler callback.
+// Post-step callbacks run right before the next (or current) call to Space.Step() returns when it is safe to add and remove objects.
+// You can only schedule one post-step callback per key value, this prevents you from accidentally removing an object twice.
+// Registering a second callback for the same key is a no-op.
 func (space *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data interface{}) bool {
 	if key == nil || space.PostStepCallback(key) == nil {
 		callback := &PostStepCallback{

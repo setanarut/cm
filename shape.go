@@ -24,19 +24,22 @@ const (
 
 type Shape struct {
 	Class    ShapeClass
+	Filter   ShapeFilter
+	UserData interface{}
+
 	space    *Space
 	body     *Body
 	massInfo *ShapeMassInfo
 	bb       BB
-
-	sensor   bool
-	e, u     float64
-	surfaceV Vector
-
-	UserData interface{}
-
+	// sensor is a boolean value if this shape is a sensor or not.
+	// Sensors only call collision callbacks, and never generate real collisions.
+	sensor               bool
+	elasticity, friction float64
+	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
+	// This value is only used when calculating friction, not resolving the collision.
+	surfaceVelocity Vector
+	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
 	collisionType CollisionType
-	Filter        ShapeFilter
 
 	hashid HashValue
 }
@@ -58,10 +61,13 @@ func (s *Shape) Order() int {
 	}
 }
 
+// Sensor returns this shape is a sensor or not.
 func (s *Shape) Sensor() bool {
 	return s.sensor
 }
 
+// SetSensor sets sensor. A boolean value if this shape is a sensor or not.
+// Sensors only call collision callbacks, and never generate real collisions.
 func (s *Shape) SetSensor(sensor bool) {
 	s.body.Activate()
 	s.sensor = sensor
@@ -122,6 +128,7 @@ func (s *Shape) SetSpace(space *Space) {
 	s.space = space
 }
 
+// BB returns 2D axis-aligned bounding box of this shape.
 func (s *Shape) BB() BB {
 	return s.bb
 }
@@ -130,40 +137,50 @@ func (s *Shape) SetBB(bb BB) {
 	s.bb = bb
 }
 
+// SetCollisionType sets collision type.
+// You can assign types to shapes that trigger callbacks (CollisionHandler) when objects of certain types touch
 func (s *Shape) SetCollisionType(collisionType CollisionType) {
 	s.body.Activate()
 	s.collisionType = collisionType
 }
 
 func (s *Shape) Friction() float64 {
-	return s.u
+	return s.friction
 }
 
 func (s *Shape) SetFriction(u float64) {
-	if s.u <= 0 {
+	if s.friction <= 0 {
 		logErr.Fatalln("Friction must be positive")
 	}
 	s.body.Activate()
-	s.u = u
+	s.friction = u
 }
 
-func (s *Shape) SetSurfaceV(surfaceV Vector) {
-	s.surfaceV = surfaceV
+// SurfaceVelocity returns the surface velocity of this shape.
+func (s *Shape) SurfaceVelocity() Vector {
+	return s.surfaceVelocity
+}
+
+// SetSurfaceVelocity sets the surface velocity of the object. Useful for creating conveyor belts or players that move around.
+// This value is only used when calculating friction, not resolving the collision.
+func (s *Shape) SetSurfaceVelocity(surfaceV Vector) {
+	s.surfaceVelocity = surfaceV
 }
 
 func (s *Shape) Elasticity() float64 {
-	return s.e
+	return s.elasticity
 }
 
+// SetElasticity sets elasticity (0-1 range)
 func (s *Shape) SetElasticity(e float64) {
-	if s.e <= 0 {
+	if s.elasticity <= 0 {
 		logErr.Fatalln("Friction must be positive")
 	}
 	s.body.Activate()
-	s.e = e
+	s.elasticity = e
 }
 
-func (s *Shape) SetFilter(filter ShapeFilter) {
+func (s *Shape) SetShapeFilter(filter ShapeFilter) {
 	s.body.Activate()
 	s.Filter = filter
 }
@@ -233,7 +250,7 @@ func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
 		body:     body,
 		massInfo: massInfo,
 
-		surfaceV: Vector{},
+		surfaceVelocity: Vector{},
 		Filter: ShapeFilter{
 			Group:      NO_GROUP,
 			Categories: ALL_CATEGORIES,
