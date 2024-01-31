@@ -419,8 +419,8 @@ func bias_coef(errorBias, dt float64) float64 {
 
 var maxArbiters, maxPoints, maxConstraints int
 
-func !assert(truth bool, msg ...interface{}) {
-	if truth {
+func assert(truth bool, msg ...interface{}) {
+	if !truth {
 		log.Fatalln(fmt.Sprint("Assertion failed: ", msg))
 	}
 }
