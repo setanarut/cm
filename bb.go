@@ -171,3 +171,9 @@ func (bb BB) Offset(v Vector) BB {
 func (a BB) Proximity(b BB) float64 {
 	return math.Abs(a.L+a.R-b.L-b.R) + math.Abs(a.B+a.T-b.B-b.T)
 }
+
+// Corners returns corner coords of BBox.
+// LeftBottom, RightBottom, RightTop, LelftTop
+func (bb BB) Corners() (LB, RB, RT, LT cm.Vector) {
+	return Vector{bb.L, bb.B}, Vector{bb.R, bb.B}, Vector{bb.R, bb.T}, Vector{bb.L, bb.T}
+}
