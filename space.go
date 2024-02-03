@@ -255,18 +255,50 @@ func arbiterSetEql(shapes ShapePair, arb *Arbiter) bool {
 }
 
 type Space struct {
+
 	// Iterations is number of iterations to use in the impulse solver to solve contacts and other constrain.
 	// Must be non-zero.
-	Iterations         uint
-	IdleSpeedThreshold float64
-	SleepTimeThreshold float64
-	StaticBody         *Body
+	Iterations uint
 
-	gravity              Vector
-	damping              float64
-	collisionSlop        float64
-	collisionBias        float64
-	collisionPersistence uint
+	// IdleSpeedThreshold is speed threshold for a body to be considered idle.
+	// The default value of 0 means to let the space guess a good threshold based on gravity.
+	IdleSpeedThreshold float64
+
+	// SleepTimeThreshold is time a group of bodies must remain idle in order to fall asleep.
+	// Enabling sleeping also implicitly enables the the contact graph.
+	// The default value of INFINITY disables the sleeping algorithm.
+	SleepTimeThreshold float64
+
+	// StaticBody is the Space provided static body for a given Space.
+	// This is merely provided for convenience and you are not required to use it.
+	StaticBody *Body
+
+	// Gravity to pass to rigid bodies when integrating velocity.
+	Gravity Vector
+
+	// Damping rate expressed as the fraction of velocity bodies retain each second.
+	//
+	// A value of 0.9 would mean that each body's velocity will drop 10% per second.
+	// The default value is 1.0, meaning no Damping is applied.
+	// @note This Damping value is different than those of DampedSpring and DampedRotarySpring.
+	Damping float64
+
+	// CollisionSlop is amount of encouraged penetration between colliding shapes.
+	//
+	// Used to reduce oscillating contacts and keep the collision cache warm.
+	// Defaults to 0.1. If you have poor simulation quality,
+	// increase this number as much as possible without allowing visible amounts of overlap.
+	CollisionSlop float64
+
+	// CollisionBias determines how fast overlapping shapes are pushed apart.
+	//
+	// Expressed as a fraction of the error remaining after each second.
+	// Defaults to math.Pow(0.9, 60) meaning that Chipmunk fixes 10% of overlap each frame at 60Hz.
+	CollisionBias float64
+
+	// Number of frames that contact information should persist.
+	// Defaults to 3. There is probably never a reason to change this value.
+	CollisionPersistence uint
 
 	stamp   uint
 	curr_dt float64
@@ -295,17 +327,21 @@ type Space struct {
 
 	skipPostStep      bool
 	postStepCallbacks []*PostStepCallback
+	UserData          interface{}
 }
 
 // NewSpace allocates and initializes a Space
 func NewSpace() *Space {
 	space := &Space{
 		Iterations:           10,
-		gravity:              Vector{},
-		damping:              1.0,
-		collisionSlop:        0.1,
-		collisionBias:        math.Pow(0.9, 60),
-		collisionPersistence: 3,
+		IdleSpeedThreshold:   0.0,
+		SleepTimeThreshold:   math.MaxFloat64,
+		StaticBody:           NewBody(0, 0),
+		Gravity:              Vector{},
+		Damping:              1.0,
+		CollisionSlop:        0.1,
+		CollisionBias:        math.Pow(0.9, 60),
+		CollisionPersistence: 3,
 		locked:               0,
 		stamp:                0,
 		shapeIDCounter:       1,
@@ -314,8 +350,6 @@ func NewSpace() *Space {
 		staticBodies:         []*Body{},
 		sleepingComponents:   []*Body{},
 		rousedBodies:         []*Body{},
-		SleepTimeThreshold:   math.MaxFloat64,
-		IdleSpeedThreshold:   0.0,
 		arbiters:             []*Arbiter{},
 		cachedArbiters:       NewHashSet[ShapePair, *Arbiter](arbiterSetEql),
 		pooledArbiters:       sync.Pool{New: func() interface{} { return &Arbiter{} }},
@@ -337,15 +371,10 @@ func NewSpace() *Space {
 	}
 	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
 	space.dynamicShapes.class.(*BBTree).velocityFunc = BBTreeVelocityFunc(ShapeVelocityFunc)
-	staticBody := NewBody(0, 0)
-	staticBody.SetType(BODY_STATIC)
-	space.SetStaticBody(staticBody)
+	space.StaticBody.SetType(BODY_STATIC)
 	return space
 }
 
-func (space *Space) Gravity() Vector {
-	return space.gravity
-}
 func (space *Space) Arbiters() []*Arbiter {
 	return space.arbiters
 }
@@ -370,35 +399,14 @@ func (space *Space) StaticBodyCount() int {
 	return len(space.staticBodies)
 }
 
+// SetGravity sets gravity and wake up all of the sleeping bodies since the gravity changed.
 func (space *Space) SetGravity(gravity Vector) {
-	space.gravity = gravity
+	space.Gravity = gravity
 
 	// Wake up all of the bodies since the gravity changed.
 	for _, component := range space.sleepingComponents {
 		component.Activate()
 	}
-}
-
-// Daming returns damping
-func (space *Space) Damping() float64 {
-	return space.damping
-}
-
-// SetDamping sets damping.
-//
-// Damping rate expressed as the fraction of velocity bodies retain each second.
-// A value of 0.9 would mean that each body's velocity will drop 10% per second.
-// The default value is 1.0, meaning no damping is applied.
-// @note This damping value is different than those of DampedSpring and DampedRotarySpring.
-func (space *Space) SetDamping(damping float64) {
-	if damping < 0 {
-		log.Fatalln("Must be positive")
-	}
-	space.damping = damping
-}
-
-func (space *Space) SetCollisionSlop(slop float64) {
-	space.collisionSlop = slop
 }
 
 func (space *Space) SetStaticBody(body *Body) {
@@ -718,7 +726,7 @@ func (space *Space) PushFreshContactBuffer() {
 
 	if head == nil {
 		space.contactBuffersHead = NewContactBuffer(stamp, nil)
-	} else if stamp-head.next.stamp > space.collisionPersistence {
+	} else if stamp-head.next.stamp > space.CollisionPersistence {
 		tail := head.next
 		space.contactBuffersHead = tail.InitHeader(stamp, tail)
 	} else {
@@ -748,7 +756,7 @@ func (space *Space) ProcessComponents(dt float64) {
 		if dv != 0 {
 			dvsq = dv * dv
 		} else {
-			dvsq = space.gravity.LengthSq() * dt * dt
+			dvsq = space.Gravity.LengthSq() * dt * dt
 		}
 
 		// update idling and reset component nodes
@@ -876,8 +884,8 @@ func (space *Space) Step(dt float64) {
 		})
 
 		// Prestep the arbiters and constraints.
-		slop := space.collisionSlop
-		biasCoef := 1 - math.Pow(space.collisionBias, dt)
+		slop := space.CollisionSlop
+		biasCoef := 1 - math.Pow(space.CollisionBias, dt)
 		for _, arbiter := range space.arbiters {
 			arbiter.PreStep(dt, slop, biasCoef)
 		}
@@ -891,8 +899,8 @@ func (space *Space) Step(dt float64) {
 		}
 
 		// Integrate velocities.
-		damping := math.Pow(space.damping, dt)
-		gravity := space.gravity
+		damping := math.Pow(space.Damping, dt)
+		gravity := space.Gravity
 		for _, body := range space.dynamicBodies {
 			body.velocity_func(body, gravity, damping, dt)
 		}
@@ -940,6 +948,11 @@ func (space *Space) Step(dt float64) {
 
 func (space *Space) Lock() {
 	space.locked++
+}
+
+// IsLocked returns true from inside a callback when objects cannot be added/removed.
+func (space *Space) IsLocked() bool {
+	return space.locked > 0
 }
 
 func (space *Space) Unlock(runPostStep bool) {

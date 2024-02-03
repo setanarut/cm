@@ -21,7 +21,7 @@ func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 		handler.SeparateFunc(arb, space, handler.UserData)
 	}
 
-	if ticks >= space.collisionPersistence {
+	if ticks >= space.CollisionPersistence {
 		arb.contacts = nil
 		arb.count = 0
 		space.pooledArbiters.Put(arb)
