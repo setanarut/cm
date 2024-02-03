@@ -25,29 +25,29 @@ func NewGearJoint(a, b *Body, phase, ratio float64) *Constraint {
 }
 
 func (joint *GearJoint) PreStep(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	// calculate moment of inertia coefficient.
-	joint.iSum = 1.0 / (a.i_inv*joint.ratio_inv + joint.ratio*b.i_inv)
+	joint.iSum = 1.0 / (a.moi_inv*joint.ratio_inv + joint.ratio*b.moi_inv)
 
 	// calculate bias velocity
 	maxBias := joint.Constraint.maxBias
-	joint.bias = Clamp(-bias_coef(joint.errorBias, dt)*(b.a*joint.ratio-a.a-joint.phase)/dt, -maxBias, maxBias)
+	joint.bias = Clamp(-bias_coef(joint.errorBias, dt)*(b.angle*joint.ratio-a.angle-joint.phase)/dt, -maxBias, maxBias)
 }
 
 func (joint *GearJoint) ApplyCachedImpulse(dt_coef float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	j := joint.jAcc * dt_coef
-	a.w -= j * a.i_inv * joint.ratio_inv
-	b.w += j * b.i_inv
+	a.w -= j * a.moi_inv * joint.ratio_inv
+	b.w += j * b.moi_inv
 }
 
 func (joint *GearJoint) ApplyImpulse(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	// compute relative rotational velocity
 	wr := b.w*joint.ratio - a.w
@@ -61,8 +61,8 @@ func (joint *GearJoint) ApplyImpulse(dt float64) {
 	j = joint.jAcc - jOld
 
 	// apply impulse
-	a.w -= j * a.i_inv * joint.ratio_inv
-	b.w += j * b.i_inv
+	a.w -= j * a.moi_inv * joint.ratio_inv
+	b.w += j * b.moi_inv
 }
 
 func (joint *GearJoint) GetImpulse() float64 {

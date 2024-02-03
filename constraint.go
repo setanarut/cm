@@ -19,8 +19,8 @@ type Constraint struct {
 	Class Constrainer
 	space *Space
 
-	a, b           *Body
-	next_a, next_b *Constraint
+	bodyA, bodyB *Body
+	nextA, nextB *Constraint
 
 	maxForce, errorBias, maxBias float64
 
@@ -34,8 +34,8 @@ type Constraint struct {
 func NewConstraint(class Constrainer, a, b *Body) *Constraint {
 	return &Constraint{
 		Class: class,
-		a:     a,
-		b:     b,
+		bodyA: a,
+		bodyB: b,
 		space: nil,
 
 		maxForce:  INFINITY,
@@ -49,8 +49,14 @@ func NewConstraint(class Constrainer, a, b *Body) *Constraint {
 }
 
 func (c *Constraint) ActivateBodies() {
-	c.a.Activate()
-	c.b.Activate()
+	c.bodyA.Activate()
+	c.bodyB.Activate()
+}
+func (c *Constraint) BodyA() *Body {
+	return c.bodyA
+}
+func (c *Constraint) BodyB() *Body {
+	return c.bodyB
 }
 
 func (c Constraint) MaxForce() float64 {
@@ -90,10 +96,10 @@ func (c *Constraint) SetErrorBias(errorBias float64) {
 }
 
 func (c *Constraint) Next(body *Body) *Constraint {
-	if c.a == body {
-		return c.next_a
+	if c.bodyA == body {
+		return c.nextA
 	} else {
-		return c.next_b
+		return c.nextB
 	}
 }
 

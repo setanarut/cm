@@ -32,15 +32,15 @@ func PolySupportPoint(shape *Shape, n Vector) SupportPoint {
 
 func SegmentSupportPoint(shape *Shape, n Vector) SupportPoint {
 	seg := shape.Class.(*Segment)
-	if seg.ta.Dot(n) > seg.tb.Dot(n) {
-		return NewSupportPoint(seg.ta, 0)
+	if seg.transformA.Dot(n) > seg.transformB.Dot(n) {
+		return NewSupportPoint(seg.transformA, 0)
 	} else {
-		return NewSupportPoint(seg.tb, 1)
+		return NewSupportPoint(seg.transformB, 1)
 	}
 }
 
 func CircleSupportPoint(shape *Shape, _ Vector) SupportPoint {
-	return NewSupportPoint(shape.Class.(*Circle).tc, 0)
+	return NewSupportPoint(shape.Class.(*Circle).transformC, 0)
 }
 
 func PolySupportPointIndex(count int, planes []SplittingPlane, n Vector) int {
@@ -87,8 +87,8 @@ func CircleToCircle(info *CollisionInfo) {
 	c1 := info.a.Class.(*Circle)
 	c2 := info.b.Class.(*Circle)
 
-	mindist := c1.r + c2.r
-	delta := c2.tc.Sub(c1.tc)
+	mindist := c1.radius + c2.radius
+	delta := c2.transformC.Sub(c1.transformC)
 	distsq := delta.LengthSq()
 
 	if distsq < mindist*mindist {
@@ -98,7 +98,7 @@ func CircleToCircle(info *CollisionInfo) {
 		} else {
 			info.n = Vector{1, 0}
 		}
-		info.PushContact(c1.tc.Add(info.n.Mult(c1.r)), c2.tc.Add(info.n.Mult(-c2.r)), 0)
+		info.PushContact(c1.transformC.Add(info.n.Mult(c1.radius)), c2.transformC.Add(info.n.Mult(-c2.radius)), 0)
 	}
 }
 
@@ -110,15 +110,15 @@ func CircleToSegment(info *CollisionInfo) {
 	circle := info.a.Class.(*Circle)
 	segment := info.b.Class.(*Segment)
 
-	segA := segment.ta
-	segB := segment.tb
-	center := circle.tc
+	segA := segment.transformA
+	segB := segment.transformB
+	center := circle.transformC
 
 	segDelta := segB.Sub(segA)
 	closestT := Clamp01(segDelta.Dot(center.Sub(segA)) / segDelta.LengthSq())
 	closest := segA.Add(segDelta.Mult(closestT))
 
-	mindist := circle.r + segment.r
+	mindist := circle.radius + segment.radius
 	delta := closest.Sub(center)
 	distsq := delta.LengthSq()
 	if distsq < mindist*mindist {
@@ -126,14 +126,14 @@ func CircleToSegment(info *CollisionInfo) {
 		if dist != 0 {
 			info.n = delta.Mult(1 / dist)
 		} else {
-			info.n = segment.tn
+			info.n = segment.transformN
 		}
 		n := info.n
 
 		rot := segment.Shape.body.Rotation()
-		if (closestT != 0.0 || n.Dot(segment.a_tangent.Rotate(rot)) >= 0.0) &&
-			(closestT != 1.0 || n.Dot(segment.b_tangent.Rotate(rot)) >= 0.0) {
-			info.PushContact(center.Add(n.Mult(circle.r)), closest.Add(n.Mult(-segment.r)), 0)
+		if (closestT != 0.0 || n.Dot(segment.aTangent.Rotate(rot)) >= 0.0) &&
+			(closestT != 1.0 || n.Dot(segment.bTangent.Rotate(rot)) >= 0.0) {
+			info.PushContact(center.Add(n.Mult(circle.radius)), closest.Add(n.Mult(-segment.radius)), 0)
 		}
 	}
 }
@@ -149,14 +149,14 @@ func SegmentToSegment(info *CollisionInfo) {
 	rot1 := seg1.body.Rotation()
 	rot2 := seg2.body.Rotation()
 
-	if points.d > (seg1.r + seg2.r) {
+	if points.d > (seg1.radius + seg2.radius) {
 		return
 	}
 
-	if (!points.a.Equal(seg1.ta) || n.Dot(seg1.a_tangent.Rotate(rot1)) <= 0) &&
-		(!points.a.Equal(seg1.tb) || n.Dot(seg1.b_tangent.Rotate(rot1)) <= 0) &&
-		(!points.b.Equal(seg2.ta) || n.Dot(seg2.a_tangent.Rotate(rot2)) >= 0) &&
-		(!points.b.Equal(seg2.tb) || n.Dot(seg2.b_tangent.Rotate(rot2)) >= 0) {
+	if (!points.a.Equal(seg1.transformA) || n.Dot(seg1.aTangent.Rotate(rot1)) <= 0) &&
+		(!points.a.Equal(seg1.transformB) || n.Dot(seg1.bTangent.Rotate(rot1)) <= 0) &&
+		(!points.b.Equal(seg2.transformA) || n.Dot(seg2.aTangent.Rotate(rot2)) >= 0) &&
+		(!points.b.Equal(seg2.transformB) || n.Dot(seg2.bTangent.Rotate(rot2)) >= 0) {
 		ContactPoints(SupportEdgeForSegment(seg1, n), SupportEdgeForSegment(seg2, n.Neg()), points, info)
 	}
 }
@@ -168,9 +168,9 @@ func CircleToPoly(info *CollisionInfo) {
 	circle := info.a.Class.(*Circle)
 	poly := info.b.Class.(*PolyShape)
 
-	if points.d <= circle.r+poly.r {
+	if points.d <= circle.radius+poly.radius {
 		info.n = points.n
-		info.PushContact(points.a.Add(info.n.Mult(circle.r)), points.b.Add(info.n.Mult(poly.r)), 0)
+		info.PushContact(points.a.Add(info.n.Mult(circle.radius)), points.b.Add(info.n.Mult(poly.radius)), 0)
 	}
 }
 
@@ -185,10 +185,10 @@ func SegmentToPoly(info *CollisionInfo) {
 	polyshape := info.b.Class.(*PolyShape)
 
 	// If the closest points are nearer than the sum of the radii...
-	if points.d-segment.r-polyshape.r <= 0 && (
+	if points.d-segment.radius-polyshape.radius <= 0 && (
 	// Reject endcap collisions if tangents are provided.
-	(!points.a.Equal(segment.ta) || n.Dot(segment.a_tangent.Rotate(rot)) <= 0) &&
-		(!points.a.Equal(segment.tb) || n.Dot(segment.b_tangent.Rotate(rot)) <= 0)) {
+	(!points.a.Equal(segment.transformA) || n.Dot(segment.aTangent.Rotate(rot)) <= 0) &&
+		(!points.a.Equal(segment.transformB) || n.Dot(segment.bTangent.Rotate(rot)) <= 0)) {
 		ContactPoints(SupportEdgeForSegment(segment, n), SupportEdgeForPoly(polyshape, n.Neg()), points, info)
 	}
 }
@@ -201,7 +201,7 @@ func PolyToPoly(info *CollisionInfo) {
 
 	poly1 := info.a.Class.(*PolyShape)
 	poly2 := info.b.Class.(*PolyShape)
-	if points.d-poly1.r-poly2.r <= 0 {
+	if points.d-poly1.radius-poly2.radius <= 0 {
 		ContactPoints(SupportEdgeForPoly(poly1, points.n), SupportEdgeForPoly(poly2, points.n.Neg()), points, info)
 	}
 }
@@ -264,20 +264,20 @@ type Edge struct {
 
 func SupportEdgeForSegment(seg *Segment, n Vector) Edge {
 	hashid := seg.Shape.hashid
-	if seg.tn.Dot(n) > 0 {
+	if seg.transformN.Dot(n) > 0 {
 		return Edge{
-			a: EdgePoint{seg.ta, HashPair(hashid, 0)},
-			b: EdgePoint{seg.tb, HashPair(hashid, 1)},
-			r: seg.r,
-			n: seg.tn,
+			a: EdgePoint{seg.transformA, HashPair(hashid, 0)},
+			b: EdgePoint{seg.transformB, HashPair(hashid, 1)},
+			r: seg.radius,
+			n: seg.transformN,
 		}
 	}
 
 	return Edge{
-		a: EdgePoint{seg.tb, HashPair(hashid, 1)},
-		b: EdgePoint{seg.ta, HashPair(hashid, 0)},
-		r: seg.r,
-		n: seg.tn.Neg(),
+		a: EdgePoint{seg.transformB, HashPair(hashid, 1)},
+		b: EdgePoint{seg.transformA, HashPair(hashid, 0)},
+		r: seg.radius,
+		n: seg.transformN.Neg(),
 	}
 }
 
@@ -295,7 +295,7 @@ func SupportEdgeForPoly(poly *PolyShape, n Vector) Edge {
 		return Edge{
 			EdgePoint{planes[i0].v0, HashPair(hashId, HashValue(i0))},
 			EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
-			poly.r,
+			poly.radius,
 			planes[i1].n,
 		}
 	}
@@ -303,7 +303,7 @@ func SupportEdgeForPoly(poly *PolyShape, n Vector) Edge {
 	return Edge{
 		EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
 		EdgePoint{planes[i2].v0, HashPair(hashId, HashValue(i2))},
-		poly.r,
+		poly.radius,
 		planes[i2].n,
 	}
 }
@@ -325,8 +325,8 @@ func ContactPoints(e1, e2 Edge, points ClosestPoints, info *CollisionInfo) {
 	dE2B := e2.b.p.Cross(n)
 
 	// TODO + min isn't a complete fix
-	e1Denom := 1 / (dE1B - dE1A + math.SmallestNonzeroFloat64)
-	e2Denom := 1 / (dE2B - dE2A + math.SmallestNonzeroFloat64)
+	e1Denom := 1 / (dE1B - dE1A + math.SmallestNonzeroFloat64) // try 1e-15
+	e2Denom := 1 / (dE2B - dE2A + math.SmallestNonzeroFloat64) // try 1e-15
 
 	// Project the endpoints of the two edges onto the opposing edge, clamping them as necessary.
 	// Compare the projected points to the collision normal to see if the shapes overlap there.

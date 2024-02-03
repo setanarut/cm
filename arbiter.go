@@ -24,7 +24,7 @@ type Arbiter struct {
 	count int
 	// a slice onto the current buffer array of contacts
 	contacts []Contact
-	n        Vector
+	normal   Vector
 
 	// Regular, wildcard A and wildcard B collision handlers.
 	handler, handlerA, handlerB *CollisionHandler
@@ -120,7 +120,7 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dt_coef float64) {
 
 	for i := 0; i < arbiter.count; i++ {
 		contact := arbiter.contacts[i]
-		j := arbiter.n.Rotate(Vector{contact.jnAcc, contact.jtAcc})
+		j := arbiter.normal.Rotate(Vector{contact.jnAcc, contact.jtAcc})
 		apply_impulses(arbiter.body_a, arbiter.body_b, contact.r1, contact.r2, j.Mult(dt_coef))
 	}
 }
@@ -128,7 +128,7 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dt_coef float64) {
 func (arbiter *Arbiter) ApplyImpulse() {
 	a := arbiter.body_a
 	b := arbiter.body_b
-	n := arbiter.n
+	n := arbiter.normal
 	surface_vr := arbiter.surface_vr
 	friction := arbiter.u
 
@@ -171,8 +171,8 @@ func (arbiter *Arbiter) IsFirstContact() bool {
 func (arb *Arbiter) PreStep(dt, slop, bias float64) {
 	a := arb.body_a
 	b := arb.body_b
-	n := arb.n
-	bodyDelta := b.p.Sub(a.p)
+	n := arb.normal
+	bodyDelta := b.position.Sub(a.position)
 
 	for i := 0; i < arb.count; i++ {
 		con := &arb.contacts[i]
@@ -207,8 +207,8 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 
 		// r1 and r2 store absolute offsets at init time.
 		// Need to convert them to relative offsets.
-		con.r1 = con.r1.Sub(a.body.p)
-		con.r2 = con.r2.Sub(b.body.p)
+		con.r1 = con.r1.Sub(a.body.position)
+		con.r2 = con.r2.Sub(b.body.position)
 
 		// Cached impulses are not zeroed at init time.
 		con.jnAcc = 0
@@ -228,7 +228,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 
 	arb.contacts = info.arr[:info.count]
 	arb.count = info.count
-	arb.n = info.n
+	arb.normal = info.n
 
 	arb.e = a.elasticity * b.elasticity
 	arb.u = a.friction * b.friction
@@ -327,37 +327,37 @@ func (arb *Arbiter) CallWildcardSeparateB(space *Space) {
 }
 
 func apply_impulses(a, b *Body, r1, r2, j Vector) {
-	b.v.X += j.X * b.m_inv
-	b.v.Y += j.Y * b.m_inv
-	b.w += b.i_inv * (r2.X*j.Y - r2.Y*j.X)
+	b.vel.X += j.X * b.m_inv
+	b.vel.Y += j.Y * b.m_inv
+	b.w += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
 
 	j.X = -j.X
 	j.Y = -j.Y
-	a.v.X += j.X * a.m_inv
-	a.v.Y += j.Y * a.m_inv
-	a.w += a.i_inv * (r1.X*j.Y - r1.Y*j.X)
+	a.vel.X += j.X * a.m_inv
+	a.vel.Y += j.Y * a.m_inv
+	a.w += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
 func apply_impulse(body *Body, j, r Vector) {
-	body.v.X += j.X * body.m_inv
-	body.v.Y += j.Y * body.m_inv
-	body.w += body.i_inv * r.Cross(j)
+	body.vel.X += j.X * body.m_inv
+	body.vel.Y += j.Y * body.m_inv
+	body.w += body.moi_inv * r.Cross(j)
 }
 
 func apply_bias_impulses(a, b *Body, r1, r2, j Vector) {
 	b.v_bias.X += j.X * b.m_inv
 	b.v_bias.Y += j.Y * b.m_inv
-	b.w_bias += b.i_inv * (r2.X*j.Y - r2.Y*j.X)
+	b.w_bias += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
 
 	j.X = -j.X
 	j.Y = -j.Y
 	a.v_bias.X += j.X * a.m_inv
 	a.v_bias.Y += j.Y * a.m_inv
-	a.w_bias += a.i_inv * (r1.X*j.Y - r1.Y*j.X)
+	a.w_bias += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
 func relative_velocity(a, b *Body, r1, r2 Vector) Vector {
-	return r2.Perp().Mult(b.w).Add(b.v).Sub(r1.Perp().Mult(a.w).Add(a.v))
+	return r2.Perp().Mult(b.w).Add(b.vel).Sub(r1.Perp().Mult(a.w).Add(a.vel))
 }
 
 var CollisionHandlerDoNothing = CollisionHandler{
@@ -415,7 +415,7 @@ func (arb *Arbiter) TotalImpulse() Vector {
 	count := arb.Count()
 	for i := 0; i < count; i++ {
 		con := arb.contacts[i]
-		sum = sum.Add(arb.n.Rotate(Vector{con.jnAcc, con.jtAcc}))
+		sum = sum.Add(arb.normal.Rotate(Vector{con.jnAcc, con.jtAcc}))
 	}
 
 	if arb.swapped {
@@ -450,9 +450,9 @@ func (arb *Arbiter) Bodies() (*Body, *Body) {
 
 func (arb *Arbiter) Normal() Vector {
 	if arb.swapped {
-		return arb.n.Mult(-1)
+		return arb.normal.Mult(-1)
 	} else {
-		return arb.n
+		return arb.normal
 	}
 }
 
@@ -479,7 +479,7 @@ func (arb *Arbiter) ContactPointSet() ContactPointSet {
 	set.Count = arb.Count()
 
 	swapped := arb.swapped
-	n := arb.n
+	n := arb.normal
 	if swapped {
 		set.Normal = n.Neg()
 	} else {
@@ -488,8 +488,8 @@ func (arb *Arbiter) ContactPointSet() ContactPointSet {
 
 	for i := 0; i < set.Count; i++ {
 		// Contact points are relative to body CoGs;
-		p1 := arb.body_a.p.Add(arb.contacts[i].r1)
-		p2 := arb.body_b.p.Add(arb.contacts[i].r2)
+		p1 := arb.body_a.position.Add(arb.contacts[i].r1)
+		p2 := arb.body_b.position.Add(arb.contacts[i].r2)
 
 		if swapped {
 			set.Points[i].PointA = p2
@@ -515,9 +515,9 @@ func (arb *Arbiter) SetContactPointSet(set *ContactPointSet) {
 	}
 	swapped := arb.swapped
 	if swapped {
-		arb.n = set.Normal.Neg()
+		arb.normal = set.Normal.Neg()
 	} else {
-		arb.n = set.Normal
+		arb.normal = set.Normal
 	}
 
 	for i := 0; i < count; i++ {
@@ -525,11 +525,11 @@ func (arb *Arbiter) SetContactPointSet(set *ContactPointSet) {
 		p2 := set.Points[i].PointB
 
 		if swapped {
-			arb.contacts[i].r1 = p2.Sub(arb.body_a.p)
-			arb.contacts[i].r2 = p1.Sub(arb.body_b.p)
+			arb.contacts[i].r1 = p2.Sub(arb.body_a.position)
+			arb.contacts[i].r2 = p1.Sub(arb.body_b.position)
 		} else {
-			arb.contacts[i].r1 = p1.Sub(arb.body_a.p)
-			arb.contacts[i].r2 = p2.Sub(arb.body_b.p)
+			arb.contacts[i].r1 = p1.Sub(arb.body_a.position)
+			arb.contacts[i].r2 = p2.Sub(arb.body_b.position)
 		}
 	}
 }

@@ -31,21 +31,21 @@ type Body struct {
 	velocity_func BodyVelocityFunc // Integration function
 	position_func BodyPositionFunc // Integration function
 
-	m     float64 // Mass
+	mass  float64 // Mass
 	m_inv float64 // Mass inverse
 
-	i     float64 // Moment of inertia
-	i_inv float64 // Inverse of moment of inertia i
+	moi     float64 // Moment of inertia
+	moi_inv float64 // Inverse of moment of inertia i
 
 	cog Vector // Center of gravity
 
-	p Vector // Position
-	v Vector // Velocity
-	f Vector // Force
+	position Vector // Position
+	vel      Vector // Velocity
+	force    Vector // Force
 
-	a float64 // Angle (radians)
-	w float64 // Angular velocity,
-	t float64 // Torque (radians)
+	angle  float64 // Angle (radians)
+	w      float64 // Angular velocity,
+	torque float64 // Torque (radians)
 
 	transform Transform
 
@@ -87,9 +87,9 @@ func NewBody(mass, moment float64) *Body {
 	body := &Body{
 		id:            bodyCur,
 		cog:           Vector{},
-		p:             Vector{},
-		v:             Vector{},
-		f:             Vector{},
+		position:      Vector{},
+		vel:           Vector{},
+		force:         Vector{},
 		v_bias:        Vector{},
 		transform:     NewTransformIdentity(),
 		velocity_func: BodyUpdateVelocity,
@@ -121,31 +121,31 @@ func NewKinematicBody() *Body {
 // SetAngle sets the angle of body.
 func (body *Body) SetAngle(angle float64) {
 	body.Activate()
-	body.a = angle
-	body.SetTransform(body.p, angle)
+	body.angle = angle
+	body.SetTransform(body.position, angle)
 }
 
 // Moment returns moment of inertia of the body.
 func (body Body) Moment() float64 {
-	return body.i
+	return body.moi
 }
 
 // SetMoment sets moment of inertia of the body.
 func (body *Body) SetMoment(moment float64) {
 	body.Activate()
-	body.i = moment
-	body.i_inv = 1 / moment
+	body.moi = moment
+	body.moi_inv = 1 / moment
 }
 
 // Mass returns mass of the body
 func (body *Body) Mass() float64 {
-	return body.m
+	return body.mass
 }
 
 // SetMass sets mass of the body
 func (body *Body) SetMass(mass float64) {
 	body.Activate()
-	body.m = mass
+	body.mass = mass
 	body.m_inv = 1 / mass
 }
 
@@ -168,19 +168,19 @@ func (body *Body) SetType(newType int) {
 	}
 
 	if newType == BODY_DYNAMIC {
-		body.m = 0
-		body.i = 0
+		body.mass = 0
+		body.moi = 0
 		body.m_inv = INFINITY
-		body.i_inv = INFINITY
+		body.moi_inv = INFINITY
 
 		body.AccumulateMassFromShapes()
 	} else {
-		body.m = INFINITY
-		body.i = INFINITY
+		body.mass = INFINITY
+		body.moi = INFINITY
 		body.m_inv = 0
-		body.i_inv = 0
+		body.moi_inv = 0
 
-		body.v = Vector{}
+		body.vel = Vector{}
 		body.w = 0
 	}
 
@@ -240,7 +240,7 @@ func (body *Body) GetType() int {
 	if body.sleepingIdleTime == INFINITY {
 		return BODY_STATIC
 	}
-	if body.m == INFINITY {
+	if body.mass == INFINITY {
 		return BODY_KINEMATIC
 	}
 	return BODY_DYNAMIC
@@ -252,8 +252,8 @@ func (body *Body) AccumulateMassFromShapes() {
 		return
 	}
 
-	body.m = 0
-	body.i = 0
+	body.mass = 0
+	body.moi = 0
 	body.cog = Vector{}
 
 	// cache position, realign at the end
@@ -264,15 +264,15 @@ func (body *Body) AccumulateMassFromShapes() {
 		m := info.m
 
 		if info.m > 0 {
-			msum := body.m + m
-			body.i += m*info.i + body.cog.DistanceSq(info.cog)*(m*body.m)/msum
+			msum := body.mass + m
+			body.moi += m*info.i + body.cog.DistanceSq(info.cog)*(m*body.mass)/msum
 			body.cog = body.cog.Lerp(info.cog, m/msum)
-			body.m = msum
+			body.mass = msum
 		}
 	}
 
-	body.m_inv = 1.0 / body.m
-	body.i_inv = 1.0 / body.i
+	body.m_inv = 1.0 / body.mass
+	body.moi_inv = 1.0 / body.moi
 
 	body.SetPosition(pos)
 }
@@ -284,7 +284,7 @@ func (body Body) CenterOfGravity() Vector {
 
 // Angle returns the angle of the body.
 func (body *Body) Angle() float64 {
-	return body.a
+	return body.angle
 }
 
 // Rotation returns the rotation vector of the body.
@@ -302,13 +302,13 @@ func (body *Body) Position() Vector {
 // SetPosition sets the position of the body.
 func (body *Body) SetPosition(position Vector) {
 	body.Activate()
-	body.p = body.transform.Vect(body.cog).Add(position)
-	body.SetTransform(body.p, body.a)
+	body.position = body.transform.Vect(body.cog).Add(position)
+	body.SetTransform(body.position, body.angle)
 }
 
 // Velocity returns the velocity of the body.
 func (body *Body) Velocity() Vector {
-	return body.v
+	return body.vel
 }
 
 // SetVelocity sets the velocity of the body.
@@ -316,13 +316,13 @@ func (body *Body) Velocity() Vector {
 // Shorthand for Body.SetVelocityVector()
 func (body *Body) SetVelocity(x, y float64) {
 	body.Activate()
-	body.v = Vector{x, y}
+	body.vel = Vector{x, y}
 }
 
 // SetVelocityVector sets the velocity of the body
 func (body *Body) SetVelocityVector(v Vector) {
 	body.Activate()
-	body.v = v
+	body.vel = v
 }
 
 // UpdateVelocity is the default velocity integration function.
@@ -330,37 +330,37 @@ func (body *Body) UpdateVelocity(gravity Vector, damping, dt float64) {
 	if body.GetType() == BODY_KINEMATIC {
 		return
 	}
-	if body.m < 0 && body.i < 0 {
+	if body.mass < 0 && body.moi < 0 {
 		log.Fatalln("Body's mass and moment must be positive")
 	}
 
-	body.v = body.v.Mult(damping).Add(gravity.Add(body.f.Mult(body.m_inv)).Mult(dt))
-	body.w = body.w*damping + body.t*body.i_inv*dt
+	body.vel = body.vel.Mult(damping).Add(gravity.Add(body.force.Mult(body.m_inv)).Mult(dt))
+	body.w = body.w*damping + body.torque*body.moi_inv*dt
 
-	body.f = Vector{}
-	body.t = 0
+	body.force = Vector{}
+	body.torque = 0
 }
 
 // Force returns the force applied to the body for the next time step.
 func (body *Body) Force() Vector {
-	return body.f
+	return body.force
 }
 
 // SetForce sets the force applied to the body for the next time step.
 func (body *Body) SetForce(force Vector) {
 	body.Activate()
-	body.f = force
+	body.force = force
 }
 
 // Torque returns the torque applied to the body for the next time step.
 func (body *Body) Torque() float64 {
-	return body.t
+	return body.torque
 }
 
 // SetTorque sets the torque applied to the body for the next time step.
 func (body *Body) SetTorque(torque float64) {
 	body.Activate()
-	body.t = torque
+	body.torque = torque
 }
 
 // AngularVelocity returns the angular velocity of the body.
@@ -383,6 +383,11 @@ func (body *Body) SetTransform(p Vector, a float64) {
 		rot.X, -rot.Y, p.X-(c.X*rot.X-c.Y*rot.Y),
 		rot.Y, rot.X, p.Y-(c.X*rot.Y+c.Y*rot.X),
 	)
+}
+
+// Transform returns body's transform
+func (body *Body) Transform() Transform {
+	return body.transform
 }
 
 // Activate wakes up a sleeping or idle body.
@@ -470,14 +475,14 @@ func (body *Body) AddShape(shape *Shape) *Shape {
 // KineticEnergy returns the kinetic energy of this body.
 func (body *Body) KineticEnergy() float64 {
 	// Need to do some fudging to avoid NaNs
-	vsq := body.v.Dot(body.v)
+	vsq := body.vel.Dot(body.vel)
 	wsq := body.w * body.w
 	var a, b float64
 	if vsq != 0 {
-		a = vsq * body.m
+		a = vsq * body.mass
 	}
 	if wsq != 0 {
-		b = wsq * body.i
+		b = wsq * body.moi
 	}
 	return a + b
 }
@@ -524,10 +529,10 @@ func (body *Body) LocalToWorld(point Vector) Vector {
 // ApplyForceAtWorldPoint applies a force at world point.
 func (body *Body) ApplyForceAtWorldPoint(force, point Vector) {
 	body.Activate()
-	body.f = body.f.Add(force)
+	body.force = body.force.Add(force)
 
 	r := point.Sub(body.transform.Point(body.cog))
-	body.t += r.Cross(force)
+	body.torque += r.Cross(force)
 }
 
 // ApplyForceAtLocalPoint applies a force at local point.
@@ -553,7 +558,7 @@ func (body *Body) ApplyImpulseAtLocalPoint(impulse, point Vector) {
 // Get the world (absolute) velocity of a point on a rigid body specified in body local coordinates.
 func (body *Body) VelocityAtLocalPoint(point Vector) Vector {
 	r := body.transform.Vect(point.Sub(body.cog))
-	return body.v.Add(r.Perp().Mult(body.w))
+	return body.vel.Add(r.Perp().Mult(body.w))
 }
 
 // VelocityAtWorldPoint returns the velocity of a point on a body.
@@ -561,7 +566,7 @@ func (body *Body) VelocityAtLocalPoint(point Vector) Vector {
 // Get the world (absolute) velocity of a point on a rigid body specified in world coordinates.
 func (body *Body) VelocityAtWorldPoint(point Vector) Vector {
 	r := point.Sub(body.transform.Point(body.cog))
-	return body.v.Add(r.Perp().Mult(body.w))
+	return body.vel.Add(r.Perp().Mult(body.w))
 }
 
 // RemoveConstraint removes constraint from the body.
@@ -631,10 +636,10 @@ func (body *Body) EachConstraint(f func(*Constraint)) {
 func filterConstraints(node *Constraint, body *Body, filter *Constraint) *Constraint {
 	if node == filter {
 		return node.Next(body)
-	} else if node.a == body {
-		node.next_a = filterConstraints(node.next_a, body, filter)
+	} else if node.bodyA == body {
+		node.nextA = filterConstraints(node.nextA, body, filter)
 	} else {
-		node.next_b = filterConstraints(node.next_b, body, filter)
+		node.nextB = filterConstraints(node.nextB, body, filter)
 	}
 	return node
 }
@@ -645,18 +650,18 @@ func BodyUpdateVelocity(body *Body, gravity Vector, damping, dt float64) {
 		return
 	}
 
-	body.v = body.v.Mult(damping).Add(gravity.Add(body.f.Mult(body.m_inv)).Mult(dt))
-	body.w = body.w*damping + body.t*body.i_inv*dt
+	body.vel = body.vel.Mult(damping).Add(gravity.Add(body.force.Mult(body.m_inv)).Mult(dt))
+	body.w = body.w*damping + body.torque*body.moi_inv*dt
 
-	body.f = Vector{}
-	body.t = 0
+	body.force = Vector{}
+	body.torque = 0
 }
 
 // BodyUpdatePosition is default position integration function.
 func BodyUpdatePosition(body *Body, dt float64) {
-	body.p = body.p.Add(body.v.Add(body.v_bias).Mult(dt))
-	body.a = body.a + (body.w+body.w_bias)*dt
-	body.SetTransform(body.p, body.a)
+	body.position = body.position.Add(body.vel.Add(body.v_bias).Mult(dt))
+	body.angle = body.angle + (body.w+body.w_bias)*dt
+	body.SetTransform(body.position, body.angle)
 
 	body.v_bias = Vector{}
 	body.w_bias = 0

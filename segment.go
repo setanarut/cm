@@ -1,62 +1,61 @@
 package cm
 
+// Segment is a segment Shape
 type Segment struct {
 	*Shape
-
-	a, b, n    Vector
-	ta, tb, tn Vector
-	r          float64
-
-	a_tangent, b_tangent Vector
+	a, b, n                            Vector
+	transformA, transformB, transformN Vector
+	radius                             float64
+	aTangent, bTangent                 Vector
 }
 
 func (seg *Segment) CacheData(transform Transform) BB {
-	seg.ta = transform.Point(seg.a)
-	seg.tb = transform.Point(seg.b)
-	seg.tn = transform.Vect(seg.n)
+	seg.transformA = transform.Point(seg.a)
+	seg.transformB = transform.Point(seg.b)
+	seg.transformN = transform.Vect(seg.n)
 
 	var l, r, b, t float64
 
-	if seg.ta.X < seg.tb.X {
-		l = seg.ta.X
-		r = seg.tb.X
+	if seg.transformA.X < seg.transformB.X {
+		l = seg.transformA.X
+		r = seg.transformB.X
 	} else {
-		l = seg.tb.X
-		r = seg.ta.X
+		l = seg.transformB.X
+		r = seg.transformA.X
 	}
 
-	if seg.ta.Y < seg.tb.Y {
-		b = seg.ta.Y
-		t = seg.tb.Y
+	if seg.transformA.Y < seg.transformB.Y {
+		b = seg.transformA.Y
+		t = seg.transformB.Y
 	} else {
-		b = seg.tb.Y
-		t = seg.ta.Y
+		b = seg.transformB.Y
+		t = seg.transformA.Y
 	}
 
-	rad := seg.r
+	rad := seg.radius
 	return BB{l - rad, b - rad, r + rad, t + rad}
 }
 
 func (seg *Segment) SetRadius(r float64) {
-	seg.r = r
+	seg.radius = r
 
 	mass := seg.massInfo.m
-	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.r)
+	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
 	if mass > 0 {
 		seg.body.AccumulateMassFromShapes()
 	}
 }
 
 func (seg *Segment) Radius() float64 {
-	return seg.r
+	return seg.radius
 }
 
 func (seg *Segment) TransformA() Vector {
-	return seg.ta
+	return seg.transformA
 }
 
 func (seg *Segment) TransformB() Vector {
-	return seg.tb
+	return seg.transformB
 }
 
 func (seg *Segment) SetEndpoints(a, b Vector) {
@@ -65,7 +64,7 @@ func (seg *Segment) SetEndpoints(a, b Vector) {
 	seg.n = b.Sub(a).Normalize().Perp()
 
 	mass := seg.massInfo.m
-	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.r)
+	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
 	if mass > 0 {
 		seg.body.AccumulateMassFromShapes()
 	}
@@ -84,11 +83,11 @@ func (seg *Segment) B() Vector {
 }
 
 func (seg *Segment) PointQuery(p Vector, info *PointQueryInfo) {
-	closest := p.ClosestPointOnSegment(seg.ta, seg.tb)
+	closest := p.ClosestPointOnSegment(seg.transformA, seg.transformB)
 
 	delta := p.Sub(closest)
 	d := delta.Length()
-	r := seg.r
+	r := seg.radius
 	g := delta.Mult(1 / d)
 
 	info.Shape = seg.Shape
@@ -108,9 +107,9 @@ func (seg *Segment) PointQuery(p Vector, info *PointQueryInfo) {
 }
 
 func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo) {
-	n := seg.tn
-	d := seg.ta.Sub(a).Dot(n)
-	r := seg.r + r2
+	n := seg.transformN
+	d := seg.transformA.Sub(a).Dot(n)
+	r := seg.radius + r2
 
 	var flippedN Vector
 	if d > 0 {
@@ -121,8 +120,8 @@ func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo
 	segOffset := flippedN.Mult(r).Sub(a)
 
 	// Make the endpoints relative to 'a' and move them by the thickness of the segment.
-	segA := seg.ta.Add(segOffset)
-	segB := seg.tb.Add(segOffset)
+	segA := seg.transformA.Add(segOffset)
+	segB := seg.transformB.Add(segOffset)
 	delta := b.Sub(a)
 
 	if delta.Cross(segA)*delta.Cross(segB) <= 0 {
@@ -146,8 +145,8 @@ func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo
 	} else if r != 0 {
 		info1 := SegmentQueryInfo{nil, b, Vector{}, 1}
 		info2 := SegmentQueryInfo{nil, b, Vector{}, 1}
-		CircleSegmentQuery(seg.Shape, seg.ta, seg.r, a, b, r2, &info1)
-		CircleSegmentQuery(seg.Shape, seg.tb, seg.r, a, b, r2, &info2)
+		CircleSegmentQuery(seg.Shape, seg.transformA, seg.radius, a, b, r2, &info1)
+		CircleSegmentQuery(seg.Shape, seg.transformB, seg.radius, a, b, r2, &info2)
 
 		if info1.Alpha < info2.Alpha {
 			*info = info1
@@ -163,9 +162,9 @@ func NewSegment(body *Body, a, b Vector, r float64) *Shape {
 		b: b,
 		n: b.Sub(a).Normalize().ReversePerp(),
 
-		r:         r,
-		a_tangent: Vector{},
-		b_tangent: Vector{},
+		radius:   r,
+		aTangent: Vector{},
+		bTangent: Vector{},
 	}
 	segment.Shape = NewShape(segment, body, NewSegmentMassInfo(0, a, b, r))
 	return segment.Shape

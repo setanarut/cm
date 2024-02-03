@@ -11,7 +11,7 @@ const MAX_CONTACTS_PER_ARBITER = 2
 const CONTACTS_BUFFER_SIZE = 1024
 
 var ShapeVelocityFunc = func(obj interface{}) Vector {
-	return obj.(*Shape).body.v
+	return obj.(*Shape).body.vel
 }
 
 var ShapeUpdateFunc = func(shape *Shape) {
@@ -103,7 +103,7 @@ func SpaceCollideShapesFunc(obj interface{}, b *Shape, collisionId uint32, vspac
 		!(a.sensor || b.sensor) &&
 		// Don't process collisions between two infinite mass bodies.
 		// This includes collisions between two kinematic bodies, or a kinematic body and a static body.
-		!(a.body.m == INFINITY && b.body.m == INFINITY) {
+		!(a.body.mass == INFINITY && b.body.mass == INFINITY) {
 		space.arbiters = append(space.arbiters, arb)
 	} else {
 		space.PopContacts(info.count)
@@ -140,8 +140,8 @@ func QueryReject(a, b *Shape) bool {
 
 func QueryRejectConstraints(a, b *Body) bool {
 	for constraint := a.constraintList; constraint != nil; constraint = constraint.Next(a) {
-		if !constraint.collideBodies && ((constraint.a == a && constraint.b == b) ||
-			(constraint.a == b && constraint.b == a)) {
+		if !constraint.collideBodies && ((constraint.bodyA == a && constraint.bodyB == b) ||
+			(constraint.bodyA == b && constraint.bodyB == a)) {
 			return true
 		}
 	}
@@ -179,10 +179,10 @@ func FloodFillComponent(root *Body, body *Body) {
 		}
 
 		for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
-			if body == constraint.a {
-				FloodFillComponent(root, constraint.b)
+			if body == constraint.bodyA {
+				FloodFillComponent(root, constraint.bodyB)
 			} else {
-				FloodFillComponent(root, constraint.a)
+				FloodFillComponent(root, constraint.bodyA)
 			}
 		}
 	} else {
@@ -346,6 +346,9 @@ func NewSpace() *Space {
 func (space *Space) Gravity() Vector {
 	return space.gravity
 }
+func (space *Space) Arbiters() []*Arbiter {
+	return space.arbiters
+}
 
 // DynamicBodies returns dynamic body list of the space
 func (space *Space) DynamicBodies() []*Body {
@@ -462,7 +465,7 @@ func (space *Space) Activate(body *Body) {
 	}
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
-		if body == constraint.a || constraint.a.GetType() == BODY_STATIC {
+		if body == constraint.bodyA || constraint.bodyA.GetType() == BODY_STATIC {
 			space.constraints = append(space.constraints, constraint)
 		}
 	}
@@ -497,7 +500,7 @@ func (space *Space) Deactivate(body *Body) {
 	}
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
-		bodyA := constraint.a
+		bodyA := constraint.bodyA
 		if body == bodyA || bodyA.GetType() == BODY_STATIC {
 			for i, c := range space.constraints {
 				if c == constraint {
@@ -641,8 +644,8 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 		log.Fatalln("Space is locked")
 	}
 
-	a := constraint.a
-	b := constraint.b
+	a := constraint.bodyA
+	b := constraint.bodyB
 
 	if a == nil && b == nil {
 		log.Fatalln("Constraint is attached to a null body")
@@ -653,10 +656,10 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 	space.constraints = append(space.constraints, constraint)
 
 	// Push onto the heads of the bodies' constraint lists
-	constraint.next_a = a.constraintList
+	constraint.nextA = a.constraintList
 	// possible nil pointer dereference (SA5011)
 	a.constraintList = constraint
-	constraint.next_b = b.constraintList
+	constraint.nextB = b.constraintList
 	b.constraintList = constraint
 	constraint.space = space
 
@@ -673,8 +676,8 @@ func (space *Space) RemoveConstraint(constraint *Constraint) {
 		log.Fatalln("Space is locked")
 	}
 
-	constraint.a.Activate()
-	constraint.b.Activate()
+	constraint.bodyA.Activate()
+	constraint.bodyB.Activate()
 	for i, c := range space.constraints {
 		if c == constraint {
 			space.constraints = append(space.constraints[:i], space.constraints[i+1:]...)
@@ -682,8 +685,8 @@ func (space *Space) RemoveConstraint(constraint *Constraint) {
 		}
 	}
 
-	constraint.a.RemoveConstraint(constraint)
-	constraint.b.RemoveConstraint(constraint)
+	constraint.bodyA.RemoveConstraint(constraint)
+	constraint.bodyB.RemoveConstraint(constraint)
 	constraint.space = nil
 }
 
@@ -757,7 +760,7 @@ func (space *Space) ProcessComponents(dt float64) {
 			// Need to deal with infinite mass objects
 			var keThreshold float64
 			if dvsq != 0 {
-				keThreshold = body.m * dvsq
+				keThreshold = body.mass * dvsq
 			}
 			if body.KineticEnergy() > keThreshold {
 				body.sleepingIdleTime = 0
@@ -788,11 +791,11 @@ func (space *Space) ProcessComponents(dt float64) {
 	if sleep {
 		// Bodies should be held active if connected by a joint to a kinematic.
 		for _, constraint := range space.constraints {
-			if constraint.b.GetType() == BODY_KINEMATIC {
-				constraint.a.Activate()
+			if constraint.bodyB.GetType() == BODY_KINEMATIC {
+				constraint.bodyA.Activate()
 			}
-			if constraint.a.GetType() == BODY_KINEMATIC {
-				constraint.b.Activate()
+			if constraint.bodyA.GetType() == BODY_KINEMATIC {
+				constraint.bodyB.Activate()
 			}
 		}
 

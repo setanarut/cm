@@ -27,8 +27,8 @@ func NewGrooveJoint(a, b *Body, grooveA, grooveB, anchorB Vector) *Constraint {
 }
 
 func (joint *GrooveJoint) PreStep(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	ta := a.transform.Point(joint.GrooveA)
 	tb := a.transform.Point(joint.GrooveB)
@@ -39,28 +39,28 @@ func (joint *GrooveJoint) PreStep(dt float64) {
 	joint.grooveTn = n
 	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
 
-	td := b.p.Add(joint.r2).Cross(n)
+	td := b.position.Add(joint.r2).Cross(n)
 
 	if td <= ta.Cross(n) {
 		joint.clamp = 1
-		joint.r1 = ta.Sub(a.p)
+		joint.r1 = ta.Sub(a.position)
 	} else if td >= tb.Cross(n) {
 		joint.clamp = -1
-		joint.r1 = tb.Sub(a.p)
+		joint.r1 = tb.Sub(a.position)
 	} else {
 		joint.clamp = 0
-		joint.r1 = n.Perp().Mult(-td).Add(n.Mult(d)).Sub(a.p)
+		joint.r1 = n.Perp().Mult(-td).Add(n.Mult(d)).Sub(a.position)
 	}
 
 	joint.k = k_tensor(a, b, joint.r1, joint.r2)
 
-	delta := b.p.Add(joint.r2).Sub(a.p.Add(joint.r1))
-	joint.bias = delta.Mult(-bias_coef(joint.errorBias, dt) / dt).Clamp(joint.maxBias)
+	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
+	joint.bias = delta.Mult(-bias_coef(joint.errorBias, dt) / dt).ClampLenght(joint.maxBias)
 }
 
 func (joint *GrooveJoint) ApplyCachedImpulse(dt_coef float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	apply_impulses(a, b, joint.r1, joint.r2, joint.jAcc.Mult(dt_coef))
 }
@@ -73,12 +73,12 @@ func (joint *GrooveJoint) grooveConstrain(j Vector, dt float64) Vector {
 	} else {
 		jClamp = j.Project(n)
 	}
-	return jClamp.Clamp(joint.maxForce * dt)
+	return jClamp.ClampLenght(joint.maxForce * dt)
 }
 
 func (joint *GrooveJoint) ApplyImpulse(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	r1 := joint.r1
 	r2 := joint.r2

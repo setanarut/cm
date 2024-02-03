@@ -38,13 +38,13 @@ func NewDampedSpring(a, b *Body, anchorA, anchorB Vector, restLength, stiffness,
 }
 
 func (spring *DampedSpring) PreStep(dt float64) {
-	a := spring.a
-	b := spring.b
+	a := spring.bodyA
+	b := spring.bodyB
 
 	spring.r1 = a.transform.Vect(spring.AnchorA.Sub(a.cog))
 	spring.r2 = b.transform.Vect(spring.AnchorB.Sub(b.cog))
 
-	delta := b.p.Add(spring.r2).Sub(a.p.Add(spring.r1))
+	delta := b.position.Add(spring.r2).Sub(a.position.Add(spring.r1))
 	dist := delta.Length()
 	if dist != 0 {
 		spring.n = delta.Mult(1.0 / dist)
@@ -73,8 +73,8 @@ func (spring *DampedSpring) ApplyCachedImpulse(dt_coef float64) {
 }
 
 func (spring *DampedSpring) ApplyImpulse(dt float64) {
-	a := spring.a
-	b := spring.b
+	a := spring.bodyA
+	b := spring.bodyB
 
 	n := spring.n
 	r1 := spring.r1

@@ -9,30 +9,37 @@ type Vector struct {
 	X, Y float64
 }
 
+// String returns string representation of this vector.
 func (v Vector) String() string {
 	return fmt.Sprintf("%f,%f", v.X, v.Y)
 }
 
+// Equal checks if two vectors are equal. (Be careful when comparing floating point numbers!)
 func (v Vector) Equal(other Vector) bool {
 	return v.X == other.X && v.Y == other.Y
 }
 
+// Add two vector
 func (v Vector) Add(other Vector) Vector {
 	return Vector{v.X + other.X, v.Y + other.Y}
 }
 
+// Sub returns this - other
 func (v Vector) Sub(other Vector) Vector {
 	return Vector{v.X - other.X, v.Y - other.Y}
 }
 
+// Neg negates a vector.
 func (v Vector) Neg() Vector {
 	return Vector{-v.X, -v.Y}
 }
 
+// Mult scales vector
 func (v Vector) Mult(s float64) Vector {
 	return Vector{v.X * s, v.Y * s}
 }
 
+// Dot returns dot product
 func (v Vector) Dot(other Vector) float64 {
 	return v.X*other.X + v.Y*other.Y
 }
@@ -44,52 +51,63 @@ func (v Vector) Cross(other Vector) float64 {
 	return v.X*other.Y - v.Y*other.X
 }
 
+// Perp returns a perpendicular vector. (90 degree rotation)
 func (v Vector) Perp() Vector {
 	return Vector{-v.Y, v.X}
 }
 
+// ReversePerp returns a perpendicular vector. (-90 degree rotation)
 func (v Vector) ReversePerp() Vector {
 	return Vector{v.Y, -v.X}
 }
 
+// Returns the vector projection onto other.
 func (v Vector) Project(other Vector) Vector {
 	return other.Mult(v.Dot(other) / other.Dot(other))
 }
 
-// ForAngle returns the unit length vector for the given angle (in radians).
-func ForAngle(a float64) Vector {
-	return Vector{math.Cos(a), math.Sin(a)}
-}
-
+// ToAngle returns the angular direction v is pointing in (in radians).
 func (v Vector) ToAngle() float64 {
 	return math.Atan2(v.Y, v.X)
 }
 
+// Rotate uses complex number multiplication to rotate this by other.
+//
+// Scaling will occur if this is not a unit vector.
 func (v Vector) Rotate(other Vector) Vector {
 	return Vector{v.X*other.X - v.Y*other.Y, v.X*other.Y + v.Y*other.X}
 }
 
+// Unrotate is inverse of Vector.Rotate().
 func (v Vector) Unrotate(other Vector) Vector {
 	return Vector{v.X*other.X + v.Y*other.Y, v.Y*other.X - v.X*other.Y}
 }
 
+// LengthSq returns the squared length of this vector.
+//
+// Faster than  Vector.Length() when you only need to compare lengths.
 func (v Vector) LengthSq() float64 {
 	return v.Dot(v)
 }
 
+// Length returns the length of this vector
 func (v Vector) Length() float64 {
 	return math.Sqrt(v.Dot(v))
 }
 
+// Lerp linearly interpolates between this and other vector.
 func (v Vector) Lerp(other Vector, t float64) Vector {
 	return v.Mult(1.0 - t).Add(other.Mult(t))
 }
 
+// Normalize returns a normalized copy of this vector.
 func (v Vector) Normalize() Vector {
-	return v.Mult(1.0 / (v.Length() + math.SmallestNonzeroFloat64))
+	// return v.Mult(1.0 / (v.Length() + math.SmallestNonzeroFloat64))
+	return v.Mult(1.0 / (v.Length() + 1e-15))
 }
 
-func (v Vector) SLerp(other Vector, t float64) Vector {
+// Spherical linearly interpolate between this and other.
+func (v Vector) LerpSpherical(other Vector, t float64) Vector {
 	dot := v.Normalize().Dot(other.Normalize())
 	omega := math.Acos(Clamp(dot, -1, 1))
 
@@ -101,53 +119,41 @@ func (v Vector) SLerp(other Vector, t float64) Vector {
 	return v.Mult(math.Sin((1.0-t)*omega) * denom).Add(other.Mult(math.Sin(t*omega) * denom))
 }
 
-func Clamp(f, min, max float64) float64 {
-	if f > min {
-		return math.Min(f, max)
-	} else {
-		return math.Min(min, max)
-	}
-}
-
-func Clamp01(f float64) float64 {
-	return math.Max(0, math.Min(f, 1))
-}
-
-func Lerp(f1, f2, t float64) float64 {
-	return f1*(1.0-t) + f2*t
-}
-
-func LerpConst(f1, f2, d float64) float64 {
-	return f1 + Clamp(f2-f1, -d, d)
-}
-
-func (v Vector) SlerpConst(other Vector, a float64) Vector {
+// Spherical linearly interpolate between this towards other by no more than angle a radians.
+func (v Vector) LerpSphericalClamp(other Vector, angle float64) Vector {
 	dot := v.Normalize().Dot(other.Normalize())
 	omega := math.Acos(Clamp(dot, -1, 1))
-	return v.SLerp(other, math.Min(a, omega)/omega)
+	return v.LerpSpherical(other, math.Min(angle, omega)/omega)
 }
 
-func (v Vector) Clamp(length float64) Vector {
-	if v.Dot(v) > length*length {
-		return v.Normalize().Mult(length)
+// ClampLenght clamps this vector lenght to len.
+func (v Vector) ClampLenght(len float64) Vector {
+	if v.Dot(v) > len*len {
+		return v.Normalize().Mult(len)
 	}
 	return Vector{v.X, v.Y}
 }
 
-func (v Vector) LerpConst(other Vector, d float64) Vector {
-	return v.Add(other.Sub(v).Clamp(d))
+// LerpDistance linearly interpolates between this towards other by distance dist.
+func (v Vector) LerpDistance(other Vector, dist float64) Vector {
+	return v.Add(other.Sub(v).ClampLenght(dist))
 }
 
+// Returns the distance between this and other.
 func (v Vector) Distance(other Vector) float64 {
 	return v.Sub(other).Length()
 }
 
+// DistanceSq returns the squared distance between this and other.
+//
+// Faster than Vector.Distance() when you only need to compare distances.
 func (v Vector) DistanceSq(other Vector) float64 {
 	return v.Sub(other).LengthSq()
 }
 
-func (v Vector) Near(other Vector, d float64) bool {
-	return v.DistanceSq(other) < d*d
+// Near returns true if the distance between this and other is less than dist.
+func (v Vector) Near(other Vector, dist float64) bool {
+	return v.DistanceSq(other) < dist*dist
 }
 
 // Collision related below
@@ -182,4 +188,29 @@ func (v Vector) ClosestPointOnSegment(a, b Vector) Vector {
 
 func (v Vector) Clone() Vector {
 	return Vector{v.X, v.Y}
+}
+
+func Clamp(f, min, max float64) float64 {
+	if f > min {
+		return math.Min(f, max)
+	} else {
+		return math.Min(min, max)
+	}
+}
+
+func Clamp01(f float64) float64 {
+	return math.Max(0, math.Min(f, 1))
+}
+
+func Lerp(f1, f2, t float64) float64 {
+	return f1*(1.0-t) + f2*t
+}
+
+func LerpConst(f1, f2, d float64) float64 {
+	return f1 + Clamp(f2-f1, -d, d)
+}
+
+// ForAngle returns the unit length vector for the given angle (in radians).
+func ForAngle(a float64) Vector {
+	return Vector{math.Cos(a), math.Sin(a)}
 }

@@ -200,13 +200,13 @@ func (s *Shape) Update(transform Transform) BB {
 func (s *Shape) Point(i uint32) SupportPoint {
 	switch s.Class.(type) {
 	case *Circle:
-		return NewSupportPoint(s.Class.(*Circle).tc, 0)
+		return NewSupportPoint(s.Class.(*Circle).transformC, 0)
 	case *Segment:
 		seg := s.Class.(*Segment)
 		if i == 0 {
-			return NewSupportPoint(seg.ta, i)
+			return NewSupportPoint(seg.transformA, i)
 		}
-		return NewSupportPoint(seg.tb, i)
+		return NewSupportPoint(seg.transformB, i)
 	case *PolyShape:
 		poly := s.Class.(*PolyShape)
 		// Poly shapes may change vertex count.

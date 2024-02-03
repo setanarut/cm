@@ -4,14 +4,14 @@ import "math"
 
 type Circle struct {
 	*Shape
-	c, tc Vector
-	r     float64
+	c, transformC Vector
+	radius        float64
 }
 
 func NewCircle(body *Body, radius float64, offset Vector) *Shape {
 	circle := &Circle{
-		c: offset,
-		r: radius,
+		c:      offset,
+		radius: radius,
 	}
 	circle.Shape = NewShape(circle, body, CircleShapeMassInfo(0, radius, offset))
 	return circle.Shape
@@ -27,35 +27,35 @@ func CircleShapeMassInfo(mass, radius float64, center Vector) *ShapeMassInfo {
 }
 
 func (circle *Circle) CacheData(transform Transform) BB {
-	circle.tc = transform.Point(circle.c)
-	return NewBBForCircle(circle.tc, circle.r)
+	circle.transformC = transform.Point(circle.c)
+	return NewBBForCircle(circle.transformC, circle.radius)
 }
 
 func (circle *Circle) Radius() float64 {
-	return circle.r
+	return circle.radius
 }
 
 func (circle *Circle) SetRadius(r float64) {
-	circle.r = r
+	circle.radius = r
 
 	mass := circle.massInfo.m
-	circle.massInfo = CircleShapeMassInfo(mass, circle.r, circle.c)
+	circle.massInfo = CircleShapeMassInfo(mass, circle.radius, circle.c)
 	if mass > 0 {
 		circle.body.AccumulateMassFromShapes()
 	}
 }
 
 func (circle *Circle) TransformC() Vector {
-	return circle.tc
+	return circle.transformC
 }
 
 func (circle *Circle) PointQuery(p Vector, info *PointQueryInfo) {
-	delta := p.Sub(circle.tc)
+	delta := p.Sub(circle.transformC)
 	d := delta.Length()
-	r := circle.r
+	r := circle.radius
 
 	info.Shape = circle.Shape
-	info.Point = circle.tc.Add(delta.Mult(r / d))
+	info.Point = circle.transformC.Add(delta.Mult(r / d))
 	info.Distance = d - r
 
 	if d > MAGIC_EPSILON {
@@ -66,7 +66,7 @@ func (circle *Circle) PointQuery(p Vector, info *PointQueryInfo) {
 }
 
 func (circle *Circle) SegmentQuery(a, b Vector, radius float64, info *SegmentQueryInfo) {
-	CircleSegmentQuery(circle.Shape, circle.tc, circle.r, a, b, radius, info)
+	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
 }
 
 func CircleSegmentQuery(shape *Shape, center Vector, r1 float64, a, b Vector, r2 float64, info *SegmentQueryInfo) {

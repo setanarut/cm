@@ -7,11 +7,8 @@ import (
 
 type PolyShape struct {
 	*Shape
-
-	r float64
-
-	count int
-
+	radius float64
+	count  int
 	// The untransformed planes are appended at the end of the transformed planes.
 	planes []SplittingPlane
 }
@@ -32,12 +29,13 @@ func (poly PolyShape) TransformVert(i int) Vector {
 	return poly.planes[i].v0
 }
 
+// Radius returns the radius of a polygon shape.
 func (poly PolyShape) Radius() float64 {
-	return poly.r
+	return poly.radius
 }
 
 func (poly *PolyShape) SetRadius(r float64) {
-	poly.r = r
+	poly.radius = r
 }
 
 func (poly *PolyShape) CacheData(transform Transform) BB {
@@ -63,7 +61,7 @@ func (poly *PolyShape) CacheData(transform Transform) BB {
 		t = math.Max(t, v.Y)
 	}
 
-	radius := poly.r
+	radius := poly.radius
 	poly.Shape.bb = BB{l - radius, b - radius, r + radius, t + radius}
 	return poly.Shape.bb
 }
@@ -71,7 +69,7 @@ func (poly *PolyShape) CacheData(transform Transform) BB {
 func (poly *PolyShape) PointQuery(p Vector, info *PointQueryInfo) {
 	count := poly.count
 	planes := poly.planes
-	r := poly.r
+	r := poly.radius
 
 	v0 := planes[count-1].v0
 	minDist := INFINITY
@@ -119,7 +117,7 @@ func (poly *PolyShape) PointQuery(p Vector, info *PointQueryInfo) {
 func (poly *PolyShape) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo) {
 	planes := poly.planes
 	count := poly.count
-	r := poly.r
+	r := poly.radius
 	rsum := r + r2
 
 	for i := 0; i < count; i++ {
@@ -174,7 +172,7 @@ func NewPolyShape(body *Body, vectCount int, verts []Vector, transform Transform
 
 func NewPolyShapeRaw(body *Body, count int, verts []Vector, radius float64) *Shape {
 	poly := &PolyShape{
-		r:      radius,
+		radius: radius,
 		count:  count,
 		planes: []SplittingPlane{},
 	}
@@ -234,7 +232,7 @@ func (p *PolyShape) SetVertsUnsafe(count int, verts []Vector, transform Transfor
 func (p *PolyShape) SetVertsRaw(count int, verts []Vector) {
 	p.SetVerts(count, verts)
 	mass := p.massInfo.m
-	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.r)
+	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.radius)
 	if mass > 0 {
 		p.body.AccumulateMassFromShapes()
 	}

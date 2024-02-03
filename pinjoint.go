@@ -40,13 +40,13 @@ func NewPinJoint(a, b *Body, anchorA, anchorB Vector) *Constraint {
 }
 
 func (joint *PinJoint) PreStep(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.cog))
 	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
 
-	delta := b.p.Add(joint.r2.Sub(a.p.Add(joint.r1)))
+	delta := b.position.Add(joint.r2.Sub(a.position.Add(joint.r1)))
 	dist := delta.Length()
 	if dist != 0 {
 		joint.n = delta.Mult(1 / dist)
@@ -62,12 +62,12 @@ func (joint *PinJoint) PreStep(dt float64) {
 
 func (joint *PinJoint) ApplyCachedImpulse(dt_coef float64) {
 	j := joint.n.Mult(joint.jnAcc * dt_coef)
-	apply_impulses(joint.a, joint.b, joint.r1, joint.r2, j)
+	apply_impulses(joint.bodyA, joint.bodyB, joint.r1, joint.r2, j)
 }
 
 func (joint *PinJoint) ApplyImpulse(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 	n := joint.n
 
 	vrn := normal_relative_velocity(a, b, joint.r1, joint.r2, n)

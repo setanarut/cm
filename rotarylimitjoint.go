@@ -20,10 +20,10 @@ func NewRotaryLimitJoint(a, b *Body, min, max float64) *Constraint {
 }
 
 func (joint *RotaryLimitJoint) PreStep(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
-	dist := b.a - a.a
+	dist := b.angle - a.angle
 	pdist := 0.0
 	if dist > joint.Max {
 		pdist = joint.Max - dist
@@ -31,7 +31,7 @@ func (joint *RotaryLimitJoint) PreStep(dt float64) {
 		pdist = joint.Min - dist
 	}
 
-	joint.iSum = 1.0 / (a.i_inv + b.i_inv)
+	joint.iSum = 1.0 / (a.moi_inv + b.moi_inv)
 
 	maxBias := joint.maxBias
 	joint.bias = Clamp(-bias_coef(joint.errorBias, dt)*pdist/dt, -maxBias, maxBias)
@@ -42,12 +42,12 @@ func (joint *RotaryLimitJoint) PreStep(dt float64) {
 }
 
 func (joint *RotaryLimitJoint) ApplyCachedImpulse(dt_coef float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	j := joint.jAcc * dt_coef
-	a.w -= j * a.i_inv
-	b.w += j * b.i_inv
+	a.w -= j * a.moi_inv
+	b.w += j * b.moi_inv
 }
 
 func (joint *RotaryLimitJoint) ApplyImpulse(dt float64) {
@@ -55,8 +55,8 @@ func (joint *RotaryLimitJoint) ApplyImpulse(dt float64) {
 		return
 	}
 
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	wr := b.w - a.w
 
@@ -71,8 +71,8 @@ func (joint *RotaryLimitJoint) ApplyImpulse(dt float64) {
 	}
 	j = joint.jAcc - jOld
 
-	a.w -= j * a.i_inv
-	b.w += j * b.i_inv
+	a.w -= j * a.moi_inv
+	b.w += j * b.moi_inv
 }
 
 func (joint *RotaryLimitJoint) GetImpulse() float64 {

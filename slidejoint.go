@@ -27,13 +27,13 @@ func NewSlideJoint(a, b *Body, anchorA, anchorB Vector, min, max float64) *Const
 }
 
 func (joint *SlideJoint) PreStep(dt float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.cog))
 	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
 
-	delta := b.p.Add(joint.r2).Sub(a.p.Add(joint.r1))
+	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
 	dist := delta.Length()
 	pdist := 0.0
 	if dist > joint.Max {
@@ -56,8 +56,8 @@ func (joint *SlideJoint) PreStep(dt float64) {
 }
 
 func (joint *SlideJoint) ApplyCachedImpulse(dt_coef float64) {
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 
 	j := joint.n.Mult(joint.jnAcc * dt_coef)
 	apply_impulses(a, b, joint.r1, joint.r2, j)
@@ -68,8 +68,8 @@ func (joint *SlideJoint) ApplyImpulse(dt float64) {
 		return
 	}
 
-	a := joint.a
-	b := joint.b
+	a := joint.bodyA
+	b := joint.bodyB
 	n := joint.n
 	r1 := joint.r1
 	r2 := joint.r2

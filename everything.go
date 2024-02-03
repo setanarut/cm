@@ -326,10 +326,10 @@ func DebugInfo(space *Space) string {
 
 	var ke float64
 	for _, body := range space.dynamicBodies {
-		if body.m == INFINITY || body.i == INFINITY {
+		if body.mass == INFINITY || body.moi == INFINITY {
 			continue
 		}
-		ke += body.m*body.v.Dot(body.v) + body.i*body.w*body.w
+		ke += body.mass*body.vel.Dot(body.vel) + body.moi*body.w*body.w
 	}
 
 	return fmt.Sprintf(`Arbiters: %d (%d) - Contact Points: %d (%d)
@@ -341,7 +341,7 @@ KE: %e`, arbiters, maxArbiters,
 
 func k_scalar_body(body *Body, r, n Vector) float64 {
 	rcn := r.Cross(n)
-	return body.m_inv + body.i_inv*rcn*rcn
+	return body.m_inv + body.moi_inv*rcn*rcn
 }
 
 func k_scalar(a, b *Body, r1, r2, n Vector) float64 {
@@ -362,7 +362,7 @@ func k_tensor(a, b *Body, r1, r2 Vector) Mat2x2 {
 	k22 := m_sum
 
 	// add the influence from r1
-	a_i_inv := a.i_inv
+	a_i_inv := a.moi_inv
 	r1xsq := r1.X * r1.X * a_i_inv
 	r1ysq := r1.Y * r1.Y * a_i_inv
 	r1nxy := -r1.X * r1.Y * a_i_inv
@@ -372,7 +372,7 @@ func k_tensor(a, b *Body, r1, r2 Vector) Mat2x2 {
 	k22 += r1xsq
 
 	// add the influence from r2
-	b_i_inv := b.i_inv
+	b_i_inv := b.moi_inv
 	r2xsq := r2.X * r2.X * b_i_inv
 	r2ysq := r2.Y * r2.Y * b_i_inv
 	r2nxy := -r2.X * r2.Y * b_i_inv
