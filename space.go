@@ -1120,11 +1120,10 @@ func (space *Space) PointQueryNearest(point Vector, maxDistance float64, filter 
 
 func (space *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data interface{}) {
 	context := BBQueryContext{bb, filter, f}
-	space.Lock()
-
 	space.staticShapes.class.Query(&context, bb, space.bbQuery, data)
-	space.dynamicShapes.class.Query(&context, bb, space.bbQuery, data)
 
+	space.Lock()
+	space.dynamicShapes.class.Query(&context, bb, space.bbQuery, data)
 	space.Unlock(true)
 }
 
