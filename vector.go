@@ -11,7 +11,7 @@ type Vector struct {
 
 // String returns string representation of this vector.
 func (v Vector) String() string {
-	return fmt.Sprintf("%f,%f", v.X, v.Y)
+	return fmt.Sprintf("Vector{X: %f, Y: %f}", v.X, v.Y)
 }
 
 // Equal checks if two vectors are equal. (Be careful when comparing floating point numbers!)
