@@ -2,7 +2,6 @@ package cm
 
 import (
 	"fmt"
-	"log"
 	"math"
 )
 
@@ -121,9 +120,9 @@ type CollisionInfo struct {
 }
 
 func (info *CollisionInfo) PushContact(p1, p2 Vector, hash HashValue) {
-	if info.count > MAX_CONTACTS_PER_ARBITER {
-		log.Fatalln("Internal error: Tried to push too many contacts.")
-	}
+	// if info.count > MAX_CONTACTS_PER_ARBITER {
+	// 	log.Fatalln("Internal error: Tried to push too many contacts.")
+	// }
 
 	con := &info.arr[info.count]
 	con.r1 = p1
@@ -383,9 +382,9 @@ func k_tensor(a, b *Body, r1, r2 Vector) Mat2x2 {
 
 	// invert
 	det := k11*k22 - k12*k21
-	if det == 0.0 {
-		log.Fatalln("Unsolvable constraint")
-	}
+	// if det == 0.0 {
+	// 	log.Fatalln("Unsolvable constraint")
+	// }
 
 	det_inv := 1.0 / det
 	return Mat2x2{

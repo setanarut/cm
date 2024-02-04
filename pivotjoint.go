@@ -17,13 +17,13 @@ func NewPivotJoint(a, b *Body, pivot Vector) *Constraint {
 	if a != nil {
 		anchorA = a.WorldToLocal(pivot)
 	} else {
-		anchorA = pivot.Clone()
+		anchorA = pivot
 	}
 
 	if b != nil {
 		anchorB = b.WorldToLocal(pivot)
 	} else {
-		anchorB = pivot.Clone()
+		anchorB = pivot
 	}
 
 	return NewPivotJoint2(a, b, anchorA, anchorB)

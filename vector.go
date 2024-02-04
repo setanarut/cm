@@ -186,8 +186,9 @@ func (v Vector) ClosestPointOnSegment(a, b Vector) Vector {
 	return b.Add(delta.Mult(t))
 }
 
-func (v Vector) Clone() Vector {
-	return Vector{v.X, v.Y}
+// Round returns the nearest integer Vector, rounding half away from zero.
+func (v Vector) Round() Vector {
+	return Vector{math.Round(v.X), math.Round(v.Y)}
 }
 
 func Clamp(f, min, max float64) float64 {

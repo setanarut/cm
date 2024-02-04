@@ -1,7 +1,6 @@
 package cm
 
 import (
-	"log"
 	"math"
 )
 
@@ -18,9 +17,9 @@ func (poly PolyShape) Count() int {
 }
 
 func (poly PolyShape) Vert(i int) Vector {
-	if i < 0 && i > poly.count {
-		log.Fatalln("Vert index error")
-	}
+	// if i < 0 && i > poly.count {
+	// 	log.Fatalln("Vert index error")
+	// }
 
 	return poly.planes[i+poly.count].v0
 }

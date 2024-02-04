@@ -330,9 +330,9 @@ func (body *Body) UpdateVelocity(gravity Vector, damping, dt float64) {
 	if body.GetType() == BODY_KINEMATIC {
 		return
 	}
-	if body.mass < 0 && body.moi < 0 {
-		log.Fatalln("Body's mass and moment must be positive")
-	}
+	// if body.mass < 0 && body.moi < 0 {
+	// 	log.Fatalln("Body's mass and moment must be positive")
+	// }
 
 	body.vel = body.vel.Mult(damping).Add(gravity.Add(body.force.Mult(body.m_inv)).Mult(dt))
 	body.w = body.w*damping + body.torque*body.moi_inv*dt
@@ -401,9 +401,9 @@ func (body *Body) Activate() {
 	root := body.ComponentRoot()
 	if root != nil && root.IsSleeping() {
 
-		if root.GetType() != BODY_DYNAMIC {
-			log.Fatalln("Non-dynamic root")
-		}
+		// if root.GetType() != BODY_DYNAMIC {
+		// 	log.Fatalln("Non-dynamic root")
+		// }
 
 		space := root.space
 		// in the chipmunk code they shadow body, so here I am not
@@ -441,11 +441,11 @@ func (body *Body) Activate() {
 	}
 }
 
-// ActivateStatic wakes up any sleeping or idle bodies touching a static body.
+// ActivateStatic wakes up any sleeping or idle bodies touching this static body.
 func (body *Body) ActivateStatic(filter *Shape) {
-	if body.GetType() != BODY_STATIC {
-		log.Fatalln("Body is not static")
-	}
+	// if body.GetType() != BODY_STATIC {
+	// 	log.Fatalln("Body is not static")
+	// }
 
 	for arb := body.arbiterList; arb != nil; arb = arb.Next(body) {
 		if filter == nil || filter == arb.a || filter == arb.b {

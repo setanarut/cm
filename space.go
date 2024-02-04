@@ -419,9 +419,9 @@ func (space *Space) SetStaticBody(body *Body) {
 }
 
 func (space *Space) Activate(body *Body) {
-	if body.GetType() != BODY_DYNAMIC {
-		log.Fatalln("Attempting to activate a non-dynamic body")
-	}
+	// if body.GetType() != BODY_DYNAMIC {
+	// 	log.Fatalln("Attempting to activate a non-dynamic body")
+	// }
 
 	if space.locked != 0 {
 		if !Contains(space.rousedBodies, body) {
@@ -430,9 +430,9 @@ func (space *Space) Activate(body *Body) {
 		return
 	}
 
-	if body.sleepingRoot != nil && body.sleepingNext != nil {
-		log.Fatalln("Activating body non-NULL node pointers.")
-	}
+	// if body.sleepingRoot != nil && body.sleepingNext != nil {
+	// 	log.Fatalln("Activating body non-NULL node pointers.")
+	// }
 
 	space.dynamicBodies = append(space.dynamicBodies, body)
 
@@ -480,9 +480,9 @@ func (space *Space) Activate(body *Body) {
 }
 
 func (space *Space) Deactivate(body *Body) {
-	if body.GetType() != BODY_DYNAMIC {
-		log.Fatalln("Attempting to deactivate non-dynamic body.")
-	}
+	// if body.GetType() != BODY_DYNAMIC {
+	// 	log.Fatalln("Attempting to deactivate non-dynamic body.")
+	// }
 	for i, v := range space.dynamicBodies {
 		if v == body {
 			space.dynamicBodies = append(space.dynamicBodies[:i], space.dynamicBodies[i+1:]...)
@@ -525,15 +525,15 @@ func (space *Space) Deactivate(body *Body) {
 func (space *Space) AddShape(shape *Shape) *Shape {
 	var body *Body = shape.Body()
 
-	if shape.space == space {
-		log.Fatalln("You have already added this shape to this space. You must not add it a second time.")
-	}
-	if shape.space != nil {
-		log.Fatalln("You have already added this shape to another space. You cannot add it to a second.")
-	}
-	if space.locked != 0 {
-		log.Fatalln("This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
-	}
+	// if shape.space == space {
+	// 	log.Fatalln("You have already added this shape to this space. You must not add it a second time.")
+	// }
+	// if shape.space != nil {
+	// 	log.Fatalln("You have already added this shape to another space. You cannot add it to a second.")
+	// }
+	// if space.locked != 0 {
+	// 	log.Fatalln("This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
+	// }
 
 	isStatic := body.GetType() == BODY_STATIC
 	if !isStatic {
@@ -559,13 +559,13 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 func (space *Space) RemoveShape(shape *Shape) {
 	body := shape.body
 
-	if !space.ContainsShape(shape) {
-		log.Fatalln("Shape is not in space")
-	}
+	// if !space.ContainsShape(shape) {
+	// 	log.Fatalln("Shape is not in space")
+	// }
 
-	if space.locked != 0 {
-		log.Fatalln("space.locked is not zero")
-	}
+	// if space.locked != 0 {
+	// 	log.Fatalln("space.locked is not zero")
+	// }
 
 	isStatic := body.GetType() == BODY_STATIC
 	if isStatic {
@@ -587,13 +587,13 @@ func (space *Space) RemoveShape(shape *Shape) {
 
 // AddBody adds a body to the space if not in space.
 func (space *Space) AddBody(body *Body) *Body {
-	if space.ContainsBody(body) {
-		log.Fatalln("Body already added to space")
-	}
+	// if space.ContainsBody(body) {
+	// 	log.Fatalln("Body already added to space")
+	// }
 
-	if body.space != nil {
-		log.Fatalln("Body already added to another space")
-	}
+	// if body.space != nil {
+	// 	log.Fatalln("Body already added to another space")
+	// }
 	if body.GetType() == BODY_STATIC {
 		space.staticBodies = append(space.staticBodies, body)
 	} else {
@@ -605,15 +605,15 @@ func (space *Space) AddBody(body *Body) *Body {
 
 // RemoveBody removes a body from the simulation
 func (space *Space) RemoveBody(body *Body) {
-	if body == space.StaticBody {
-		log.Fatalln("Body is space.Staticbody")
-	}
-	if !space.ContainsBody(body) {
-		log.Fatalln("Body is not in space")
-	}
-	if space.locked != 0 {
-		log.Fatalln("Space is locked")
-	}
+	// if body == space.StaticBody {
+	// 	log.Fatalln("Body is space.Staticbody")
+	// }
+	// if !space.ContainsBody(body) {
+	// 	log.Fatalln("Body is not in space")
+	// }
+	// if space.locked != 0 {
+	// 	log.Fatalln("Space is locked")
+	// }
 	body.Activate()
 	if body.GetType() == BODY_STATIC {
 		for i, b := range space.staticBodies {
@@ -642,22 +642,22 @@ func (space *Space) RemoveBodyWithShapes(body *Body) {
 }
 
 func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
-	if constraint.space == space {
-		log.Fatalln("Already added to this space")
-	}
-	if constraint.space != nil {
-		log.Fatalln("Already added to another space")
-	}
-	if space.locked != 0 {
-		log.Fatalln("Space is locked")
-	}
+	// if constraint.space == space {
+	// 	log.Fatalln("Already added to this space")
+	// }
+	// if constraint.space != nil {
+	// 	log.Fatalln("Already added to another space")
+	// }
+	// if space.locked != 0 {
+	// 	log.Fatalln("Space is locked")
+	// }
 
 	a := constraint.bodyA
 	b := constraint.bodyB
 
-	if a == nil && b == nil {
-		log.Fatalln("Constraint is attached to a null body")
-	}
+	// if a == nil && b == nil {
+	// 	log.Fatalln("Constraint is attached to a null body")
+	// }
 
 	a.Activate()
 	b.Activate()
@@ -676,13 +676,13 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 
 func (space *Space) RemoveConstraint(constraint *Constraint) {
 
-	if !space.ContainsConstraint(constraint) {
-		log.Fatalln("Constraint not found")
-	}
+	// if !space.ContainsConstraint(constraint) {
+	// 	log.Fatalln("Constraint not found")
+	// }
 
-	if space.locked != 0 {
-		log.Fatalln("Space is locked")
-	}
+	// if space.locked != 0 {
+	// 	log.Fatalln("Space is locked")
+	// }
 
 	constraint.bodyA.Activate()
 	constraint.bodyB.Activate()
@@ -958,9 +958,9 @@ func (space *Space) IsLocked() bool {
 func (space *Space) Unlock(runPostStep bool) {
 	space.locked--
 
-	if space.locked < 0 {
-		log.Fatalln("Space lock underflow")
-	}
+	// if space.locked < 0 {
+	// 	log.Fatalln("Space lock underflow")
+	// }
 
 	if space.locked != 0 {
 		return
@@ -1012,9 +1012,9 @@ func (space *Space) UncacheArbiter(arb *Arbiter) {
 }
 
 func (space *Space) PushContacts(count int) {
-	if count > MAX_CONTACTS_PER_ARBITER {
-		log.Fatalln("Contact buffer overflow")
-	}
+	// if count > MAX_CONTACTS_PER_ARBITER {
+	// 	log.Fatalln("Contact buffer overflow")
+	// }
 	space.contactBuffersHead.numContacts += count
 }
 

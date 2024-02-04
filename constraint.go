@@ -1,7 +1,6 @@
 package cm
 
 import (
-	"log"
 	"math"
 )
 
@@ -64,9 +63,9 @@ func (c Constraint) MaxForce() float64 {
 }
 
 func (c *Constraint) SetMaxForce(max float64) {
-	if max < 0.0 {
-		log.Fatalln("Must be positive")
-	}
+	// if max < 0.0 {
+	// 	log.Fatalln("Must be positive")
+	// }
 	c.ActivateBodies()
 	c.maxForce = max
 }
@@ -76,9 +75,9 @@ func (c Constraint) MaxBias() float64 {
 }
 
 func (c *Constraint) SetMaxBias(max float64) {
-	if max < 0 {
-		log.Fatalln("Must be positive")
-	}
+	// if max < 0 {
+	// 	log.Fatalln("Must be positive")
+	// }
 	c.ActivateBodies()
 	c.maxBias = max
 }
@@ -88,9 +87,9 @@ func (c Constraint) ErrorBias() float64 {
 }
 
 func (c *Constraint) SetErrorBias(errorBias float64) {
-	if errorBias < 0 {
-		log.Fatalln("Must be positive")
-	}
+	// if errorBias < 0 {
+	// 	log.Fatalln("Must be positive")
+	// }
 	c.ActivateBodies()
 	c.errorBias = errorBias
 }
