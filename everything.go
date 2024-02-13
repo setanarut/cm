@@ -220,9 +220,9 @@ func MomentForBox2(mass float64, box BB) float64 {
 
 // MomentForCircle calculates the moment of inertia for a circle.
 //
-// r1 and r2 are the inner and outer diameters. A solid circle has an inner diameter of 0.
-func MomentForCircle(mass, r1, r2 float64, offset Vector) float64 {
-	return mass * (0.5*(r1*r1+r2*r2) + offset.LengthSq())
+// d1 and d2 are the inner and outer diameters. A solid circle has an inner diameter (d1) of 0.
+func MomentForCircle(mass, d1, d2 float64, offset Vector) float64 {
+	return mass * (0.5*(d1*d1+d2*d2) + offset.LengthSq())
 }
 
 // MomentForSegment calculates the moment of inertia for a line segment.
