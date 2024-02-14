@@ -2,7 +2,7 @@ package cm
 
 import "math"
 
-type BBTreeVelocityFunc func(obj interface{}) Vector
+type BBTreeVelocityFunc func(obj interface{}) Vec2
 
 type Node struct {
 	obj    *Shape
@@ -411,7 +411,7 @@ func (subtree *Node) SubtreeQuery(obj interface{}, bb BB, query SpatialIndexQuer
 	}
 }
 
-func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b Vector, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
+func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
 	if subtree.IsLeaf() {
 		return f(obj, subtree.obj, data)
 	}
@@ -438,7 +438,7 @@ func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b Vector, t_exit fl
 	return t_exit
 }
 
-func (tree *BBTree) SegmentQuery(obj interface{}, a, b Vector, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
+func (tree *BBTree) SegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
 	root := tree.root
 	if root != nil {
 		root.SubtreeSegmentQuery(obj, a, b, t_exit, f, data)

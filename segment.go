@@ -3,10 +3,10 @@ package cm
 // Segment is a segment Shape
 type Segment struct {
 	*Shape
-	a, b, n                            Vector
-	transformA, transformB, transformN Vector
+	a, b, n                            Vec2
+	transformA, transformB, transformN Vec2
 	radius                             float64
-	aTangent, bTangent                 Vector
+	aTangent, bTangent                 Vec2
 }
 
 func (seg *Segment) CacheData(transform Transform) BB {
@@ -50,15 +50,15 @@ func (seg *Segment) Radius() float64 {
 	return seg.radius
 }
 
-func (seg *Segment) TransformA() Vector {
+func (seg *Segment) TransformA() Vec2 {
 	return seg.transformA
 }
 
-func (seg *Segment) TransformB() Vector {
+func (seg *Segment) TransformB() Vec2 {
 	return seg.transformB
 }
 
-func (seg *Segment) SetEndpoints(a, b Vector) {
+func (seg *Segment) SetEndpoints(a, b Vec2) {
 	seg.a = a
 	seg.b = b
 	seg.n = b.Sub(a).Normalize().Perp()
@@ -70,19 +70,19 @@ func (seg *Segment) SetEndpoints(a, b Vector) {
 	}
 }
 
-func (seg *Segment) Normal() Vector {
+func (seg *Segment) Normal() Vec2 {
 	return seg.n
 }
 
-func (seg *Segment) A() Vector {
+func (seg *Segment) A() Vec2 {
 	return seg.a
 }
 
-func (seg *Segment) B() Vector {
+func (seg *Segment) B() Vec2 {
 	return seg.b
 }
 
-func (seg *Segment) PointQuery(p Vector, info *PointQueryInfo) {
+func (seg *Segment) PointQuery(p Vec2, info *PointQueryInfo) {
 	closest := p.ClosestPointOnSegment(seg.transformA, seg.transformB)
 
 	delta := p.Sub(closest)
@@ -106,12 +106,12 @@ func (seg *Segment) PointQuery(p Vector, info *PointQueryInfo) {
 	}
 }
 
-func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo) {
+func (seg *Segment) SegmentQuery(a, b Vec2, r2 float64, info *SegmentQueryInfo) {
 	n := seg.transformN
 	d := seg.transformA.Sub(a).Dot(n)
 	r := seg.radius + r2
 
-	var flippedN Vector
+	var flippedN Vec2
 	if d > 0 {
 		flippedN = n.Neg()
 	} else {
@@ -143,8 +143,8 @@ func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo
 			info.Alpha = t
 		}
 	} else if r != 0 {
-		info1 := SegmentQueryInfo{nil, b, Vector{}, 1}
-		info2 := SegmentQueryInfo{nil, b, Vector{}, 1}
+		info1 := SegmentQueryInfo{nil, b, Vec2{}, 1}
+		info2 := SegmentQueryInfo{nil, b, Vec2{}, 1}
 		CircleSegmentQuery(seg.Shape, seg.transformA, seg.radius, a, b, r2, &info1)
 		CircleSegmentQuery(seg.Shape, seg.transformB, seg.radius, a, b, r2, &info2)
 
@@ -156,21 +156,21 @@ func (seg *Segment) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo
 	}
 }
 
-func NewSegment(body *Body, a, b Vector, r float64) *Shape {
+func NewSegment(body *Body, a, b Vec2, r float64) *Shape {
 	segment := &Segment{
 		a: a,
 		b: b,
 		n: b.Sub(a).Normalize().ReversePerp(),
 
 		radius:   r,
-		aTangent: Vector{},
-		bTangent: Vector{},
+		aTangent: Vec2{},
+		bTangent: Vec2{},
 	}
 	segment.Shape = NewShape(segment, body, NewSegmentMassInfo(0, a, b, r))
 	return segment.Shape
 }
 
-func NewSegmentMassInfo(mass float64, a, b Vector, r float64) *ShapeMassInfo {
+func NewSegmentMassInfo(mass float64, a, b Vec2, r float64) *ShapeMassInfo {
 	return &ShapeMassInfo{
 		m:    mass,
 		i:    MomentForBox(1, a.Distance(b)+2*r, 2*r),

@@ -16,8 +16,8 @@ type Shaper interface {
 
 type ShapeClass interface {
 	CacheData(transform Transform) BB
-	PointQuery(p Vector, info *PointQueryInfo)
-	SegmentQuery(a, b Vector, radius float64, info *SegmentQueryInfo)
+	PointQuery(p Vec2, info *PointQueryInfo)
+	SegmentQuery(a, b Vec2, radius float64, info *SegmentQueryInfo)
 }
 
 const (
@@ -39,7 +39,7 @@ type Shape struct {
 	elasticity, friction float64
 	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
 	// This value is only used when calculating friction, not resolving the collision.
-	surfaceVelocity Vector
+	surfaceVelocity Vec2
 	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
 	collisionType CollisionType
 
@@ -114,7 +114,7 @@ func (s *Shape) Area() float64 {
 	return s.massInfo.area
 }
 
-func (s *Shape) CenterOfGravity() Vector {
+func (s *Shape) CenterOfGravity() Vec2 {
 	return s.massInfo.cog
 }
 
@@ -159,13 +159,13 @@ func (s *Shape) SetFriction(u float64) {
 }
 
 // SurfaceVelocity returns the surface velocity of this shape.
-func (s *Shape) SurfaceVelocity() Vector {
+func (s *Shape) SurfaceVelocity() Vec2 {
 	return s.surfaceVelocity
 }
 
 // SetSurfaceVelocity sets the surface velocity of the object. Useful for creating conveyor belts or players that move around.
 // This value is only used when calculating friction, not resolving the collision.
-func (s *Shape) SetSurfaceVelocity(surfaceV Vector) {
+func (s *Shape) SetSurfaceVelocity(surfaceV Vec2) {
 	s.surfaceVelocity = surfaceV
 }
 
@@ -215,18 +215,18 @@ func (s *Shape) Point(i uint32) SupportPoint {
 		}
 		return NewSupportPoint(poly.planes[index].v0, uint32(index))
 	default:
-		return NewSupportPoint(Vector{}, 0)
+		return NewSupportPoint(Vec2{}, 0)
 	}
 }
 
-func (s *Shape) PointQuery(p Vector) PointQueryInfo {
-	info := PointQueryInfo{nil, Vector{}, INFINITY, Vector{}}
+func (s *Shape) PointQuery(p Vec2) PointQueryInfo {
+	info := PointQueryInfo{nil, Vec2{}, INFINITY, Vec2{}}
 	s.Class.PointQuery(p, &info)
 	return info
 }
 
-func (shape *Shape) SegmentQuery(a, b Vector, radius float64, info *SegmentQueryInfo) bool {
-	blank := SegmentQueryInfo{nil, b, Vector{}, 1}
+func (shape *Shape) SegmentQuery(a, b Vec2, radius float64, info *SegmentQueryInfo) bool {
+	blank := SegmentQueryInfo{nil, b, Vec2{}, 1}
 	if info != nil {
 		*info = blank
 	} else {
@@ -252,7 +252,7 @@ func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
 		body:     body,
 		massInfo: massInfo,
 
-		surfaceVelocity: Vector{},
+		surfaceVelocity: Vec2{},
 		Filter: ShapeFilter{
 			Group:      NO_GROUP,
 			Categories: ALL_CATEGORIES,

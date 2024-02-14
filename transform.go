@@ -18,7 +18,7 @@ func NewTransformTranspose(a, c, tx, b, d, ty float64) Transform {
 	return Transform{a, b, c, d, tx, ty}
 }
 
-func NewTransformTranslate(translate Vector) Transform {
+func NewTransformTranslate(translate Vec2) Transform {
 	return NewTransformTranspose(
 		1, 0, translate.X,
 		0, 1, translate.Y,
@@ -40,7 +40,7 @@ func NewTransformRotate(radians float64) Transform {
 	)
 }
 
-func NewTransformRigid(translate Vector, radians float64) Transform {
+func NewTransformRigid(translate Vec2, radians float64) Transform {
 	rot := ForAngle(radians)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, translate.X,
@@ -70,12 +70,12 @@ func (t Transform) Mult(t2 Transform) Transform {
 	)
 }
 
-func (t Transform) Point(p Vector) Vector {
-	return Vector{X: t.a*p.X + t.c*p.Y + t.tx, Y: t.b*p.X + t.d*p.Y + t.ty}
+func (t Transform) Point(p Vec2) Vec2 {
+	return Vec2{X: t.a*p.X + t.c*p.Y + t.tx, Y: t.b*p.X + t.d*p.Y + t.ty}
 }
 
-func (t Transform) Vect(v Vector) Vector {
-	return Vector{t.a*v.X + t.c*v.Y, t.b*v.X + t.d*v.Y}
+func (t Transform) Vect(v Vec2) Vec2 {
+	return Vec2{t.a*v.X + t.c*v.Y, t.b*v.X + t.d*v.Y}
 }
 
 func (t Transform) BB(bb BB) BB {
@@ -104,7 +104,7 @@ func (t Transform) Ortho(bb BB) Transform {
 	)
 }
 
-func (t Transform) BoneScale(v0, v1 Vector) Transform {
+func (t Transform) BoneScale(v0, v1 Vec2) Transform {
 	d := v1.Sub(v0)
 	return NewTransformTranspose(
 		d.X, -d.Y, v0.X,
@@ -112,7 +112,7 @@ func (t Transform) BoneScale(v0, v1 Vector) Transform {
 	)
 }
 
-func (t Transform) AxialScale(axis, pivot Vector, scale float64) Transform {
+func (t Transform) AxialScale(axis, pivot Vec2, scale float64) Transform {
 	A := axis.X * axis.Y * (scale - 1.0)
 	B := axis.Dot(pivot) * (1.0 - scale)
 

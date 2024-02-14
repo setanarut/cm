@@ -15,11 +15,11 @@ const (
 )
 
 type Drawer interface {
-	DrawCircle(pos cm.Vector, angle, radius float64, outline, fill color.RGBA, data interface{})
-	DrawSegment(a, b cm.Vector, fill color.RGBA, data interface{})
-	DrawFatSegment(a, b cm.Vector, radius float64, outline, fill color.RGBA, data interface{})
-	DrawPolygon(count int, verts []cm.Vector, radius float64, outline, fill color.RGBA, data interface{})
-	DrawDot(size float64, pos cm.Vector, fill color.RGBA, data interface{})
+	DrawCircle(pos cm.Vec2, angle, radius float64, outline, fill color.RGBA, data interface{})
+	DrawSegment(a, b cm.Vec2, fill color.RGBA, data interface{})
+	DrawFatSegment(a, b cm.Vec2, radius float64, outline, fill color.RGBA, data interface{})
+	DrawPolygon(count int, verts []cm.Vec2, radius float64, outline, fill color.RGBA, data interface{})
+	DrawDot(size float64, pos cm.Vec2, fill color.RGBA, data interface{})
 
 	Flags() uint
 	OutlineColor() color.RGBA
@@ -47,7 +47,7 @@ func DrawShape(shape *cm.Shape, options Drawer) {
 		poly := shape.Class.(*cm.PolyShape)
 
 		count := poly.Count()
-		verts := make([]cm.Vector, count)
+		verts := make([]cm.Vec2, count)
 
 		for i := 0; i < count; i++ {
 			verts[i] = poly.TransformVert(i)
@@ -58,7 +58,7 @@ func DrawShape(shape *cm.Shape, options Drawer) {
 	}
 }
 
-var springVerts = []cm.Vector{
+var springVerts = []cm.Vec2{
 	{0.00, 0.0},
 	{0.20, 0.0},
 	{0.25, 3.0},
@@ -135,13 +135,13 @@ func DrawConstraint(constraint *cm.Constraint, options Drawer) {
 		sin := delta.Y
 		s := 1.0 / delta.Length()
 
-		r1 := cm.Vector{cos, -sin * s}
-		r2 := cm.Vector{sin, cos * s}
+		r1 := cm.Vec2{cos, -sin * s}
+		r2 := cm.Vec2{sin, cos * s}
 
-		verts := []cm.Vector{}
+		verts := []cm.Vec2{}
 		for i := 0; i < len(springVerts); i++ {
 			v := springVerts[i]
-			verts = append(verts, cm.Vector{v.Dot(r1) + a.X, v.Dot(r2) + a.Y})
+			verts = append(verts, cm.Vec2{v.Dot(r1) + a.X, v.Dot(r2) + a.Y})
 		}
 
 		for i := 0; i < len(springVerts)-1; i++ {

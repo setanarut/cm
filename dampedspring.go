@@ -9,20 +9,20 @@ type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
 type DampedSpring struct {
 	*Constraint
 
-	AnchorA, AnchorB               Vector
+	AnchorA, AnchorB               Vec2
 	RestLength, Stiffness, Damping float64
 	SpringForceFunc                DampedSpringForceFunc
 
 	targetVrn, vCoef float64
 
-	r1, r2 Vector
+	r1, r2 Vec2
 	nMass  float64
-	n      Vector
+	n      Vec2
 
 	jAcc float64
 }
 
-func NewDampedSpring(a, b *Body, anchorA, anchorB Vector, restLength, stiffness, damping float64) *Constraint {
+func NewDampedSpring(a, b *Body, anchorA, anchorB Vec2, restLength, stiffness, damping float64) *Constraint {
 	spring := &DampedSpring{
 		AnchorA:         anchorA,
 		AnchorB:         anchorB,

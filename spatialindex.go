@@ -16,7 +16,7 @@ type SpatialIndexer interface {
 	ReindexObject(obj *Shape, hashId HashValue)
 	ReindexQuery(f SpatialIndexQuery, data interface{})
 	Query(obj interface{}, bb BB, f SpatialIndexQuery, data interface{})
-	SegmentQuery(obj interface{}, a, b Vector, t_exit float64, f SpatialIndexSegmentQuery, data interface{})
+	SegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{})
 }
 
 func ShapeGetBB(obj *Shape) BB {

@@ -4,21 +4,21 @@ import "math"
 
 type PinJoint struct {
 	*Constraint
-	AnchorA, AnchorB Vector
+	AnchorA, AnchorB Vec2
 	Dist             float64
 
-	r1, r2, n          Vector
+	r1, r2, n          Vec2
 	nMass, jnAcc, bias float64
 }
 
-func NewPinJoint(a, b *Body, anchorA, anchorB Vector) *Constraint {
+func NewPinJoint(a, b *Body, anchorA, anchorB Vec2) *Constraint {
 	joint := &PinJoint{
 		AnchorA: anchorA,
 		AnchorB: anchorB,
 	}
 
 	// static body check
-	var p1, p2 Vector
+	var p1, p2 Vec2
 	if a != nil {
 		p1 = a.transform.Point(anchorA)
 	} else {

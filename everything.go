@@ -83,7 +83,7 @@ type CollisionHandler struct {
 }
 
 type Contact struct {
-	r1, r2 Vector
+	r1, r2 Vec2
 
 	nMass, tMass float64
 	bounce       float64 // TODO: look for an alternate bounce solution
@@ -114,12 +114,12 @@ type CollisionInfo struct {
 	a, b        *Shape
 	collisionId uint32
 
-	n     Vector
+	n     Vec2
 	count int
 	arr   []Contact
 }
 
-func (info *CollisionInfo) PushContact(p1, p2 Vector, hash HashValue) {
+func (info *CollisionInfo) PushContact(p1, p2 Vec2, hash HashValue) {
 	// if info.count > MAX_CONTACTS_PER_ARBITER {
 	// 	log.Fatalln("Internal error: Tried to push too many contacts.")
 	// }
@@ -135,7 +135,7 @@ func (info *CollisionInfo) PushContact(p1, p2 Vector, hash HashValue) {
 // ShapeMassInfo is mass info struct
 type ShapeMassInfo struct {
 	m, i, area float64
-	cog        Vector
+	cog        Vec2
 }
 
 // PointQueryInfo is point query info struct.
@@ -143,12 +143,12 @@ type PointQueryInfo struct {
 	// The nearest shape, NULL if no shape was within range.
 	Shape *Shape
 	// The closest point on the shape's surface. (in world space coordinates)
-	Point Vector
+	Point Vec2
 	// The distance to the point. The distance is negative if the point is inside the shape.
 	Distance float64
 	// The gradient of the signed distance function.
 	// The value should be similar to info.p/info.d, but accurate even for very small values of info.d.
-	Gradient Vector
+	Gradient Vec2
 }
 
 // SegmentQueryInfo is segment query info struct.
@@ -156,15 +156,15 @@ type SegmentQueryInfo struct {
 	// The shape that was hit, or NULL if no collision occurred.
 	Shape *Shape
 	// The point of impact.
-	Point Vector
+	Point Vec2
 	// The normal of the surface hit.
-	Normal Vector
+	Normal Vec2
 	// The normalized distance along the query segment in the range [0, 1].
 	Alpha float64
 }
 
 type SplittingPlane struct {
-	v0, n Vector
+	v0, n Vec2
 }
 
 // ShapeFilter is fast collision filtering type that is used to determine if two objects collide before calling collision or query callbacks.
@@ -199,8 +199,8 @@ type Mat2x2 struct {
 }
 
 // Transform transforms Vector v
-func (m *Mat2x2) Transform(v Vector) Vector {
-	return Vector{v.X*m.a + v.Y*m.b, v.X*m.c + v.Y*m.d}
+func (m *Mat2x2) Transform(v Vec2) Vec2 {
+	return Vec2{v.X*m.a + v.Y*m.b, v.X*m.c + v.Y*m.d}
 }
 
 // MomentForBox calculates the moment of inertia for a solid box.
@@ -212,7 +212,7 @@ func MomentForBox(mass, width, height float64) float64 {
 func MomentForBox2(mass float64, box BB) float64 {
 	width := box.R - box.L
 	height := box.T - box.B
-	offset := Vector{box.L + box.R, box.B + box.T}.Mult(0.5)
+	offset := Vec2{box.L + box.R, box.B + box.T}.Mult(0.5)
 
 	// TODO: NaN when offset is 0 and m is INFINITY
 	return MomentForBox(mass, width, height) + mass*offset.LengthSq()
@@ -221,14 +221,14 @@ func MomentForBox2(mass float64, box BB) float64 {
 // MomentForCircle calculates the moment of inertia for a circle.
 //
 // d1 and d2 are the inner and outer diameters. A solid circle has an inner diameter (d1) of 0.
-func MomentForCircle(mass, d1, d2 float64, offset Vector) float64 {
+func MomentForCircle(mass, d1, d2 float64, offset Vec2) float64 {
 	return mass * (0.5*(d1*d1+d2*d2) + offset.LengthSq())
 }
 
 // MomentForSegment calculates the moment of inertia for a line segment.
 //
 // Beveling radius is not supported.
-func MomentForSegment(mass float64, a, b Vector, r float64) float64 {
+func MomentForSegment(mass float64, a, b Vec2, r float64) float64 {
 	offset := a.Lerp(b, 0.5)
 	length := b.Distance(a) + 2.0*r
 	return mass * ((length*length+4.0*r*r)/12.0 + offset.LengthSq())
@@ -236,7 +236,7 @@ func MomentForSegment(mass float64, a, b Vector, r float64) float64 {
 
 // MomentForPoly calculates the moment of inertia for a solid polygon shape assuming it's center of gravity is at it's centroid.
 // The offset is added to each vertex.
-func MomentForPoly(mass float64, count int, verts []Vector, offset Vector, r float64) float64 {
+func MomentForPoly(mass float64, count int, verts []Vec2, offset Vec2, r float64) float64 {
 	if count == 2 {
 		return MomentForSegment(mass, verts[0], verts[1], 0)
 	}
@@ -265,14 +265,14 @@ func AreaForCircle(r1, r2 float64) float64 {
 }
 
 // AreaForSegment calculates the area of a fattened (capsule shaped) line segment.
-func AreaForSegment(a, b Vector, r float64) float64 {
+func AreaForSegment(a, b Vec2, r float64) float64 {
 	return r * (math.Pi*r + 2.0*a.Distance(b))
 }
 
 // AreaForPoly calculates the signed area of a polygon.
 //
 // A Clockwise winding gives positive area. This is probably backwards from what you expect, but matches Chipmunk's the winding for poly shapes.
-func AreaForPoly(count int, verts []Vector, r float64) float64 {
+func AreaForPoly(count int, verts []Vec2, r float64) float64 {
 	var area float64
 	var perimeter float64
 	for i := 0; i < count; i++ {
@@ -287,9 +287,9 @@ func AreaForPoly(count int, verts []Vector, r float64) float64 {
 }
 
 // CentroidForPoly calculates the natural centroid of a polygon.
-func CentroidForPoly(count int, verts []Vector) Vector {
+func CentroidForPoly(count int, verts []Vec2) Vec2 {
 	var sum float64
-	vsum := Vector{}
+	vsum := Vec2{}
 
 	for i := 0; i < count; i++ {
 		v1 := verts[i]
@@ -338,20 +338,20 @@ KE: %e`, arbiters, maxArbiters,
 		points, maxPoints, len(space.constraints), space.Iterations, constraints, maxConstraints, ke)
 }
 
-func k_scalar_body(body *Body, r, n Vector) float64 {
+func k_scalar_body(body *Body, r, n Vec2) float64 {
 	rcn := r.Cross(n)
 	return body.m_inv + body.moi_inv*rcn*rcn
 }
 
-func k_scalar(a, b *Body, r1, r2, n Vector) float64 {
+func k_scalar(a, b *Body, r1, r2, n Vec2) float64 {
 	return k_scalar_body(a, r1, n) + k_scalar_body(b, r2, n)
 }
 
-func normal_relative_velocity(a, b *Body, r1, r2, n Vector) float64 {
+func normal_relative_velocity(a, b *Body, r1, r2, n Vec2) float64 {
 	return relative_velocity(a, b, r1, r2).Dot(n)
 }
 
-func k_tensor(a, b *Body, r1, r2 Vector) Mat2x2 {
+func k_tensor(a, b *Body, r1, r2 Vec2) Mat2x2 {
 	m_sum := a.m_inv + b.m_inv
 
 	// start with Identity*m_sum

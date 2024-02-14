@@ -13,7 +13,7 @@ var WILDCARD_COLLISION_TYPE CollisionType = ^CollisionType(0)
 // A unique arbiter value is used for each pair of colliding objects. It persists until the shapes separate.
 type Arbiter struct {
 	e, u       float64
-	surface_vr Vector
+	surface_vr Vec2
 
 	UserData interface{}
 
@@ -24,7 +24,7 @@ type Arbiter struct {
 	count int
 	// a slice onto the current buffer array of contacts
 	contacts []Contact
-	normal   Vector
+	normal   Vec2
 
 	// Regular, wildcard A and wildcard B collision handlers.
 	handler, handlerA, handlerB *CollisionHandler
@@ -44,7 +44,7 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 
 	arbiter.e = 0
 	arbiter.u = 0
-	arbiter.surface_vr = Vector{}
+	arbiter.surface_vr = Vec2{}
 
 	arbiter.count = 0
 	arbiter.contacts = nil
@@ -120,7 +120,7 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dt_coef float64) {
 
 	for i := 0; i < arbiter.count; i++ {
 		contact := arbiter.contacts[i]
-		j := arbiter.normal.Rotate(Vector{contact.jnAcc, contact.jtAcc})
+		j := arbiter.normal.Rotate(Vec2{contact.jnAcc, contact.jtAcc})
 		apply_impulses(arbiter.body_a, arbiter.body_b, contact.r1, contact.r2, j.Mult(dt_coef))
 	}
 }
@@ -160,7 +160,7 @@ func (arbiter *Arbiter) ApplyImpulse() {
 		con.jtAcc = Clamp(jtOld+jt, -jtMax, jtMax)
 
 		apply_bias_impulses(a, b, r1, r2, n.Mult(con.jBias-jbnOld))
-		apply_impulses(a, b, r1, r2, n.Rotate(Vector{con.jnAcc - jnOld, con.jtAcc - jtOld}))
+		apply_impulses(a, b, r1, r2, n.Rotate(Vec2{con.jnAcc - jnOld, con.jtAcc - jtOld}))
 	}
 }
 
@@ -326,7 +326,7 @@ func (arb *Arbiter) CallWildcardSeparateB(space *Space) {
 	arb.swapped = !arb.swapped
 }
 
-func apply_impulses(a, b *Body, r1, r2, j Vector) {
+func apply_impulses(a, b *Body, r1, r2, j Vec2) {
 	b.vel.X += j.X * b.m_inv
 	b.vel.Y += j.Y * b.m_inv
 	b.w += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
@@ -338,13 +338,13 @@ func apply_impulses(a, b *Body, r1, r2, j Vector) {
 	a.w += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
-func apply_impulse(body *Body, j, r Vector) {
+func apply_impulse(body *Body, j, r Vec2) {
 	body.vel.X += j.X * body.m_inv
 	body.vel.Y += j.Y * body.m_inv
 	body.w += body.moi_inv * r.Cross(j)
 }
 
-func apply_bias_impulses(a, b *Body, r1, r2, j Vector) {
+func apply_bias_impulses(a, b *Body, r1, r2, j Vec2) {
 	b.v_bias.X += j.X * b.m_inv
 	b.v_bias.Y += j.Y * b.m_inv
 	b.w_bias += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
@@ -356,7 +356,7 @@ func apply_bias_impulses(a, b *Body, r1, r2, j Vector) {
 	a.w_bias += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
-func relative_velocity(a, b *Body, r1, r2 Vector) Vector {
+func relative_velocity(a, b *Body, r1, r2 Vec2) Vec2 {
 	return r2.Perp().Mult(b.w).Add(b.vel).Sub(r1.Perp().Mult(a.w).Add(a.vel))
 }
 
@@ -409,13 +409,13 @@ func DefaultSeparate(arb *Arbiter, space *Space, _ interface{}) {
 // TotalImpulse calculates the total impulse including the friction that was applied by this arbiter.
 //
 // This function should only be called from a post-solve, post-step or EachArbiter callback.
-func (arb *Arbiter) TotalImpulse() Vector {
-	var sum Vector
+func (arb *Arbiter) TotalImpulse() Vec2 {
+	var sum Vec2
 
 	count := arb.Count()
 	for i := 0; i < count; i++ {
 		con := arb.contacts[i]
-		sum = sum.Add(arb.normal.Rotate(Vector{con.jnAcc, con.jtAcc}))
+		sum = sum.Add(arb.normal.Rotate(Vec2{con.jnAcc, con.jtAcc}))
 	}
 
 	if arb.swapped {
@@ -448,7 +448,7 @@ func (arb *Arbiter) Bodies() (*Body, *Body) {
 	return shapeA.body, shapeB.body
 }
 
-func (arb *Arbiter) Normal() Vector {
+func (arb *Arbiter) Normal() Vec2 {
 	if arb.swapped {
 		return arb.normal.Mult(-1)
 	} else {
@@ -461,11 +461,11 @@ type ContactPointSet struct {
 	// Count is the number of contact points in the set.
 	Count int
 	// Normal is the normal of the collision.
-	Normal Vector
+	Normal Vec2
 
 	Points [MAX_CONTACTS_PER_ARBITER]struct {
 		// The position of the contact on the surface of each shape.
-		PointA, PointB Vector
+		PointA, PointB Vec2
 		// Distance is penetration distance of the two shapes. Overlapping means it will be negative.
 		//
 		// This value is calculated as p2.Sub(p1).Dot(n) and is ignored by Arbiter.SetContactPointSet().

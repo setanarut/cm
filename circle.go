@@ -4,11 +4,11 @@ import "math"
 
 type Circle struct {
 	*Shape
-	c, transformC Vector
+	c, transformC Vec2
 	radius        float64
 }
 
-func NewCircle(body *Body, radius float64, offset Vector) *Shape {
+func NewCircle(body *Body, radius float64, offset Vec2) *Shape {
 	circle := &Circle{
 		c:      offset,
 		radius: radius,
@@ -17,10 +17,10 @@ func NewCircle(body *Body, radius float64, offset Vector) *Shape {
 	return circle.Shape
 }
 
-func CircleShapeMassInfo(mass, radius float64, center Vector) *ShapeMassInfo {
+func CircleShapeMassInfo(mass, radius float64, center Vec2) *ShapeMassInfo {
 	return &ShapeMassInfo{
 		m:    mass,
-		i:    MomentForCircle(1, 0, radius, Vector{}),
+		i:    MomentForCircle(1, 0, radius, Vec2{}),
 		cog:  center,
 		area: AreaForCircle(0, radius),
 	}
@@ -45,11 +45,11 @@ func (circle *Circle) SetRadius(r float64) {
 	}
 }
 
-func (circle *Circle) TransformC() Vector {
+func (circle *Circle) TransformC() Vec2 {
 	return circle.transformC
 }
 
-func (circle *Circle) PointQuery(p Vector, info *PointQueryInfo) {
+func (circle *Circle) PointQuery(p Vec2, info *PointQueryInfo) {
 	delta := p.Sub(circle.transformC)
 	d := delta.Length()
 	r := circle.radius
@@ -61,15 +61,15 @@ func (circle *Circle) PointQuery(p Vector, info *PointQueryInfo) {
 	if d > MAGIC_EPSILON {
 		info.Gradient = delta.Mult(1 / d)
 	} else {
-		info.Gradient = Vector{0, 1}
+		info.Gradient = Vec2{0, 1}
 	}
 }
 
-func (circle *Circle) SegmentQuery(a, b Vector, radius float64, info *SegmentQueryInfo) {
+func (circle *Circle) SegmentQuery(a, b Vec2, radius float64, info *SegmentQueryInfo) {
 	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
 }
 
-func CircleSegmentQuery(shape *Shape, center Vector, r1 float64, a, b Vector, r2 float64, info *SegmentQueryInfo) {
+func CircleSegmentQuery(shape *Shape, center Vec2, r1 float64, a, b Vec2, r2 float64, info *SegmentQueryInfo) {
 	da := a.Sub(center)
 	db := b.Sub(center)
 	rsum := r1 + r2

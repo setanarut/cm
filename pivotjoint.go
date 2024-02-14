@@ -2,17 +2,17 @@ package cm
 
 type PivotJoint struct {
 	*Constraint
-	AnchorA, AnchorB Vector
+	AnchorA, AnchorB Vec2
 
-	r1, r2 Vector
+	r1, r2 Vec2
 	k      Mat2x2
 
-	jAcc, bias Vector
+	jAcc, bias Vec2
 }
 
-func NewPivotJoint(a, b *Body, pivot Vector) *Constraint {
-	var anchorA Vector
-	var anchorB Vector
+func NewPivotJoint(a, b *Body, pivot Vec2) *Constraint {
+	var anchorA Vec2
+	var anchorB Vec2
 
 	if a != nil {
 		anchorA = a.WorldToLocal(pivot)
@@ -29,11 +29,11 @@ func NewPivotJoint(a, b *Body, pivot Vector) *Constraint {
 	return NewPivotJoint2(a, b, anchorA, anchorB)
 }
 
-func NewPivotJoint2(a, b *Body, anchorA, anchorB Vector) *Constraint {
+func NewPivotJoint2(a, b *Body, anchorA, anchorB Vec2) *Constraint {
 	joint := &PivotJoint{
 		AnchorA: anchorA,
 		AnchorB: anchorB,
-		jAcc:    Vector{},
+		jAcc:    Vec2{},
 	}
 	constraint := NewConstraint(joint, a, b)
 	joint.Constraint = constraint

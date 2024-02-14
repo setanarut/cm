@@ -16,7 +16,7 @@ func (poly PolyShape) Count() int {
 	return poly.count
 }
 
-func (poly PolyShape) Vert(i int) Vector {
+func (poly PolyShape) Vert(i int) Vec2 {
 	// if i < 0 && i > poly.count {
 	// 	log.Fatalln("Vert index error")
 	// }
@@ -24,7 +24,7 @@ func (poly PolyShape) Vert(i int) Vector {
 	return poly.planes[i+poly.count].v0
 }
 
-func (poly PolyShape) TransformVert(i int) Vector {
+func (poly PolyShape) TransformVert(i int) Vec2 {
 	return poly.planes[i].v0
 }
 
@@ -65,15 +65,15 @@ func (poly *PolyShape) CacheData(transform Transform) BB {
 	return poly.Shape.bb
 }
 
-func (poly *PolyShape) PointQuery(p Vector, info *PointQueryInfo) {
+func (poly *PolyShape) PointQuery(p Vec2, info *PointQueryInfo) {
 	count := poly.count
 	planes := poly.planes
 	r := poly.radius
 
 	v0 := planes[count-1].v0
 	minDist := INFINITY
-	closestPoint := Vector{}
-	closestNormal := Vector{}
+	closestPoint := Vec2{}
+	closestNormal := Vec2{}
 	outside := false
 
 	for i := 0; i < count; i++ {
@@ -113,7 +113,7 @@ func (poly *PolyShape) PointQuery(p Vector, info *PointQueryInfo) {
 	}
 }
 
-func (poly *PolyShape) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryInfo) {
+func (poly *PolyShape) SegmentQuery(a, b Vec2, r2 float64, info *SegmentQueryInfo) {
 	planes := poly.planes
 	count := poly.count
 	r := poly.radius
@@ -149,7 +149,7 @@ func (poly *PolyShape) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryI
 	// Also check against the beveled vertexes
 	if rsum > 0 {
 		for i := 0; i < count; i++ {
-			circleInfo := SegmentQueryInfo{nil, b, Vector{}, 1}
+			circleInfo := SegmentQueryInfo{nil, b, Vec2{}, 1}
 			CircleSegmentQuery(poly.Shape, planes[i].v0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {
 				*info = circleInfo
@@ -158,8 +158,8 @@ func (poly *PolyShape) SegmentQuery(a, b Vector, r2 float64, info *SegmentQueryI
 	}
 }
 
-func NewPolyShape(body *Body, vectCount int, verts []Vector, transform Transform, radius float64) *Shape {
-	hullVerts := []Vector{}
+func NewPolyShape(body *Body, vectCount int, verts []Vec2, transform Transform, radius float64) *Shape {
+	hullVerts := []Vec2{}
 	// Transform the verts before building the hull in case of a negative scale.
 	for i := 0; i < vectCount; i++ {
 		hullVerts = append(hullVerts, transform.Point(verts[i]))
@@ -169,7 +169,7 @@ func NewPolyShape(body *Body, vectCount int, verts []Vector, transform Transform
 	return NewPolyShapeRaw(body, hullCount, hullVerts, radius)
 }
 
-func NewPolyShapeRaw(body *Body, count int, verts []Vector, radius float64) *Shape {
+func NewPolyShapeRaw(body *Body, count int, verts []Vec2, radius float64) *Shape {
 	poly := &PolyShape{
 		radius: radius,
 		count:  count,
@@ -184,7 +184,7 @@ func NewBox(body *Body, w, h, r float64) *Shape {
 	hw := w / 2.0
 	hh := h / 2.0
 	bb := &BB{-hw, -hh, hw, hh}
-	verts := []Vector{
+	verts := []Vec2{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
@@ -194,7 +194,7 @@ func NewBox(body *Body, w, h, r float64) *Shape {
 }
 
 func NewBox2(body *Body, bb BB, r float64) *Shape {
-	verts := []Vector{
+	verts := []Vec2{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
@@ -203,7 +203,7 @@ func NewBox2(body *Body, bb BB, r float64) *Shape {
 	return NewPolyShapeRaw(body, 4, verts, r)
 }
 
-func (p *PolyShape) SetVerts(count int, verts []Vector) {
+func (p *PolyShape) SetVerts(count int, verts []Vec2) {
 	p.count = count
 	p.planes = make([]SplittingPlane, count*2)
 
@@ -217,8 +217,8 @@ func (p *PolyShape) SetVerts(count int, verts []Vector) {
 	}
 }
 
-func (p *PolyShape) SetVertsUnsafe(count int, verts []Vector, transform Transform) {
-	hullVerts := make([]Vector, count)
+func (p *PolyShape) SetVertsUnsafe(count int, verts []Vec2, transform Transform) {
+	hullVerts := make([]Vec2, count)
 
 	for i := 0; i < count; i++ {
 		hullVerts[i] = transform.Point(verts[i])
@@ -228,7 +228,7 @@ func (p *PolyShape) SetVertsUnsafe(count int, verts []Vector, transform Transfor
 	p.SetVertsRaw(hullCount, hullVerts)
 }
 
-func (p *PolyShape) SetVertsRaw(count int, verts []Vector) {
+func (p *PolyShape) SetVertsRaw(count int, verts []Vec2) {
 	p.SetVerts(count, verts)
 	mass := p.massInfo.m
 	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.radius)
@@ -237,7 +237,7 @@ func (p *PolyShape) SetVertsRaw(count int, verts []Vector) {
 	}
 }
 
-func PolyShapeMassInfo(mass float64, count int, verts []Vector, r float64) *ShapeMassInfo {
+func PolyShapeMassInfo(mass float64, count int, verts []Vec2, r float64) *ShapeMassInfo {
 	centroid := CentroidForPoly(count, verts)
 	return &ShapeMassInfo{
 		m:    mass,
@@ -249,7 +249,7 @@ func PolyShapeMassInfo(mass float64, count int, verts []Vector, r float64) *Shap
 
 // QuickHull seemed like a neat algorithm, and efficient-ish for large input sets.
 // My implementation performs an in place reduction using the result array as scratch space.
-func ConvexHull(count int, verts []Vector, first *int, tol float64) int {
+func ConvexHull(count int, verts []Vec2, first *int, tol float64) int {
 	start, end := LoopIndexes(verts, count)
 	if start == end {
 		if first != nil {
@@ -275,7 +275,7 @@ func ConvexHull(count int, verts []Vector, first *int, tol float64) int {
 	return QHullReduce(tol, verts[2:], count-2, a, b, a, verts[1:]) + 1
 }
 
-func LoopIndexes(verts []Vector, count int) (int, int) {
+func LoopIndexes(verts []Vec2, count int) (int, int) {
 	start := 0
 	end := 0
 
@@ -297,7 +297,7 @@ func LoopIndexes(verts []Vector, count int) (int, int) {
 	return start, end
 }
 
-func QHullReduce(tol float64, verts []Vector, count int, a, pivot, b Vector, result []Vector) int {
+func QHullReduce(tol float64, verts []Vec2, count int, a, pivot, b Vec2, result []Vec2) int {
 	if count == 0 {
 		result[0] = pivot
 		return 1
@@ -319,7 +319,7 @@ func QHullReduce(tol float64, verts []Vector, count int, a, pivot, b Vector, res
 	return index + QHullReduce(tol, verts[leftCount+1:], rightCount-1, pivot, verts[leftCount], b, result[index:])
 }
 
-func QHullPartition(verts []Vector, count int, a, b Vector, tol float64) int {
+func QHullPartition(verts []Vec2, count int, a, b Vec2, tol float64) int {
 	if count == 0 {
 		return 0
 	}

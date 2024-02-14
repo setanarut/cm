@@ -3,24 +3,24 @@ package cm
 type GrooveJoint struct {
 	*Constraint
 
-	GrooveN, GrooveA, GrooveB Vector
-	AnchorB                   Vector
+	GrooveN, GrooveA, GrooveB Vec2
+	AnchorB                   Vec2
 
-	grooveTn Vector
+	grooveTn Vec2
 	clamp    float64
-	r1, r2   Vector
+	r1, r2   Vec2
 	k        Mat2x2
 
-	jAcc, bias Vector
+	jAcc, bias Vec2
 }
 
-func NewGrooveJoint(a, b *Body, grooveA, grooveB, anchorB Vector) *Constraint {
+func NewGrooveJoint(a, b *Body, grooveA, grooveB, anchorB Vec2) *Constraint {
 	joint := &GrooveJoint{
 		GrooveA: grooveA,
 		GrooveB: grooveB,
 		GrooveN: grooveB.Sub(grooveA).Normalize().Perp(),
 		AnchorB: anchorB,
-		jAcc:    Vector{},
+		jAcc:    Vec2{},
 	}
 	joint.Constraint = NewConstraint(joint, a, b)
 	return joint.Constraint
@@ -65,9 +65,9 @@ func (joint *GrooveJoint) ApplyCachedImpulse(dt_coef float64) {
 	apply_impulses(a, b, joint.r1, joint.r2, joint.jAcc.Mult(dt_coef))
 }
 
-func (joint *GrooveJoint) grooveConstrain(j Vector, dt float64) Vector {
+func (joint *GrooveJoint) grooveConstrain(j Vec2, dt float64) Vec2 {
 	n := joint.grooveTn
-	var jClamp Vector
+	var jClamp Vec2
 	if joint.clamp*j.Cross(n) > 0 {
 		jClamp = j
 	} else {
