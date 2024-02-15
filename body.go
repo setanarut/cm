@@ -216,15 +216,15 @@ func (body *Body) SetType(newType int) {
 
 	var fromIndex, toIndex *SpatialIndex
 	if oldType == BODY_STATIC {
-		fromIndex = body.space.StaticShapes
+		fromIndex = body.space.staticShapes
 	} else {
-		fromIndex = body.space.DynamicShapes
+		fromIndex = body.space.dynamicShapes
 	}
 
 	if newType == BODY_STATIC {
-		toIndex = body.space.StaticShapes
+		toIndex = body.space.staticShapes
 	} else {
-		toIndex = body.space.DynamicShapes
+		toIndex = body.space.dynamicShapes
 	}
 
 	if oldType != newType {

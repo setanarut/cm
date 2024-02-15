@@ -1,6 +1,6 @@
 module github.com/setanarut/cm
 
-go 1.21.6
+go 1.22.0
 
 retract (
     v1.0.1 // fatal mistake
