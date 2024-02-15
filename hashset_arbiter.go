@@ -45,9 +45,9 @@ func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) 
 		}
 
 		arb.Unthread()
-		for i, arbiter := range space.arbiters {
+		for i, arbiter := range space.Arbiters {
 			if arb == arbiter {
-				space.arbiters = append(space.arbiters[:i], space.arbiters[i+1:]...)
+				space.Arbiters = append(space.Arbiters[:i], space.Arbiters[i+1:]...)
 				break
 			}
 		}

@@ -305,11 +305,11 @@ func CentroidForPoly(count int, verts []Vec2) Vec2 {
 
 // DebugInfo returns info of space
 func DebugInfo(space *Space) string {
-	arbiters := len(space.arbiters)
+	arbiters := len(space.Arbiters)
 	points := 0
 
 	for i := 0; i < arbiters; i++ {
-		points += int(space.arbiters[i].count)
+		points += int(space.Arbiters[i].count)
 	}
 
 	constraints := len(space.constraints) + points*int(space.Iterations)
@@ -324,7 +324,7 @@ func DebugInfo(space *Space) string {
 	}
 
 	var ke float64
-	for _, body := range space.dynamicBodies {
+	for _, body := range space.DynamicBodies {
 		if body.mass == INFINITY || body.moi == INFINITY {
 			continue
 		}

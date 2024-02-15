@@ -197,34 +197,34 @@ func (body *Body) SetType(newType int) {
 	}
 
 	if oldType == BODY_STATIC {
-		for i, b := range body.space.staticBodies {
+		for i, b := range body.space.StaticBodies {
 			if b == body {
-				body.space.staticBodies = append(body.space.staticBodies[:i], body.space.staticBodies[i+1:]...)
+				body.space.StaticBodies = append(body.space.StaticBodies[:i], body.space.StaticBodies[i+1:]...)
 				break
 			}
 		}
-		body.space.dynamicBodies = append(body.space.dynamicBodies, body)
+		body.space.DynamicBodies = append(body.space.DynamicBodies, body)
 	} else if newType == BODY_STATIC {
-		for i, b := range body.space.dynamicBodies {
+		for i, b := range body.space.DynamicBodies {
 			if b == body {
-				body.space.dynamicBodies = append(body.space.dynamicBodies[:i], body.space.dynamicBodies[i+1:]...)
+				body.space.DynamicBodies = append(body.space.DynamicBodies[:i], body.space.DynamicBodies[i+1:]...)
 				break
 			}
 		}
-		body.space.staticBodies = append(body.space.staticBodies, body)
+		body.space.StaticBodies = append(body.space.StaticBodies, body)
 	}
 
 	var fromIndex, toIndex *SpatialIndex
 	if oldType == BODY_STATIC {
-		fromIndex = body.space.staticShapes
+		fromIndex = body.space.StaticShapes
 	} else {
-		fromIndex = body.space.dynamicShapes
+		fromIndex = body.space.DynamicShapes
 	}
 
 	if newType == BODY_STATIC {
-		toIndex = body.space.staticShapes
+		toIndex = body.space.StaticShapes
 	} else {
-		toIndex = body.space.dynamicShapes
+		toIndex = body.space.DynamicShapes
 	}
 
 	if oldType != newType {
