@@ -28,6 +28,8 @@ type Shape struct {
 	Class    ShapeClass
 	Filter   ShapeFilter
 	UserData interface{}
+	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
+	CollisionType CollisionType
 
 	space    *Space
 	body     *Body
@@ -40,8 +42,6 @@ type Shape struct {
 	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
 	// This value is only used when calculating friction, not resolving the collision.
 	surfaceVelocity Vec2
-	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
-	collisionType CollisionType
 
 	hashid HashValue
 }
@@ -143,7 +143,7 @@ func (s *Shape) SetBB(bb BB) {
 // You can assign types to shapes that trigger callbacks (CollisionHandler) when objects of certain types touch
 func (s *Shape) SetCollisionType(collisionType CollisionType) {
 	s.body.Activate()
-	s.collisionType = collisionType
+	s.CollisionType = collisionType
 }
 
 func (s *Shape) Friction() float64 {
