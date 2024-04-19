@@ -21,7 +21,7 @@ func NewBB(l, b, r, t float64) BB {
 }
 
 func (bb BB) String() string {
-	return fmt.Sprintf("%v %v %v %v", bb.L, bb.T, bb.R, bb.B)
+	return fmt.Sprintf("%v %v %v %v", bb.L, bb.B, bb.R, bb.T)
 }
 
 // NewBBForExtents constructs a BB centered on a point with the given extents (half sizes).
@@ -176,4 +176,34 @@ func (a BB) Proximity(b BB) float64 {
 // LeftBottom, RightBottom, RightTop, LelftTop
 func (bb BB) Corners() (LB, RB, RT, LT Vec2) {
 	return Vec2{bb.L, bb.B}, Vec2{bb.R, bb.B}, Vec2{bb.R, bb.T}, Vec2{bb.L, bb.T}
+}
+
+// RT returns Right top corner
+func (bb BB) RT() Vec2 {
+	return Vec2{bb.R, bb.T}
+}
+
+// RB returns Right bottom corner
+func (bb BB) RB() Vec2 {
+	return Vec2{bb.R, bb.B}
+}
+
+// LT returns Left top corner
+func (bb BB) LT() Vec2 {
+	return Vec2{bb.L, bb.T}
+}
+
+// LB returns Left bottom corner
+func (bb BB) LB() Vec2 {
+	return Vec2{bb.L, bb.B}
+}
+
+// Width returns width
+func (bb BB) Width() float64 {
+	return bb.LB().Distance(bb.RB())
+}
+
+// Height returns height
+func (bb BB) Height() float64 {
+	return bb.LB().Distance(bb.LT())
 }
