@@ -934,6 +934,7 @@ func (space *Space) EachConstraint(f func(*Constraint)) {
 	space.Unlock(true)
 }
 
+// Query the space at a point and return the nearest shape found. Returns NULL if no shapes were found.
 func (space *Space) PointQueryNearest(point Vec2, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
 	info := &PointQueryInfo{nil, Vec2{}, maxDistance, Vec2{}}
 	context := &PointQueryContext{point, maxDistance, filter, nil}
@@ -1000,6 +1001,9 @@ func (space *Space) PostStepCallback(key interface{}) *PostStepCallback {
 // Post-step callbacks run right before the next (or current) call to Space.Step() returns when it is safe to add and remove objects.
 // You can only schedule one post-step callback per key value, this prevents you from accidentally removing an object twice.
 // Registering a second callback for the same key is a no-op.
+//
+// example:
+// type PostStepCallbackFunc func(space *Space, key interface{}, data interface{})
 func (space *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data interface{}) bool {
 	if key == nil || space.PostStepCallback(key) == nil {
 		callback := &PostStepCallback{
@@ -1017,7 +1021,7 @@ func (space *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data interf
 	return false
 }
 
-// ShapeQuery queries a space for any shapes overlapping the given shape and call the callback for each shape found.
+// ShapeQuery queries a space for any shapes overlapping the this shape and call the callback for each shape found.
 func (space *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points *ContactPointSet)) bool {
 	body := shape.body
 	var bb BB
@@ -1040,7 +1044,7 @@ func (space *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points 
 			if callback != nil {
 				callback(b, &contactPointSet)
 			}
-			anyCollision = !(a.sensor || b.sensor)
+			anyCollision = !(a.Sensor || b.Sensor)
 		}
 
 		return collisionId
@@ -1108,7 +1112,7 @@ func SpaceCollideShapesFunc(obj interface{}, b *Shape, collisionId uint32, vspac
 		// Check (again) in case the pre-solve() callback called ArbiterIgnored().
 		arb.state != CP_ARBITER_STATE_IGNORE &&
 		// Process, but don't add collisions for sensors.
-		!(a.sensor || b.sensor) &&
+		!(a.Sensor || b.Sensor) &&
 		// Don't process collisions between two infinite mass bodies.
 		// This includes collisions between two kinematic bodies, or a kinematic body and a static body.
 		!(a.body.mass == INFINITY && b.body.mass == INFINITY) {
@@ -1218,7 +1222,7 @@ func Contains(bodies []*Body, body *Body) bool {
 
 func NearestPointQueryNearest(obj interface{}, shape *Shape, collisionId uint32, out interface{}) uint32 {
 	context := obj.(*PointQueryContext)
-	if !shape.Filter.Reject(context.filter) && !shape.sensor {
+	if !shape.Filter.Reject(context.filter) && !shape.Sensor {
 		info := shape.PointQuery(context.point)
 		if info.Distance < out.(*PointQueryInfo).Distance {
 			outp := out.(*PointQueryInfo)
@@ -1246,7 +1250,7 @@ func queryFirst(obj interface{}, shape *Shape, data interface{}) float64 {
 	var info SegmentQueryInfo
 
 	if !shape.Filter.Reject(context.filter) &&
-		!shape.sensor &&
+		!shape.Sensor &&
 		shape.SegmentQuery(context.start, context.end, context.radius, &info) &&
 		info.Alpha < out.Alpha {
 		*out = info

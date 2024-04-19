@@ -35,9 +35,9 @@ type Shape struct {
 	body     *Body
 	massInfo *ShapeMassInfo
 	bb       BB
-	// sensor is a boolean value if this shape is a sensor or not.
+	// Sensor is a boolean value if this shape is a Sensor or not.
 	// Sensors only call collision callbacks, and never generate real collisions.
-	sensor               bool
+	Sensor               bool
 	elasticity, friction float64
 	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
 	// This value is only used when calculating friction, not resolving the collision.
@@ -63,16 +63,16 @@ func (s *Shape) Order() int {
 	}
 }
 
-// Sensor returns this shape is a sensor or not.
-func (s *Shape) Sensor() bool {
-	return s.sensor
-}
+// // Sensor returns this shape is a sensor or not.
+// func (s *Shape) Sensor() bool {
+// 	return s.sensor
+// }
 
 // SetSensor sets sensor. A boolean value if this shape is a sensor or not.
 // Sensors only call collision callbacks, and never generate real collisions.
 func (s *Shape) SetSensor(sensor bool) {
 	s.body.Activate()
-	s.sensor = sensor
+	s.Sensor = sensor
 }
 
 func (s *Shape) Space() *Space {
@@ -219,12 +219,20 @@ func (s *Shape) Point(i uint32) SupportPoint {
 	}
 }
 
+// Perform a nearest point query.
+//
+// It finds the closest point on the surface of shape to a specific point.
+// The value returned is the distance between the points.
+// A negative distance means the point is inside the shape.
 func (s *Shape) PointQuery(p Vec2) PointQueryInfo {
 	info := PointQueryInfo{nil, Vec2{}, INFINITY, Vec2{}}
 	s.Class.PointQuery(p, &info)
 	return info
 }
 
+// Perform a segment query against a shape.
+//
+// info must be a pointer to a valid SegmentQueryInfo structure.
 func (shape *Shape) SegmentQuery(a, b Vec2, radius float64, info *SegmentQueryInfo) bool {
 	blank := SegmentQueryInfo{nil, b, Vec2{}, 1}
 	if info != nil {
@@ -261,6 +269,7 @@ func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
 	}
 }
 
+// Return contact information about two shapes.
 func ShapesCollide(a, b *Shape) ContactPointSet {
 	contacts := make([]Contact, MAX_CONTACTS_PER_ARBITER)
 	info := Collide(a, b, 0, contacts)

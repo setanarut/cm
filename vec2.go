@@ -103,7 +103,7 @@ func (v Vec2) Lerp(other Vec2, t float64) Vec2 {
 // Normalize returns a normalized copy of this vector.
 func (v Vec2) Normalize() Vec2 {
 	// return v.Mult(1.0 / (v.Length() + math.SmallestNonzeroFloat64))
-	return v.Mult(1.0 / (v.Length() + 1e-15))
+	return v.Mult(1.0 / (v.Length() + 1e-50))
 }
 
 // Spherical linearly interpolate between this and other.

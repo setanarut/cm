@@ -236,8 +236,8 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	surfaceVr := b.surfaceVelocity.Sub(a.surfaceVelocity)
 	arb.surface_vr = surfaceVr.Sub(info.n.Mult(surfaceVr.Dot(info.n)))
 
-	typeA := info.a.collisionType
-	typeB := info.b.collisionType
+	typeA := info.a.CollisionType
+	typeB := info.b.CollisionType
 	handler := space.LookupHandler(typeA, typeB, space.defaultHandler)
 	arb.handler = handler
 
