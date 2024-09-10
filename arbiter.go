@@ -3,6 +3,8 @@ package cm
 import (
 	"log"
 	"math"
+
+	"github.com/setanarut/vec"
 )
 
 var WILDCARD_COLLISION_TYPE CollisionType = ^CollisionType(0)
@@ -13,7 +15,7 @@ var WILDCARD_COLLISION_TYPE CollisionType = ^CollisionType(0)
 // A unique arbiter value is used for each pair of colliding objects. It persists until the shapes separate.
 type Arbiter struct {
 	e, u       float64
-	surface_vr Vec2
+	surface_vr vec.Vec2
 
 	UserData interface{}
 
@@ -24,7 +26,7 @@ type Arbiter struct {
 	count int
 	// a slice onto the current buffer array of contacts
 	contacts []Contact
-	normal   Vec2
+	normal   vec.Vec2
 
 	// Regular, wildcard A and wildcard B collision handlers.
 	handler, handlerA, handlerB *CollisionHandler
@@ -44,7 +46,7 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 
 	arbiter.e = 0
 	arbiter.u = 0
-	arbiter.surface_vr = Vec2{}
+	arbiter.surface_vr = vec.Vec2{}
 
 	arbiter.count = 0
 	arbiter.contacts = nil
@@ -120,8 +122,8 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dt_coef float64) {
 
 	for i := 0; i < arbiter.count; i++ {
 		contact := arbiter.contacts[i]
-		j := arbiter.normal.Rotate(Vec2{contact.jnAcc, contact.jtAcc})
-		apply_impulses(arbiter.body_a, arbiter.body_b, contact.r1, contact.r2, j.Mult(dt_coef))
+		j := arbiter.normal.RotateComplex(vec.Vec2{contact.jnAcc, contact.jtAcc})
+		apply_impulses(arbiter.body_a, arbiter.body_b, contact.r1, contact.r2, j.Scale(dt_coef))
 	}
 }
 
@@ -138,8 +140,8 @@ func (arbiter *Arbiter) ApplyImpulse() {
 		r1 := con.r1
 		r2 := con.r2
 
-		vb1 := a.v_bias.Add(r1.Perp().Mult(a.w_bias))
-		vb2 := b.v_bias.Add(r2.Perp().Mult(b.w_bias))
+		vb1 := a.v_bias.Add(r1.Perp().Scale(a.w_bias))
+		vb2 := b.v_bias.Add(r2.Perp().Scale(b.w_bias))
 		vr := relative_velocity(a, b, r1, r2).Add(surface_vr)
 
 		vbn := vb2.Sub(vb1).Dot(n)
@@ -157,10 +159,10 @@ func (arbiter *Arbiter) ApplyImpulse() {
 		jtMax := friction * con.jnAcc
 		jt := -vrt * con.tMass
 		jtOld := con.jtAcc
-		con.jtAcc = Clamp(jtOld+jt, -jtMax, jtMax)
+		con.jtAcc = clamp(jtOld+jt, -jtMax, jtMax)
 
-		apply_bias_impulses(a, b, r1, r2, n.Mult(con.jBias-jbnOld))
-		apply_impulses(a, b, r1, r2, n.Rotate(Vec2{con.jnAcc - jnOld, con.jtAcc - jtOld}))
+		apply_bias_impulses(a, b, r1, r2, n.Scale(con.jBias-jbnOld))
+		apply_impulses(a, b, r1, r2, n.RotateComplex(vec.Vec2{con.jnAcc - jnOld, con.jtAcc - jtOld}))
 	}
 }
 
@@ -234,7 +236,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	arb.u = a.friction * b.friction
 
 	surfaceVr := b.surfaceVelocity.Sub(a.surfaceVelocity)
-	arb.surface_vr = surfaceVr.Sub(info.n.Mult(surfaceVr.Dot(info.n)))
+	arb.surface_vr = surfaceVr.Sub(info.n.Scale(surfaceVr.Dot(info.n)))
 
 	typeA := info.a.CollisionType
 	typeB := info.b.CollisionType
@@ -326,7 +328,7 @@ func (arb *Arbiter) CallWildcardSeparateB(space *Space) {
 	arb.swapped = !arb.swapped
 }
 
-func apply_impulses(a, b *Body, r1, r2, j Vec2) {
+func apply_impulses(a, b *Body, r1, r2, j vec.Vec2) {
 	b.vel.X += j.X * b.m_inv
 	b.vel.Y += j.Y * b.m_inv
 	b.w += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
@@ -338,13 +340,13 @@ func apply_impulses(a, b *Body, r1, r2, j Vec2) {
 	a.w += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
-func apply_impulse(body *Body, j, r Vec2) {
+func apply_impulse(body *Body, j, r vec.Vec2) {
 	body.vel.X += j.X * body.m_inv
 	body.vel.Y += j.Y * body.m_inv
 	body.w += body.moi_inv * r.Cross(j)
 }
 
-func apply_bias_impulses(a, b *Body, r1, r2, j Vec2) {
+func apply_bias_impulses(a, b *Body, r1, r2, j vec.Vec2) {
 	b.v_bias.X += j.X * b.m_inv
 	b.v_bias.Y += j.Y * b.m_inv
 	b.w_bias += b.moi_inv * (r2.X*j.Y - r2.Y*j.X)
@@ -356,8 +358,8 @@ func apply_bias_impulses(a, b *Body, r1, r2, j Vec2) {
 	a.w_bias += a.moi_inv * (r1.X*j.Y - r1.Y*j.X)
 }
 
-func relative_velocity(a, b *Body, r1, r2 Vec2) Vec2 {
-	return r2.Perp().Mult(b.w).Add(b.vel).Sub(r1.Perp().Mult(a.w).Add(a.vel))
+func relative_velocity(a, b *Body, r1, r2 vec.Vec2) vec.Vec2 {
+	return r2.Perp().Scale(b.w).Add(b.vel).Sub(r1.Perp().Scale(a.w).Add(a.vel))
 }
 
 var CollisionHandlerDoNothing = CollisionHandler{
@@ -409,13 +411,13 @@ func DefaultSeparate(arb *Arbiter, space *Space, _ interface{}) {
 // TotalImpulse calculates the total impulse including the friction that was applied by this arbiter.
 //
 // This function should only be called from a post-solve, post-step or EachArbiter callback.
-func (arb *Arbiter) TotalImpulse() Vec2 {
-	var sum Vec2
+func (arb *Arbiter) TotalImpulse() vec.Vec2 {
+	var sum vec.Vec2
 
 	count := arb.Count()
 	for i := 0; i < count; i++ {
 		con := arb.contacts[i]
-		sum = sum.Add(arb.normal.Rotate(Vec2{con.jnAcc, con.jtAcc}))
+		sum = sum.Add(arb.normal.RotateComplex(vec.Vec2{con.jnAcc, con.jtAcc}))
 	}
 
 	if arb.swapped {
@@ -448,9 +450,9 @@ func (arb *Arbiter) Bodies() (*Body, *Body) {
 	return shapeA.body, shapeB.body
 }
 
-func (arb *Arbiter) Normal() Vec2 {
+func (arb *Arbiter) Normal() vec.Vec2 {
 	if arb.swapped {
-		return arb.normal.Mult(-1)
+		return arb.normal.Scale(-1)
 	} else {
 		return arb.normal
 	}
@@ -461,11 +463,11 @@ type ContactPointSet struct {
 	// Count is the number of contact points in the set.
 	Count int
 	// Normal is the normal of the collision.
-	Normal Vec2
+	Normal vec.Vec2
 
 	Points [MAX_CONTACTS_PER_ARBITER]struct {
 		// The position of the contact on the surface of each shape.
-		PointA, PointB Vec2
+		PointA, PointB vec.Vec2
 		// Distance is penetration distance of the two shapes. Overlapping means it will be negative.
 		//
 		// This value is calculated as p2.Sub(p1).Dot(n) and is ignored by Arbiter.SetContactPointSet().

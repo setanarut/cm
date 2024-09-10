@@ -2,6 +2,8 @@ package cm
 
 import (
 	"math"
+
+	"github.com/setanarut/vec"
 )
 
 type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
@@ -9,20 +11,20 @@ type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
 type DampedSpring struct {
 	*Constraint
 
-	AnchorA, AnchorB               Vec2
+	AnchorA, AnchorB               vec.Vec2
 	RestLength, Stiffness, Damping float64
 	SpringForceFunc                DampedSpringForceFunc
 
 	targetVrn, vCoef float64
 
-	r1, r2 Vec2
+	r1, r2 vec.Vec2
 	nMass  float64
-	n      Vec2
+	n      vec.Vec2
 
 	jAcc float64
 }
 
-func NewDampedSpring(a, b *Body, anchorA, anchorB Vec2, restLength, stiffness, damping float64) *Constraint {
+func NewDampedSpring(a, b *Body, anchorA, anchorB vec.Vec2, restLength, stiffness, damping float64) *Constraint {
 	spring := &DampedSpring{
 		AnchorA:         anchorA,
 		AnchorB:         anchorB,
@@ -46,9 +48,9 @@ func (spring *DampedSpring) PreStep(dt float64) {
 	delta := b.position.Add(spring.r2).Sub(a.position.Add(spring.r1))
 	dist := delta.Length()
 	if dist != 0 {
-		spring.n = delta.Mult(1.0 / dist)
+		spring.n = delta.Scale(1.0 / dist)
 	} else {
-		spring.n = delta.Mult(1.0 / INFINITY)
+		spring.n = delta.Scale(1.0 / INFINITY)
 	}
 
 	k := k_scalar(a, b, spring.r1, spring.r2, spring.n)
@@ -64,7 +66,7 @@ func (spring *DampedSpring) PreStep(dt float64) {
 
 	fSpring := spring.SpringForceFunc(spring, dist)
 	spring.jAcc = fSpring * dt
-	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Mult(spring.jAcc))
+	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Scale(spring.jAcc))
 }
 
 func (spring *DampedSpring) ApplyCachedImpulse(dt_coef float64) {
@@ -86,7 +88,7 @@ func (spring *DampedSpring) ApplyImpulse(dt float64) {
 
 	jDamp := vDamp * spring.nMass
 	spring.jAcc += jDamp
-	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Mult(jDamp))
+	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Scale(jDamp))
 }
 
 func (spring *DampedSpring) GetImpulse() float64 {

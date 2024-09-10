@@ -5,6 +5,8 @@ import (
 	"math"
 	"sync"
 	"unsafe"
+
+	"github.com/setanarut/vec"
 )
 
 const MAX_CONTACTS_PER_ARBITER = 2
@@ -30,7 +32,7 @@ type Space struct {
 	StaticBody *Body
 
 	// Gravity to pass to rigid bodies when integrating velocity.
-	Gravity Vec2
+	Gravity vec.Vec2
 
 	// Damping rate expressed as the fraction of velocity bodies retain each second.
 	//
@@ -87,7 +89,7 @@ func NewSpace() *Space {
 		IdleSpeedThreshold:   0.0,
 		SleepTimeThreshold:   math.MaxFloat64,
 		StaticBody:           NewBody(0, 0),
-		Gravity:              Vec2{},
+		Gravity:              vec.Vec2{},
 		Damping:              1.0,
 		CollisionSlop:        0.1,
 		CollisionBias:        math.Pow(0.9, 60),
@@ -150,7 +152,7 @@ func (space *Space) StaticBodyCount() int {
 }
 
 // SetGravity sets gravity and wake up all of the sleeping bodies since the gravity changed.
-func (space *Space) SetGravity(gravity Vec2) {
+func (space *Space) SetGravity(gravity vec.Vec2) {
 	space.Gravity = gravity
 
 	// Wake up all of the bodies since the gravity changed.
@@ -935,8 +937,8 @@ func (space *Space) EachConstraint(f func(*Constraint)) {
 }
 
 // Query the space at a point and return the nearest shape found. Returns NULL if no shapes were found.
-func (space *Space) PointQueryNearest(point Vec2, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
-	info := &PointQueryInfo{nil, Vec2{}, maxDistance, Vec2{}}
+func (space *Space) PointQueryNearest(point vec.Vec2, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
+	info := &PointQueryInfo{nil, vec.Vec2{}, maxDistance, vec.Vec2{}}
 	context := &PointQueryContext{point, maxDistance, filter, nil}
 
 	bb := NewBBForCircle(point, math.Max(maxDistance, 0))
@@ -962,7 +964,7 @@ func (space *Space) ArrayForBodyType(bodyType int) *[]*Body {
 	return &space.DynamicBodies
 }
 
-func (space *Space) SegmentQuery(start, end Vec2, radius float64, filter ShapeFilter, f SpaceSegmentQueryFunc, data interface{}) {
+func (space *Space) SegmentQuery(start, end vec.Vec2, radius float64, filter ShapeFilter, f SpaceSegmentQueryFunc, data interface{}) {
 	context := SegmentQueryContext{start, end, radius, filter, f}
 	space.Lock()
 
@@ -972,8 +974,8 @@ func (space *Space) SegmentQuery(start, end Vec2, radius float64, filter ShapeFi
 	space.Unlock(true)
 }
 
-func (space *Space) SegmentQueryFirst(start, end Vec2, radius float64, filter ShapeFilter) SegmentQueryInfo {
-	info := SegmentQueryInfo{nil, end, Vec2{}, 1}
+func (space *Space) SegmentQueryFirst(start, end vec.Vec2, radius float64, filter ShapeFilter) SegmentQueryInfo {
+	info := SegmentQueryInfo{nil, end, vec.Vec2{}, 1}
 	context := &SegmentQueryContext{start, end, radius, filter, nil}
 	space.staticShapes.class.SegmentQuery(context, start, end, 1, queryFirst, &info)
 	space.dynamicShapes.class.SegmentQuery(context, start, end, info.Alpha, queryFirst, &info)
@@ -1266,7 +1268,7 @@ func arbiterSetEql(shapes ShapePair, arb *Arbiter) bool {
 	return (a == arb.a && b == arb.b) || (b == arb.a && a == arb.b)
 }
 
-var ShapeVelocityFunc = func(obj interface{}) Vec2 {
+var ShapeVelocityFunc = func(obj interface{}) vec.Vec2 {
 	return obj.(*Shape).body.vel
 }
 
@@ -1281,7 +1283,7 @@ type PostStepCallback struct {
 }
 
 type PointQueryContext struct {
-	point       Vec2
+	point       vec.Vec2
 	maxDistance float64
 	filter      ShapeFilter
 	f           SpacePointQueryFunc
@@ -1298,13 +1300,13 @@ type BBQueryContext struct {
 }
 
 type SegmentQueryContext struct {
-	start, end Vec2
+	start, end vec.Vec2
 	radius     float64
 	filter     ShapeFilter
 	f          SpaceSegmentQueryFunc
 }
 
-type SpacePointQueryFunc func(*Shape, Vec2, float64, Vec2, interface{})
+type SpacePointQueryFunc func(*Shape, vec.Vec2, float64, vec.Vec2, interface{})
 type SpaceBBQueryFunc func(shape *Shape, data interface{})
-type SpaceSegmentQueryFunc func(shape *Shape, point, normal Vec2, alpha float64, data interface{})
+type SpaceSegmentQueryFunc func(shape *Shape, point, normal vec.Vec2, alpha float64, data interface{})
 type PostStepCallbackFunc func(space *Space, key interface{}, data interface{})

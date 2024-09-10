@@ -1,9 +1,13 @@
 module github.com/setanarut/cm
 
-go 1.22.0
+go 1.23.1
 
 retract (
-    v1.0.1 // fatal mistake
-    v1.2.0 // fatal mistake
-    v1.3.0 // fatal mistake
+	v1.3.0 // fatal mistake
+	v1.2.0 // fatal mistake
+	v1.0.1 // fatal mistake
 )
+
+require github.com/setanarut/vec v1.0.0
+
+require golang.org/x/image v0.20.0 // indirect

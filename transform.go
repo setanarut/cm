@@ -1,6 +1,10 @@
 package cm
 
-import "math"
+import (
+	"math"
+
+	"github.com/setanarut/vec"
+)
 
 type Transform struct {
 	a, b, c, d, tx, ty float64
@@ -18,7 +22,7 @@ func NewTransformTranspose(a, c, tx, b, d, ty float64) Transform {
 	return Transform{a, b, c, d, tx, ty}
 }
 
-func NewTransformTranslate(translate Vec2) Transform {
+func NewTransformTranslate(translate vec.Vec2) Transform {
 	return NewTransformTranspose(
 		1, 0, translate.X,
 		0, 1, translate.Y,
@@ -40,7 +44,7 @@ func NewTransformRotate(radians float64) Transform {
 	)
 }
 
-func NewTransformRigid(translate Vec2, radians float64) Transform {
+func NewTransformRigid(translate vec.Vec2, radians float64) Transform {
 	rot := ForAngle(radians)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, translate.X,
@@ -70,12 +74,12 @@ func (t Transform) Mult(t2 Transform) Transform {
 	)
 }
 
-func (t Transform) Point(p Vec2) Vec2 {
-	return Vec2{X: t.a*p.X + t.c*p.Y + t.tx, Y: t.b*p.X + t.d*p.Y + t.ty}
+func (t Transform) Point(p vec.Vec2) vec.Vec2 {
+	return vec.Vec2{X: t.a*p.X + t.c*p.Y + t.tx, Y: t.b*p.X + t.d*p.Y + t.ty}
 }
 
-func (t Transform) Vect(v Vec2) Vec2 {
-	return Vec2{t.a*v.X + t.c*v.Y, t.b*v.X + t.d*v.Y}
+func (t Transform) Vect(v vec.Vec2) vec.Vec2 {
+	return vec.Vec2{t.a*v.X + t.c*v.Y, t.b*v.X + t.d*v.Y}
 }
 
 func (t Transform) BB(bb BB) BB {
@@ -104,7 +108,7 @@ func (t Transform) Ortho(bb BB) Transform {
 	)
 }
 
-func (t Transform) BoneScale(v0, v1 Vec2) Transform {
+func (t Transform) BoneScale(v0, v1 vec.Vec2) Transform {
 	d := v1.Sub(v0)
 	return NewTransformTranspose(
 		d.X, -d.Y, v0.X,
@@ -112,7 +116,7 @@ func (t Transform) BoneScale(v0, v1 Vec2) Transform {
 	)
 }
 
-func (t Transform) AxialScale(axis, pivot Vec2, scale float64) Transform {
+func (t Transform) AxialScale(axis, pivot vec.Vec2, scale float64) Transform {
 	A := axis.X * axis.Y * (scale - 1.0)
 	B := axis.Dot(pivot) * (1.0 - scale)
 

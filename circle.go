@@ -1,14 +1,18 @@
 package cm
 
-import "math"
+import (
+	"math"
+
+	"github.com/setanarut/vec"
+)
 
 type Circle struct {
 	*Shape
-	c, transformC Vec2
+	c, transformC vec.Vec2
 	radius        float64
 }
 
-func NewCircle(body *Body, radius float64, offset Vec2) *Shape {
+func NewCircle(body *Body, radius float64, offset vec.Vec2) *Shape {
 	circle := &Circle{
 		c:      offset,
 		radius: radius,
@@ -17,10 +21,10 @@ func NewCircle(body *Body, radius float64, offset Vec2) *Shape {
 	return circle.Shape
 }
 
-func CircleShapeMassInfo(mass, radius float64, center Vec2) *ShapeMassInfo {
+func CircleShapeMassInfo(mass, radius float64, center vec.Vec2) *ShapeMassInfo {
 	return &ShapeMassInfo{
 		m:    mass,
-		i:    MomentForCircle(1, 0, radius, Vec2{}),
+		i:    MomentForCircle(1, 0, radius, vec.Vec2{}),
 		cog:  center,
 		area: AreaForCircle(0, radius),
 	}
@@ -45,31 +49,31 @@ func (circle *Circle) SetRadius(r float64) {
 	}
 }
 
-func (circle *Circle) TransformC() Vec2 {
+func (circle *Circle) TransformC() vec.Vec2 {
 	return circle.transformC
 }
 
-func (circle *Circle) PointQuery(p Vec2, info *PointQueryInfo) {
+func (circle *Circle) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	delta := p.Sub(circle.transformC)
 	d := delta.Length()
 	r := circle.radius
 
 	info.Shape = circle.Shape
-	info.Point = circle.transformC.Add(delta.Mult(r / d))
+	info.Point = circle.transformC.Add(delta.Scale(r / d))
 	info.Distance = d - r
 
 	if d > MAGIC_EPSILON {
-		info.Gradient = delta.Mult(1 / d)
+		info.Gradient = delta.Scale(1 / d)
 	} else {
-		info.Gradient = Vec2{0, 1}
+		info.Gradient = vec.Vec2{0, 1}
 	}
 }
 
-func (circle *Circle) SegmentQuery(a, b Vec2, radius float64, info *SegmentQueryInfo) {
+func (circle *Circle) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) {
 	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
 }
 
-func CircleSegmentQuery(shape *Shape, center Vec2, r1 float64, a, b Vec2, r2 float64, info *SegmentQueryInfo) {
+func CircleSegmentQuery(shape *Shape, center vec.Vec2, r1 float64, a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {
 	da := a.Sub(center)
 	db := b.Sub(center)
 	rsum := r1 + r2
@@ -84,7 +88,7 @@ func CircleSegmentQuery(shape *Shape, center Vec2, r1 float64, a, b Vec2, r2 flo
 			n := da.Lerp(db, t).Normalize()
 
 			info.Shape = shape
-			info.Point = a.Lerp(b, t).Sub(n.Mult(r2))
+			info.Point = a.Lerp(b, t).Sub(n.Scale(r2))
 			info.Normal = n
 			info.Alpha = t
 		}

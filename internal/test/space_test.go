@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"github.com/setanarut/cm"
+	"github.com/setanarut/vec"
 )
 
 func TestSpace_ShapeQuery(t *testing.T) {
 	space := cm.NewSpace()
-	circle := space.AddShape(cm.NewCircle(space.StaticBody, 1, cm.Vec2{}))
+	circle := space.AddShape(cm.NewCircle(space.StaticBody, 1, vec.Vec2{}))
 	space.ShapeQuery(circle, func(shape *cm.Shape, points *cm.ContactPointSet) {
 		t.Fatal("Shouldn't collide with itself")
 	})
@@ -22,7 +23,7 @@ func TestSpace_ShapeQuery(t *testing.T) {
 		t.Error("Expected box to collide with circle")
 	}
 
-	box.Body().SetPosition(cm.Vec2{3, 0})
+	box.Body().SetPosition(vec.Vec2{3, 0})
 	space.ShapeQuery(box, func(shape *cm.Shape, points *cm.ContactPointSet) {
 		t.Error("Box should be just out of range")
 	})

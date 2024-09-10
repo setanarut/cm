@@ -3,6 +3,8 @@ package cm
 import (
 	"math"
 	"sync"
+
+	"github.com/setanarut/vec"
 )
 
 type SpaceHash struct {
@@ -243,9 +245,9 @@ restart:
 }
 
 // modified from http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
-func (hash *SpaceHash) SegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
-	a = a.Mult(1.0 / hash.celldim)
-	b = b.Mult(1.0 / hash.celldim)
+func (hash *SpaceHash) SegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
+	a = a.Scale(1.0 / hash.celldim)
+	b = b.Scale(1.0 / hash.celldim)
 
 	cellX := int(floor(a.X))
 	cellY := int(floor(a.Y))

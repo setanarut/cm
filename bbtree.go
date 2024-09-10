@@ -1,8 +1,12 @@
 package cm
 
-import "math"
+import (
+	"math"
 
-type BBTreeVelocityFunc func(obj interface{}) Vec2
+	"github.com/setanarut/vec"
+)
+
+type BBTreeVelocityFunc func(obj interface{}) vec.Vec2
 
 type Node struct {
 	obj    *Shape
@@ -411,7 +415,7 @@ func (subtree *Node) SubtreeQuery(obj interface{}, bb BB, query SpatialIndexQuer
 	}
 }
 
-func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
+func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
 	if subtree.IsLeaf() {
 		return f(obj, subtree.obj, data)
 	}
@@ -438,7 +442,7 @@ func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b Vec2, t_exit floa
 	return t_exit
 }
 
-func (tree *BBTree) SegmentQuery(obj interface{}, a, b Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
+func (tree *BBTree) SegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
 	root := tree.root
 	if root != nil {
 		root.SubtreeSegmentQuery(obj, a, b, t_exit, f, data)
@@ -452,7 +456,7 @@ func (tree *BBTree) GetBB(obj *Shape) BB {
 		x := (bb.R - bb.L) * coef
 		y := (bb.T - bb.B) * coef
 
-		v := tree.velocityFunc(obj).Mult(0.1)
+		v := tree.velocityFunc(obj).Scale(0.1)
 		return BB{
 			bb.L + math.Min(-x, v.X),
 			bb.B + math.Min(-y, v.Y),

@@ -3,6 +3,8 @@ package cm
 import (
 	"fmt"
 	"math"
+
+	"github.com/setanarut/vec"
 )
 
 // BB is Chipmunk's axis-aligned 2D bounding box type. (left, bottom, right, top)
@@ -25,7 +27,7 @@ func (bb BB) String() string {
 }
 
 // NewBBForExtents constructs a BB centered on a point with the given extents (half sizes).
-func NewBBForExtents(c Vec2, hw, hh float64) BB {
+func NewBBForExtents(c vec.Vec2, hw, hh float64) BB {
 	return BB{
 		L: c.X - hw,
 		B: c.Y - hh,
@@ -35,7 +37,7 @@ func NewBBForExtents(c Vec2, hw, hh float64) BB {
 }
 
 // NewBBForCircle constructs a BB for a circle with the given position and radius.
-func NewBBForCircle(p Vec2, r float64) BB {
+func NewBBForCircle(p vec.Vec2, r float64) BB {
 	return NewBBForExtents(p, r, r)
 }
 
@@ -50,7 +52,7 @@ func (bb BB) Contains(other BB) bool {
 }
 
 // ContainsVect returns true if bb contains v.
-func (bb BB) ContainsVect(v Vec2) bool {
+func (bb BB) ContainsVect(v vec.Vec2) bool {
 	return bb.L <= v.X && bb.R >= v.X && bb.B <= v.Y && bb.T >= v.Y
 }
 
@@ -65,7 +67,7 @@ func (a BB) Merge(b BB) BB {
 }
 
 // Expand returns a bounding box that holds both bb and v.
-func (bb BB) Expand(v Vec2) BB {
+func (bb BB) Expand(v vec.Vec2) BB {
 	return BB{
 		math.Min(bb.L, v.X),
 		math.Min(bb.B, v.Y),
@@ -75,8 +77,8 @@ func (bb BB) Expand(v Vec2) BB {
 }
 
 // Center returns the center of a bounding box.
-func (bb BB) Center() Vec2 {
-	return Vec2{bb.L, bb.B}.Lerp(Vec2{bb.R, bb.T}, 0.5)
+func (bb BB) Center() vec.Vec2 {
+	return vec.Vec2{bb.L, bb.B}.Lerp(vec.Vec2{bb.R, bb.T}, 0.5)
 }
 
 // Area returns the area of the bounding box.
@@ -91,7 +93,7 @@ func (a BB) MergedArea(b BB) float64 {
 
 // SegmentQuery returns the fraction along the segment query the BB is hit.
 // Returns cm.INFINITY if it doesn't hit.
-func (bb BB) SegmentQuery(a, b Vec2) float64 {
+func (bb BB) SegmentQuery(a, b vec.Vec2) float64 {
 	delta := b.Sub(a)
 	tmin := -INFINITY
 	tmax := INFINITY
@@ -126,17 +128,17 @@ func (bb BB) SegmentQuery(a, b Vec2) float64 {
 }
 
 // IntersectsSegment returns true if the bounding box intersects the line segment with ends a and b.
-func (bb BB) IntersectsSegment(a, b Vec2) bool {
+func (bb BB) IntersectsSegment(a, b vec.Vec2) bool {
 	return bb.SegmentQuery(a, b) != INFINITY
 }
 
 // ClampVect clamps a vector to bounding box.
-func (bb BB) ClampVect(v *Vec2) Vec2 {
-	return Vec2{Clamp(v.X, bb.L, bb.R), Clamp(v.Y, bb.B, bb.T)}
+func (bb BB) ClampVect(v *vec.Vec2) vec.Vec2 {
+	return vec.Vec2{clamp(v.X, bb.L, bb.R), clamp(v.Y, bb.B, bb.T)}
 }
 
 // WrapVect wraps a vector to bounding box.
-func (bb BB) WrapVect(v Vec2) Vec2 {
+func (bb BB) WrapVect(v vec.Vec2) vec.Vec2 {
 	dx := math.Abs(bb.R - bb.L)
 	modx := math.Mod(v.X-bb.L, dx)
 	var x float64
@@ -155,11 +157,11 @@ func (bb BB) WrapVect(v Vec2) Vec2 {
 		y = mody + dy
 	}
 
-	return Vec2{x + bb.L, y + bb.B}
+	return vec.Vec2{x + bb.L, y + bb.B}
 }
 
 // Offset returns a bounding box offseted by v.
-func (bb BB) Offset(v Vec2) BB {
+func (bb BB) Offset(v vec.Vec2) BB {
 	return BB{
 		bb.L + v.X,
 		bb.B + v.Y,
@@ -174,28 +176,28 @@ func (a BB) Proximity(b BB) float64 {
 
 // Corners returns corner coords of BBox.
 // LeftBottom, RightBottom, RightTop, LelftTop
-func (bb BB) Corners() (LB, RB, RT, LT Vec2) {
-	return Vec2{bb.L, bb.B}, Vec2{bb.R, bb.B}, Vec2{bb.R, bb.T}, Vec2{bb.L, bb.T}
+func (bb BB) Corners() (LB, RB, RT, LT vec.Vec2) {
+	return vec.Vec2{bb.L, bb.B}, vec.Vec2{bb.R, bb.B}, vec.Vec2{bb.R, bb.T}, vec.Vec2{bb.L, bb.T}
 }
 
 // RT returns Right top corner
-func (bb BB) RT() Vec2 {
-	return Vec2{bb.R, bb.T}
+func (bb BB) RT() vec.Vec2 {
+	return vec.Vec2{bb.R, bb.T}
 }
 
 // RB returns Right bottom corner
-func (bb BB) RB() Vec2 {
-	return Vec2{bb.R, bb.B}
+func (bb BB) RB() vec.Vec2 {
+	return vec.Vec2{bb.R, bb.B}
 }
 
 // LT returns Left top corner
-func (bb BB) LT() Vec2 {
-	return Vec2{bb.L, bb.T}
+func (bb BB) LT() vec.Vec2 {
+	return vec.Vec2{bb.L, bb.T}
 }
 
 // LB returns Left bottom corner
-func (bb BB) LB() Vec2 {
-	return Vec2{bb.L, bb.B}
+func (bb BB) LB() vec.Vec2 {
+	return vec.Vec2{bb.L, bb.B}
 }
 
 // Width returns width

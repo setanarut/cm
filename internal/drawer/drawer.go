@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/setanarut/cm"
+	"github.com/setanarut/vec"
 )
 
 // Draw flags
@@ -15,11 +16,11 @@ const (
 )
 
 type Drawer interface {
-	DrawCircle(pos cm.Vec2, angle, radius float64, outline, fill color.RGBA, data interface{})
-	DrawSegment(a, b cm.Vec2, fill color.RGBA, data interface{})
-	DrawFatSegment(a, b cm.Vec2, radius float64, outline, fill color.RGBA, data interface{})
-	DrawPolygon(count int, verts []cm.Vec2, radius float64, outline, fill color.RGBA, data interface{})
-	DrawDot(size float64, pos cm.Vec2, fill color.RGBA, data interface{})
+	DrawCircle(pos vec.Vec2, angle, radius float64, outline, fill color.RGBA, data interface{})
+	DrawSegment(a, b vec.Vec2, fill color.RGBA, data interface{})
+	DrawFatSegment(a, b vec.Vec2, radius float64, outline, fill color.RGBA, data interface{})
+	DrawPolygon(count int, verts []vec.Vec2, radius float64, outline, fill color.RGBA, data interface{})
+	DrawDot(size float64, pos vec.Vec2, fill color.RGBA, data interface{})
 
 	Flags() uint
 	OutlineColor() color.RGBA
@@ -47,7 +48,7 @@ func DrawShape(shape *cm.Shape, options Drawer) {
 		poly := shape.Class.(*cm.PolyShape)
 
 		count := poly.Count()
-		verts := make([]cm.Vec2, count)
+		verts := make([]vec.Vec2, count)
 
 		for i := 0; i < count; i++ {
 			verts[i] = poly.TransformVert(i)
@@ -58,7 +59,7 @@ func DrawShape(shape *cm.Shape, options Drawer) {
 	}
 }
 
-var springVerts = []cm.Vec2{
+var springVerts = []vec.Vec2{
 	{0.00, 0.0},
 	{0.20, 0.0},
 	{0.25, 3.0},
@@ -135,13 +136,13 @@ func DrawConstraint(constraint *cm.Constraint, options Drawer) {
 		sin := delta.Y
 		s := 1.0 / delta.Length()
 
-		r1 := cm.Vec2{cos, -sin * s}
-		r2 := cm.Vec2{sin, cos * s}
+		r1 := vec.Vec2{cos, -sin * s}
+		r2 := vec.Vec2{sin, cos * s}
 
-		verts := []cm.Vec2{}
+		verts := []vec.Vec2{}
 		for i := 0; i < len(springVerts); i++ {
 			v := springVerts[i]
-			verts = append(verts, cm.Vec2{v.Dot(r1) + a.X, v.Dot(r2) + a.Y})
+			verts = append(verts, vec.Vec2{v.Dot(r1) + a.X, v.Dot(r2) + a.Y})
 		}
 
 		for i := 0; i < len(springVerts)-1; i++ {
