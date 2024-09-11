@@ -1,4 +1,2 @@
-github.com/setanarut/vec v1.0.0 h1:ny/RHln24CS6gV3r9eacU6OFd7C3UUkJgVgoV+QV5Uw=
-github.com/setanarut/vec v1.0.0/go.mod h1:n5nlbE/xlpuBI3WfxXmq4TJWWkZzv2/bNqcEAO9X9ic=
-golang.org/x/image v0.20.0 h1:7cVCUjQwfL18gyBJOmYvptfSHS8Fb3YUDtfLIZ7Nbpw=
-golang.org/x/image v0.20.0/go.mod h1:0a88To4CYVBAHp5FXJm8o7QbUl37Vd85ply1vyD8auM=
+github.com/setanarut/vec v1.1.0 h1:Tmei65+2EsQzNB+0xkpNgcXGTZTT0gEUdZRjVb2CuuQ=
+github.com/setanarut/vec v1.1.0/go.mod h1:ZDoKd7F60rWLgCK58novWOCe5ePiXfSkwtmuOSSC9TU=

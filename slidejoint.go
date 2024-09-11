@@ -38,14 +38,14 @@ func (joint *SlideJoint) PreStep(dt float64) {
 	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
 
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	dist := delta.Length()
+	dist := delta.Mag()
 	pdist := 0.0
 	if dist > joint.Max {
 		pdist = dist - joint.Max
-		joint.n = delta.Normalize()
+		joint.n = delta.Unit()
 	} else if dist < joint.Min {
 		pdist = joint.Min - dist
-		joint.n = delta.Normalize().Neg()
+		joint.n = delta.Unit().Neg()
 	} else {
 		joint.n = vec.Vec2{}
 		joint.jnAcc = 0

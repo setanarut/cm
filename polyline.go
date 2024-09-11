@@ -19,7 +19,7 @@ func Next(i, count int) int {
 }
 
 func Sharpness(a, b, c vec.Vec2) float64 {
-	return a.Sub(b).Normalize().Dot(c.Sub(b).Normalize())
+	return a.Sub(b).Unit().Dot(c.Sub(b).Unit())
 }
 
 func (pl *PolyLine) Push(v vec.Vec2) *PolyLine {
@@ -81,7 +81,7 @@ func DouglasPeucker(verts []vec.Vec2, reduced *PolyLine, length, start, end int,
 	b := verts[end]
 
 	// Check if the length is below the threshold
-	if a.Near(b, min) && reduced.IsShort(length, start, end, min) {
+	if a.IsNear(b, min) && reduced.IsShort(length, start, end, min) {
 		return reduced
 	}
 
@@ -89,7 +89,7 @@ func DouglasPeucker(verts []vec.Vec2, reduced *PolyLine, length, start, end int,
 	var max float64
 	maxi := start
 
-	n := b.Sub(a).Perp().Normalize()
+	n := b.Sub(a).Perp().Unit()
 	d := n.Dot(a)
 
 	for i := Next(start, length); i != end; i = Next(i, length) {

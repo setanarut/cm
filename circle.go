@@ -55,7 +55,7 @@ func (circle *Circle) TransformC() vec.Vec2 {
 
 func (circle *Circle) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	delta := p.Sub(circle.transformC)
-	d := delta.Length()
+	d := delta.Mag()
 	r := circle.radius
 
 	info.Shape = circle.Shape
@@ -85,7 +85,7 @@ func CircleSegmentQuery(shape *Shape, center vec.Vec2, r1 float64, a, b vec.Vec2
 	if det >= 0 {
 		t := (-qb - math.Sqrt(det)) / qa
 		if 0 <= t && t <= 1 {
-			n := da.Lerp(db, t).Normalize()
+			n := da.Lerp(db, t).Unit()
 
 			info.Shape = shape
 			info.Point = a.Lerp(b, t).Sub(n.Scale(r2))

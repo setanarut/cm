@@ -33,7 +33,7 @@ func NewPinJoint(a, b *Body, anchorA, anchorB vec.Vec2) *Constraint {
 	} else {
 		p2 = anchorB
 	}
-	joint.Dist = p2.Sub(p1).Length()
+	joint.Dist = p2.Sub(p1).Mag()
 
 	// TODO: warn about joint.dist > 0 being unstable, use pivot joint
 
@@ -51,7 +51,7 @@ func (joint *PinJoint) PreStep(dt float64) {
 	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
 
 	delta := b.position.Add(joint.r2.Sub(a.position.Add(joint.r1)))
-	dist := delta.Length()
+	dist := delta.Mag()
 	if dist != 0 {
 		joint.n = delta.Scale(1 / dist)
 	} else {

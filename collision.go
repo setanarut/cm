@@ -237,7 +237,7 @@ func (v0 MinkowskiPoint) ClosestPoints(v1 MinkowskiPoint) ClosestPoints {
 	// First try calculating the MSA from the minkowski difference edge.
 	// This gives us a nice, accurate MSA when the surfaces are close together.
 	delta := v1.ab.Sub(v0.ab)
-	n := delta.ReversePerp().Normalize()
+	n := delta.ReversePerp().Unit()
 	d := n.Dot(p)
 
 	if d <= 0 || (-1 < t && t < 1) {
@@ -246,7 +246,7 @@ func (v0 MinkowskiPoint) ClosestPoints(v1 MinkowskiPoint) ClosestPoints {
 	}
 
 	// Vertex/vertex collisions need special treatment since the MSA won't be shared with an axis of the minkowski difference.
-	d2 := p.Length()
+	d2 := p.Mag()
 	n2 := p.Scale(1 / (d2 + math.SmallestNonzeroFloat64))
 
 	return ClosestPoints{pa, pb, n2, d2, id}

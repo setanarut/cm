@@ -20,7 +20,7 @@ func NewGrooveJoint(a, b *Body, grooveA, grooveB, anchorB vec.Vec2) *Constraint 
 	joint := &GrooveJoint{
 		GrooveA: grooveA,
 		GrooveB: grooveB,
-		GrooveN: grooveB.Sub(grooveA).Normalize().Perp(),
+		GrooveN: grooveB.Sub(grooveA).Unit().Perp(),
 		AnchorB: anchorB,
 		jAcc:    vec.Vec2{},
 	}
@@ -57,7 +57,7 @@ func (joint *GrooveJoint) PreStep(dt float64) {
 	joint.k = k_tensor(a, b, joint.r1, joint.r2)
 
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	joint.bias = delta.Scale(-bias_coef(joint.errorBias, dt) / dt).ClampLenght(joint.maxBias)
+	joint.bias = delta.Scale(-bias_coef(joint.errorBias, dt) / dt).ClampMag(joint.maxBias)
 }
 
 func (joint *GrooveJoint) ApplyCachedImpulse(dt_coef float64) {
@@ -75,7 +75,7 @@ func (joint *GrooveJoint) grooveConstrain(j vec.Vec2, dt float64) vec.Vec2 {
 	} else {
 		jClamp = j.Project(n)
 	}
-	return jClamp.ClampLenght(joint.maxForce * dt)
+	return jClamp.ClampMag(joint.maxForce * dt)
 }
 
 func (joint *GrooveJoint) ApplyImpulse(dt float64) {
@@ -96,5 +96,5 @@ func (joint *GrooveJoint) ApplyImpulse(dt float64) {
 }
 
 func (joint *GrooveJoint) GetImpulse() float64 {
-	return joint.jAcc.Length()
+	return joint.jAcc.Mag()
 }

@@ -212,7 +212,7 @@ func (p *PolyShape) SetVerts(count int, verts []vec.Vec2) {
 	for i := 0; i < count; i++ {
 		a := verts[(i-1+count)%count]
 		b := verts[i]
-		n := b.Sub(a).ReversePerp().Normalize()
+		n := b.Sub(a).ReversePerp().Unit()
 
 		p.planes[i+count].v0 = b
 		p.planes[i+count].n = n
@@ -330,7 +330,7 @@ func QHullPartition(verts []vec.Vec2, count int, a, b vec.Vec2, tol float64) int
 	pivot := 0
 
 	delta := b.Sub(a)
-	valueTol := tol * delta.Length()
+	valueTol := tol * delta.Mag()
 
 	head := 0
 	for tail := count - 1; head <= tail; {

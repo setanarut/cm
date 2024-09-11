@@ -248,7 +248,7 @@ func (shape *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQue
 	if nearest.Distance <= radius {
 		info.Shape = shape
 		info.Alpha = 0
-		info.Normal = a.Sub(nearest.Point).Normalize()
+		info.Normal = a.Sub(nearest.Point).Unit()
 	} else {
 		shape.Class.SegmentQuery(a, b, radius, info)
 	}

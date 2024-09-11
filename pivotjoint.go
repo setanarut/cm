@@ -54,7 +54,7 @@ func (joint *PivotJoint) PreStep(dt float64) {
 
 	// calculate bias velocity
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	joint.bias = delta.Scale(-bias_coef(joint.Constraint.errorBias, dt) / dt).ClampLenght(joint.Constraint.maxBias)
+	joint.bias = delta.Scale(-bias_coef(joint.Constraint.errorBias, dt) / dt).ClampMag(joint.Constraint.maxBias)
 }
 
 func (joint *PivotJoint) ApplyCachedImpulse(dt_coef float64) {
@@ -74,12 +74,12 @@ func (joint *PivotJoint) ApplyImpulse(dt float64) {
 	// compute normal impulse
 	j := joint.k.Transform(joint.bias.Sub(vr))
 	jOld := joint.jAcc
-	joint.jAcc = joint.jAcc.Add(j).ClampLenght(joint.Constraint.maxForce * dt)
+	joint.jAcc = joint.jAcc.Add(j).ClampMag(joint.Constraint.maxForce * dt)
 	j = joint.jAcc.Sub(jOld)
 
 	apply_impulses(a, b, joint.r1, joint.r2, j)
 }
 
 func (joint *PivotJoint) GetImpulse() float64 {
-	return joint.jAcc.Length()
+	return joint.jAcc.Mag()
 }

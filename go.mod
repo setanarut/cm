@@ -8,6 +8,4 @@ retract (
 	v1.0.1 // fatal mistake
 )
 
-require github.com/setanarut/vec v1.0.0
-
-require golang.org/x/image v0.20.0 // indirect
+require github.com/setanarut/vec v1.1.0

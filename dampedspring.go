@@ -46,7 +46,7 @@ func (spring *DampedSpring) PreStep(dt float64) {
 	spring.r2 = b.transform.Vect(spring.AnchorB.Sub(b.cog))
 
 	delta := b.position.Add(spring.r2).Sub(a.position.Add(spring.r1))
-	dist := delta.Length()
+	dist := delta.Mag()
 	if dist != 0 {
 		spring.n = delta.Scale(1.0 / dist)
 	} else {

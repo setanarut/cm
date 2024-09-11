@@ -63,7 +63,7 @@ func (seg *Segment) TransformB() vec.Vec2 {
 func (seg *Segment) SetEndpoints(a, b vec.Vec2) {
 	seg.a = a
 	seg.b = b
-	seg.n = b.Sub(a).Normalize().Perp()
+	seg.n = b.Sub(a).Unit().Perp()
 
 	mass := seg.massInfo.m
 	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
@@ -88,7 +88,7 @@ func (seg *Segment) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	closest := closestPointOnSegment(p, seg.transformA, seg.transformB)
 
 	delta := p.Sub(closest)
-	d := delta.Length()
+	d := delta.Mag()
 	r := seg.radius
 	g := delta.Scale(1 / d)
 
@@ -162,7 +162,7 @@ func NewSegment(body *Body, a, b vec.Vec2, r float64) *Shape {
 	segment := &Segment{
 		a: a,
 		b: b,
-		n: b.Sub(a).Normalize().ReversePerp(),
+		n: b.Sub(a).Unit().ReversePerp(),
 
 		radius:   r,
 		aTangent: vec.Vec2{},

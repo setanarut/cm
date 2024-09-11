@@ -134,7 +134,7 @@ func DrawConstraint(constraint *cm.Constraint, options Drawer) {
 		delta := b.Sub(a)
 		cos := delta.X
 		sin := delta.Y
-		s := 1.0 / delta.Length()
+		s := 1.0 / delta.Mag()
 
 		r1 := vec.Vec2{cos, -sin * s}
 		r2 := vec.Vec2{sin, cos * s}
