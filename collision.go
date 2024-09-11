@@ -225,13 +225,13 @@ func NewMinkowskiPoint(a, b SupportPoint) MinkowskiPoint {
 // ClosestPoints calculates the closest points on two shapes given the closest edge on their minkowski difference to (0, 0)
 func (v0 MinkowskiPoint) ClosestPoints(v1 MinkowskiPoint) ClosestPoints {
 	// Find the closest p(t) on the minkowski difference to (0, 0)
-	t := v0.ab.ClosestT(v1.ab)
-	p := v0.ab.LerpT(v1.ab, t)
+	t := closestT(v0.ab, v1.ab)
+	p := lerpT(v0.ab, v1.ab, t)
 
 	// Interpolate the original support points using the same 't' value as above.
 	// This gives you the closest surface points in absolute coordinates. NEAT!
-	pa := v0.a.LerpT(v1.a, t)
-	pb := v0.b.LerpT(v1.b, t)
+	pa := lerpT(v0.a, v1.a, t)
+	pb := lerpT(v0.b, v1.b, t)
 	id := (v0.collisionId&0xFFFF)<<16 | (v1.collisionId & 0xFFFF)
 
 	// First try calculating the MSA from the minkowski difference edge.
@@ -384,30 +384,30 @@ func GJKRecurse(ctx SupportContext, v0, v1 MinkowskiPoint, iteration int) Closes
 		return v0.ClosestPoints(v1)
 	}
 
-	if v1.ab.PointGreater(v0.ab, vec.Vec2{}) {
+	if pointGreater(v1.ab, v0.ab, vec.Vec2{}) {
 		// Origin is behind axis. Flip and try again.
 		return GJKRecurse(ctx, v1, v0, iteration)
 	}
-	t := v0.ab.ClosestT(v1.ab)
+	t := closestT(v0.ab, v1.ab)
 	var n vec.Vec2
 	if -1.0 < t && t < 1.0 {
 		n = v1.ab.Sub(v0.ab).Perp()
 	} else {
-		n = v0.ab.LerpT(v1.ab, t).Neg()
+		n = lerpT(v0.ab, v1.ab, t).Neg()
 	}
 	p := ctx.Support(n)
 
 	// Draw debug
 
-	if p.ab.PointGreater(v0.ab, vec.Vec2{}) && v1.ab.PointGreater(p.ab, vec.Vec2{}) {
+	if pointGreater(p.ab, v0.ab, vec.Vec2{}) && pointGreater(v1.ab, p.ab, vec.Vec2{}) {
 		return EPA(ctx, v0, p, v1)
 	}
 
-	if v0.ab.CheckAxis(v1.ab, p.ab, n) {
+	if checkAxis(v0.ab, v1.ab, p.ab, n) {
 		return v0.ClosestPoints(v1)
 	}
 
-	if v0.ab.ClosestDist(p.ab) < p.ab.ClosestDist(v1.ab) {
+	if closestDist(v0.ab, p.ab) < closestDist(p.ab, v1.ab) {
 		return GJKRecurse(ctx, v0, p, iteration+1)
 	}
 
@@ -434,7 +434,7 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 	i := count - 1
 	j := 0
 	for j < count {
-		d := hull[i].ab.ClosestDist(hull[j].ab)
+		d := closestDist(hull[i].ab, hull[j].ab)
 		if d < minDist {
 			minDist = d
 			mini = i
@@ -450,7 +450,7 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 
 	duplicate := p.collisionId == v0.collisionId || p.collisionId == v1.collisionId
 
-	if !duplicate && v0.ab.PointGreater(v1.ab, p.ab) && iteration < maxEpaIterations {
+	if !duplicate && pointGreater(v0.ab, v1.ab, p.ab) && iteration < maxEpaIterations {
 		// Rebuild the convex hull by inserting p.
 		hull2 := make([]MinkowskiPoint, count+1)
 		count2 := 1
@@ -468,7 +468,7 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 				h2 = p.ab
 			}
 
-			if h0.PointGreater(h2, h1) {
+			if pointGreater(h0, h2, h1) {
 				hull2[count2] = hull[index]
 				count2++
 			}

@@ -85,7 +85,7 @@ func (seg *Segment) B() vec.Vec2 {
 }
 
 func (seg *Segment) PointQuery(p vec.Vec2, info *PointQueryInfo) {
-	closest := p.ClosestPointOnSegment(seg.transformA, seg.transformB)
+	closest := closestPointOnSegment(p, seg.transformA, seg.transformB)
 
 	delta := p.Sub(closest)
 	d := delta.Length()

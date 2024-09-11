@@ -37,7 +37,7 @@ func NewTransformScale(scaleX, scaleY float64) Transform {
 }
 
 func NewTransformRotate(radians float64) Transform {
-	rot := ForAngle(radians)
+	rot := vec.ForAngle(radians)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, 0,
 		rot.Y, rot.X, 0,
@@ -45,7 +45,7 @@ func NewTransformRotate(radians float64) Transform {
 }
 
 func NewTransformRigid(translate vec.Vec2, radians float64) Transform {
-	rot := ForAngle(radians)
+	rot := vec.ForAngle(radians)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, translate.X,
 		rot.Y, rot.X, translate.Y,

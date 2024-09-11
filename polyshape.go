@@ -84,7 +84,7 @@ func (poly *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 			outside = planes[i].n.Dot(p.Sub(v1)) > 0
 		}
 
-		closest := p.ClosestPointOnSegment(v0, v1)
+		closest := closestPointOnSegment(p, v0, v1)
 
 		dist := p.Distance(closest)
 		if dist < minDist {

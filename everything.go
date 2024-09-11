@@ -353,11 +353,6 @@ func clamp01(f float64) float64 {
 	return math.Max(0, math.Min(f, 1))
 }
 
-// ForAngle returns the unit length vector for the given angle (in radians).
-func ForAngle(a float64) vec.Vec2 {
-	return vec.Vec2{math.Cos(a), math.Sin(a)}
-}
-
 func k_scalar(a, b *Body, r1, r2, n vec.Vec2) float64 {
 	return k_scalar_body(a, r1, n) + k_scalar_body(b, r2, n)
 }
@@ -420,4 +415,33 @@ func clamp(f, min, max float64) float64 {
 	} else {
 		return math.Min(min, max)
 	}
+}
+
+// collision related
+func lerpT(a, b vec.Vec2, t float64) vec.Vec2 {
+	ht := 0.5 * t
+	return a.Scale(0.5 - ht).Add(b.Scale(0.5 + ht))
+}
+
+func closestDist(v0, v1 vec.Vec2) float64 {
+	return lerpT(v0, v1, closestT(v0, v1)).LengthSq()
+}
+
+func closestT(a, b vec.Vec2) float64 {
+	delta := b.Sub(a)
+	return -clamp(delta.Dot(a.Add(b))/delta.LengthSq(), -1.0, 1.0)
+}
+
+func closestPointOnSegment(v, a, b vec.Vec2) vec.Vec2 {
+	delta := a.Sub(b)
+	t := clamp01(delta.Dot(v.Sub(b)) / delta.LengthSq())
+	return b.Add(delta.Scale(t))
+}
+
+func checkAxis(v, v1, p, n vec.Vec2) bool {
+	return p.Dot(n) <= math.Max(v.Dot(n), v1.Dot(n))
+}
+
+func pointGreater(v, b, c vec.Vec2) bool {
+	return (b.Y-v.Y)*(v.X+b.X-2*c.X) > (b.X-v.X)*(v.Y+b.Y-2*c.Y)
 }
