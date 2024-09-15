@@ -33,7 +33,7 @@ func NewSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *
 		stamp:         1,
 		pooledHandles: sync.Pool{New: func() interface{} { return &Handle{} }},
 	}
-	for i := 0; i < POOLED_BUFFER_SIZE; i++ {
+	for i := 0; i < PooledBufferSize; i++ {
 		spaceHash.pooledHandles.Put(&Handle{})
 	}
 	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
@@ -279,13 +279,13 @@ func (hash *SpaceHash) SegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float
 	if dx != 0 {
 		dtdx = 1.0 / dx
 	} else {
-		dtdx = INFINITY
+		dtdx = Infinity
 	}
 
 	if dy != 0 {
 		dtdy = 1.0 / dy
 	} else {
-		dtdy = INFINITY
+		dtdy = Infinity
 	}
 
 	var nextH, nextV float64
@@ -394,7 +394,7 @@ func (hash *SpaceHash) getEmptyBin() *SpaceHashBin {
 	}
 
 	// pool is exhausted, make more
-	for i := 0; i < POOLED_BUFFER_SIZE; i++ {
+	for i := 0; i < PooledBufferSize; i++ {
 		hash.recycleBin(&SpaceHashBin{})
 	}
 	return &SpaceHashBin{}

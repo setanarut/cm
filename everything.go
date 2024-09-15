@@ -8,40 +8,38 @@ import (
 )
 
 const (
-	INFINITY      = math.MaxFloat64
-	MAGIC_EPSILON = 1e-5
-
-	RadianConst = math.Pi / 180
-	DegreeConst = 180 / math.Pi
-
-	POOLED_BUFFER_SIZE = 1024
+	Infinity         = math.MaxFloat64
+	MagicEpsilon     = 1e-5
+	RadianConst      = math.Pi / 180
+	DegreeConst      = 180 / math.Pi
+	PooledBufferSize = 1024
 )
 
 // Arbiter states
 const (
 	// Arbiter is active and its the first collision.
-	CP_ARBITER_STATE_FIRST_COLLISION = iota
+	ArbiterStateFirstCollision = iota
 	// Arbiter is active and its not the first collision.
-	CP_ARBITER_STATE_NORMAL
+	ArbiterStateNormal
 	// Collision has been explicitly ignored.
 	// Either by returning false from a begin collision handler or calling cmArbiterIgnore().
-	CP_ARBITER_STATE_IGNORE
+	ArbiterStateIgnore
 	// Collison is no longer active. A space will cache an arbiter for up to cmSpace.collisionPersistence more steps.
-	CP_ARBITER_STATE_CACHED
+	ArbiterStateCached
 	// Collison arbiter is invalid because one of the shapes was removed.
-	CP_ARBITER_STATE_INVALIDATED
+	ArbiterStateInvalidated
 )
 
 var (
-	NO_GROUP       uint = 0        // Value for group signifying that a shape is in no group.
-	ALL_CATEGORIES uint = ^uint(0) // Value for Shape layers signifying that a shape is in every layer.
+	NoGroup       uint = 0        // Value for group signifying that a shape is in no group.
+	AllCategories uint = ^uint(0) // Value for Shape layers signifying that a shape is in every layer.
 )
 
-// SHAPE_FILTER_ALL is s collision filter value for a shape that will collide with anything except SHAPE_FILTER_NONE.
-var SHAPE_FILTER_ALL = ShapeFilter{NO_GROUP, ALL_CATEGORIES, ALL_CATEGORIES}
+// ShapeFilterAll is s collision filter value for a shape that will collide with anything except ShapeFilterNone.
+var ShapeFilterAll = ShapeFilter{NoGroup, AllCategories, AllCategories}
 
-// SHAPE_FILTER_NONE is a collision filter value for a shape that does not collide with anything.
-var SHAPE_FILTER_NONE = ShapeFilter{NO_GROUP, ^ALL_CATEGORIES, ^ALL_CATEGORIES}
+// ShapeFilterNone is a collision filter value for a shape that does not collide with anything.
+var ShapeFilterNone = ShapeFilter{NoGroup, ^AllCategories, ^AllCategories}
 
 // CollisionBeginFunc is collision begin event function callback type.
 //
@@ -327,7 +325,7 @@ func DebugInfo(space *Space) string {
 
 	var ke float64
 	for _, body := range space.DynamicBodies {
-		if body.mass == INFINITY || body.moi == INFINITY {
+		if body.mass == Infinity || body.moi == Infinity {
 			continue
 		}
 		ke += body.mass*body.vel.Dot(body.vel) + body.moi*body.w*body.w

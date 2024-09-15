@@ -101,7 +101,7 @@ func (seg *Segment) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	info.Distance = d - r
 
 	// Use the segment's normal if the distance is very small.
-	if d > MAGIC_EPSILON {
+	if d > MagicEpsilon {
 		info.Gradient = g
 	} else {
 		info.Gradient = seg.n

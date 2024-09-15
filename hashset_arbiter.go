@@ -9,14 +9,14 @@ func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 	a := arb.body_a
 	b := arb.body_b
 
-	if (a.GetType() == BODY_STATIC || a.IsSleeping()) && (b.GetType() == BODY_STATIC || b.IsSleeping()) {
+	if (a.GetType() == Static || a.IsSleeping()) && (b.GetType() == Static || b.IsSleeping()) {
 		return true
 	}
 
 	ticks := space.stamp - arb.stamp
 
-	if ticks >= 1 && arb.state != CP_ARBITER_STATE_CACHED {
-		arb.state = CP_ARBITER_STATE_CACHED
+	if ticks >= 1 && arb.state != ArbiterStateCached {
+		arb.state = ArbiterStateCached
 		handler := arb.handler
 		handler.SeparateFunc(arb, space, handler.UserData)
 	}
@@ -36,9 +36,9 @@ func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) 
 	if (body == arb.body_a && (shape == arb.a || shape == nil)) ||
 		(body == arb.body_b && (shape == arb.b || shape == nil)) {
 		// Call separate when removing shapes.
-		if shape != nil && arb.state != CP_ARBITER_STATE_CACHED {
+		if shape != nil && arb.state != ArbiterStateCached {
 			// Invalidate the arbiter since one of the shapes was removed
-			arb.state = CP_ARBITER_STATE_INVALIDATED
+			arb.state = ArbiterStateInvalidated
 
 			handler := arb.handler
 			handler.SeparateFunc(arb, space, handler.UserData)

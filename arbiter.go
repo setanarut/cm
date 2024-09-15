@@ -7,7 +7,7 @@ import (
 	"github.com/setanarut/vec"
 )
 
-var WILDCARD_COLLISION_TYPE CollisionType = ^CollisionType(0)
+var WildcardCollisionType CollisionType = ^CollisionType(0)
 
 // Arbiter struct tracks pairs of colliding shapes.
 //
@@ -62,7 +62,7 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 	arbiter.thread_b.prev = nil
 
 	arbiter.stamp = 0
-	arbiter.state = CP_ARBITER_STATE_FIRST_COLLISION
+	arbiter.state = ArbiterStateFirstCollision
 
 	arbiter.UserData = nil
 	return arbiter
@@ -167,7 +167,7 @@ func (arbiter *Arbiter) ApplyImpulse() {
 }
 
 func (arbiter *Arbiter) IsFirstContact() bool {
-	return arbiter.state == CP_ARBITER_STATE_FIRST_COLLISION
+	return arbiter.state == ArbiterStateFirstCollision
 }
 
 func (arb *Arbiter) PreStep(dt, slop, bias float64) {
@@ -244,23 +244,23 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	arb.handler = handler
 
 	// Check if the types match, but don't swap for a default handler which use the wildcard for type A.
-	swapped := typeA != handler.TypeA && handler.TypeA != WILDCARD_COLLISION_TYPE
+	swapped := typeA != handler.TypeA && handler.TypeA != WildcardCollisionType
 	arb.swapped = swapped
 
 	if handler != space.defaultHandler || space.usesWildcards {
 		// The order of the main handler swaps the wildcard handlers too. Uffda.
 		if swapped {
-			arb.handlerA = space.LookupHandler(typeB, WILDCARD_COLLISION_TYPE, &CollisionHandlerDoNothing)
-			arb.handlerB = space.LookupHandler(typeA, WILDCARD_COLLISION_TYPE, &CollisionHandlerDoNothing)
+			arb.handlerA = space.LookupHandler(typeB, WildcardCollisionType, &CollisionHandlerDoNothing)
+			arb.handlerB = space.LookupHandler(typeA, WildcardCollisionType, &CollisionHandlerDoNothing)
 		} else {
-			arb.handlerA = space.LookupHandler(typeA, WILDCARD_COLLISION_TYPE, &CollisionHandlerDoNothing)
-			arb.handlerB = space.LookupHandler(typeB, WILDCARD_COLLISION_TYPE, &CollisionHandlerDoNothing)
+			arb.handlerA = space.LookupHandler(typeA, WildcardCollisionType, &CollisionHandlerDoNothing)
+			arb.handlerB = space.LookupHandler(typeB, WildcardCollisionType, &CollisionHandlerDoNothing)
 		}
 	}
 
 	// mark it as new if it's been cached
-	if arb.state == CP_ARBITER_STATE_CACHED {
-		arb.state = CP_ARBITER_STATE_FIRST_COLLISION
+	if arb.state == ArbiterStateCached {
+		arb.state = ArbiterStateFirstCollision
 	}
 }
 
@@ -268,7 +268,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 //
 // Pre-solve and post-solve callbacks will not be called, but the separate callback will be called.
 func (arb *Arbiter) Ignore() bool {
-	arb.state = CP_ARBITER_STATE_IGNORE
+	arb.state = ArbiterStateIgnore
 	return false
 }
 
@@ -363,8 +363,8 @@ func relative_velocity(a, b *Body, r1, r2 vec.Vec2) vec.Vec2 {
 }
 
 var CollisionHandlerDoNothing = CollisionHandler{
-	WILDCARD_COLLISION_TYPE,
-	WILDCARD_COLLISION_TYPE,
+	WildcardCollisionType,
+	WildcardCollisionType,
 	AlwaysCollide,
 	AlwaysCollide,
 	DoNothing,
@@ -373,8 +373,8 @@ var CollisionHandlerDoNothing = CollisionHandler{
 }
 
 var CollisionHandlerDefault = CollisionHandler{
-	WILDCARD_COLLISION_TYPE,
-	WILDCARD_COLLISION_TYPE,
+	WildcardCollisionType,
+	WildcardCollisionType,
 	DefaultBegin,
 	DefaultPreSolve,
 	DefaultPostSolve,
@@ -427,7 +427,7 @@ func (arb *Arbiter) TotalImpulse() vec.Vec2 {
 }
 
 func (arb *Arbiter) Count() int {
-	if arb.state < CP_ARBITER_STATE_CACHED {
+	if arb.state < ArbiterStateCached {
 		return int(arb.count)
 	}
 	return 0

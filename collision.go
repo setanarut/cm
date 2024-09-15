@@ -46,7 +46,7 @@ func CircleSupportPoint(shape *Shape, _ vec.Vec2) SupportPoint {
 }
 
 func PolySupportPointIndex(count int, planes []SplittingPlane, n vec.Vec2) int {
-	max := -INFINITY
+	max := -Infinity
 	var index int
 	for i := 0; i < count; i++ {
 		v := planes[i].v0
@@ -427,7 +427,7 @@ func EPA(ctx SupportContext, v0, v1, v2 MinkowskiPoint) ClosestPoints {
 // Each recursion adds a point to the convex hull until it's known that we have the closest point on the surface.
 func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration int) ClosestPoints {
 	mini := 0
-	minDist := INFINITY
+	minDist := Infinity
 
 	// TODO: precalculate this when building the hull and save a step.
 	// Find the closest segment hull[i] and hull[i + 1] to (0, 0)

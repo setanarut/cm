@@ -62,7 +62,7 @@ func (circle *Circle) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	info.Point = circle.transformC.Add(delta.Scale(r / d))
 	info.Distance = d - r
 
-	if d > MAGIC_EPSILON {
+	if d > MagicEpsilon {
 		info.Gradient = delta.Scale(1 / d)
 	} else {
 		info.Gradient = vec.Vec2{0, 1}

@@ -10,9 +10,9 @@ import (
 
 // Body types
 const (
-	BODY_DYNAMIC = iota
-	BODY_KINEMATIC
-	BODY_STATIC
+	Dynamic = iota
+	Kinematic
+	Static
 )
 
 var bodyCur int = 0
@@ -27,11 +27,11 @@ type Body struct {
 	// UserData is an object that this constraint is associated with.
 	//
 	// You can use this get a reference to your game object or controller object from within callbacks.
-	UserData interface{}
+	UserData any
 
-	id            int              // Body id
-	velocity_func BodyVelocityFunc // Integration function
-	position_func BodyPositionFunc // Integration function
+	id           int              // Body id
+	velocityFunc BodyVelocityFunc // Integration function
+	positionFunc BodyPositionFunc // Integration function
 
 	mass  float64 // Mass
 	m_inv float64 // Mass inverse
@@ -87,15 +87,15 @@ func (b *Body) FirstShape() *Shape {
 // Guessing the moment of inertia is usually a bad idea. Use the moment estimation functions MomentFor*().
 func NewBody(mass, moment float64) *Body {
 	body := &Body{
-		id:            bodyCur,
-		cog:           vec.Vec2{},
-		position:      vec.Vec2{},
-		vel:           vec.Vec2{},
-		force:         vec.Vec2{},
-		v_bias:        vec.Vec2{},
-		transform:     NewTransformIdentity(),
-		velocity_func: BodyUpdateVelocity,
-		position_func: BodyUpdatePosition,
+		id:           bodyCur,
+		cog:          vec.Vec2{},
+		position:     vec.Vec2{},
+		vel:          vec.Vec2{},
+		force:        vec.Vec2{},
+		v_bias:       vec.Vec2{},
+		transform:    NewTransformIdentity(),
+		velocityFunc: BodyUpdateVelocity,
+		positionFunc: BodyUpdatePosition,
 	}
 	bodyCur++
 
@@ -109,14 +109,14 @@ func NewBody(mass, moment float64) *Body {
 // NewStaticBody allocates and initializes a Body, and set it as a static body.
 func NewStaticBody() *Body {
 	body := NewBody(0, 0)
-	body.SetType(BODY_STATIC)
+	body.SetType(Static)
 	return body
 }
 
 // NewKinematicBody allocates and initializes a Body, and set it as a kinematic body.
 func NewKinematicBody() *Body {
 	body := NewBody(0, 0)
-	body.SetType(BODY_KINEMATIC)
+	body.SetType(Kinematic)
 	return body
 }
 
@@ -163,22 +163,22 @@ func (body *Body) SetType(newType int) {
 		return
 	}
 
-	if newType == BODY_STATIC {
-		body.sleepingIdleTime = INFINITY
+	if newType == Static {
+		body.sleepingIdleTime = Infinity
 	} else {
 		body.sleepingIdleTime = 0
 	}
 
-	if newType == BODY_DYNAMIC {
+	if newType == Dynamic {
 		body.mass = 0
 		body.moi = 0
-		body.m_inv = INFINITY
-		body.moi_inv = INFINITY
+		body.m_inv = Infinity
+		body.moi_inv = Infinity
 
 		body.AccumulateMassFromShapes()
 	} else {
-		body.mass = INFINITY
-		body.moi = INFINITY
+		body.mass = Infinity
+		body.moi = Infinity
 		body.m_inv = 0
 		body.moi_inv = 0
 
@@ -194,11 +194,11 @@ func (body *Body) SetType(newType int) {
 		log.Fatalln("Space is locked")
 	}
 
-	if oldType != BODY_STATIC {
+	if oldType != Static {
 		body.Activate()
 	}
 
-	if oldType == BODY_STATIC {
+	if oldType == Static {
 		for i, b := range body.space.StaticBodies {
 			if b == body {
 				body.space.StaticBodies = append(body.space.StaticBodies[:i], body.space.StaticBodies[i+1:]...)
@@ -206,7 +206,7 @@ func (body *Body) SetType(newType int) {
 			}
 		}
 		body.space.DynamicBodies = append(body.space.DynamicBodies, body)
-	} else if newType == BODY_STATIC {
+	} else if newType == Static {
 		for i, b := range body.space.DynamicBodies {
 			if b == body {
 				body.space.DynamicBodies = append(body.space.DynamicBodies[:i], body.space.DynamicBodies[i+1:]...)
@@ -217,13 +217,13 @@ func (body *Body) SetType(newType int) {
 	}
 
 	var fromIndex, toIndex *SpatialIndex
-	if oldType == BODY_STATIC {
+	if oldType == Static {
 		fromIndex = body.space.staticShapes
 	} else {
 		fromIndex = body.space.dynamicShapes
 	}
 
-	if newType == BODY_STATIC {
+	if newType == Static {
 		toIndex = body.space.staticShapes
 	} else {
 		toIndex = body.space.dynamicShapes
@@ -239,18 +239,18 @@ func (body *Body) SetType(newType int) {
 
 // GetType returns the type of the body.
 func (body *Body) GetType() int {
-	if body.sleepingIdleTime == INFINITY {
-		return BODY_STATIC
+	if body.sleepingIdleTime == Infinity {
+		return Static
 	}
-	if body.mass == INFINITY {
-		return BODY_KINEMATIC
+	if body.mass == Infinity {
+		return Kinematic
 	}
-	return BODY_DYNAMIC
+	return Dynamic
 }
 
 // AccumulateMassFromShapes should *only* be called when shapes with mass info are modified, added or removed.
 func (body *Body) AccumulateMassFromShapes() {
-	if body == nil || body.GetType() != BODY_DYNAMIC {
+	if body == nil || body.GetType() != Dynamic {
 		return
 	}
 
@@ -329,7 +329,7 @@ func (body *Body) SetVelocityVector(v vec.Vec2) {
 
 // UpdateVelocity is the default velocity integration function.
 func (body *Body) UpdateVelocity(gravity vec.Vec2, damping, dt float64) {
-	if body.GetType() == BODY_KINEMATIC {
+	if body.GetType() == Kinematic {
 		return
 	}
 	// if body.mass < 0 && body.moi < 0 {
@@ -394,7 +394,7 @@ func (body *Body) Transform() Transform {
 
 // Activate wakes up a sleeping or idle body.
 func (body *Body) Activate() {
-	if !(body != nil && body.GetType() == BODY_DYNAMIC) {
+	if !(body != nil && body.GetType() == Dynamic) {
 		return
 	}
 
@@ -437,7 +437,7 @@ func (body *Body) Activate() {
 		} else {
 			other = arbiter.body_a
 		}
-		if other.GetType() != BODY_STATIC {
+		if other.GetType() != Static {
 			other.sleepingIdleTime = 0
 		}
 	}
@@ -588,19 +588,19 @@ func (body *Body) RemoveShape(shape *Shape) {
 			break
 		}
 	}
-	if body.GetType() == BODY_DYNAMIC && shape.massInfo.m > 0 {
+	if body.GetType() == Dynamic && shape.massInfo.m > 0 {
 		body.AccumulateMassFromShapes()
 	}
 }
 
 // SetVelocityUpdateFunc sets the callback used to update a body's velocity.
 func (body *Body) SetVelocityUpdateFunc(f BodyVelocityFunc) {
-	body.velocity_func = f
+	body.velocityFunc = f
 }
 
 // SetPositionUpdateFunc sets the callback used to update a body's position.
 func (body *Body) SetPositionUpdateFunc(f BodyPositionFunc) {
-	body.position_func = f
+	body.positionFunc = f
 }
 
 // EachArbiter calls f once for each arbiter that is currently active on the body.
@@ -648,7 +648,7 @@ func filterConstraints(node *Constraint, body *Body, filter *Constraint) *Constr
 
 // BodyUpdateVelocity is default velocity integration function.
 func BodyUpdateVelocity(body *Body, gravity vec.Vec2, damping, dt float64) {
-	if body.GetType() == BODY_KINEMATIC {
+	if body.GetType() == Kinematic {
 		return
 	}
 

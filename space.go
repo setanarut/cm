@@ -118,12 +118,12 @@ func NewSpace() *Space {
 		PostStepCallbacks: []*PostStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
-	for i := 0; i < POOLED_BUFFER_SIZE; i++ {
+	for i := 0; i < PooledBufferSize; i++ {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
 	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
 	space.dynamicShapes.class.(*BBTree).velocityFunc = BBTreeVelocityFunc(ShapeVelocityFunc)
-	space.StaticBody.SetType(BODY_STATIC)
+	space.StaticBody.SetType(Static)
 	return space
 }
 
@@ -200,7 +200,7 @@ func (space *Space) Activate(body *Body) {
 		// You only want to restore the arbiter once, so bodyA is arbitrarily chosen to own the arbiter.
 		// The edge case is when static bodies are involved as the static bodies never actually sleep.
 		// If the static body is bodyB then all is good. If the static body is bodyA, that can easily be checked.
-		if body == bodyA || bodyA.GetType() == BODY_STATIC {
+		if body == bodyA || bodyA.GetType() == Static {
 			numContacts := arbiter.count
 			contacts := arbiter.contacts
 
@@ -225,7 +225,7 @@ func (space *Space) Activate(body *Body) {
 	}
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
-		if body == constraint.bodyA || constraint.bodyA.GetType() == BODY_STATIC {
+		if body == constraint.bodyA || constraint.bodyA.GetType() == Static {
 			space.constraints = append(space.constraints, constraint)
 		}
 	}
@@ -249,7 +249,7 @@ func (space *Space) Deactivate(body *Body) {
 
 	for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
 		bodyA := arb.body_a
-		if body == bodyA || bodyA.GetType() == BODY_STATIC {
+		if body == bodyA || bodyA.GetType() == Static {
 			space.UncacheArbiter(arb)
 			// Save contact values to a new block of memory so they won't time out
 			contacts := make([]Contact, arb.count)
@@ -261,7 +261,7 @@ func (space *Space) Deactivate(body *Body) {
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
 		bodyA := constraint.bodyA
-		if body == bodyA || bodyA.GetType() == BODY_STATIC {
+		if body == bodyA || bodyA.GetType() == Static {
 			for i, c := range space.constraints {
 				if c == constraint {
 					space.constraints = append(space.constraints[0:i], space.constraints[i+1:]...)
@@ -287,7 +287,7 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 	// 	log.Fatalln("This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
 	// }
 
-	isStatic := body.GetType() == BODY_STATIC
+	isStatic := body.GetType() == Static
 	if !isStatic {
 		body.Activate()
 	}
@@ -319,7 +319,7 @@ func (space *Space) RemoveShape(shape *Shape) {
 	// 	log.Fatalln("space.locked is not zero")
 	// }
 
-	isStatic := body.GetType() == BODY_STATIC
+	isStatic := body.GetType() == Static
 	if isStatic {
 		body.ActivateStatic(shape)
 	} else {
@@ -346,7 +346,7 @@ func (space *Space) AddBody(body *Body) *Body {
 	// if body.space != nil {
 	// 	log.Fatalln("Body already added to another space")
 	// }
-	if body.GetType() == BODY_STATIC {
+	if body.GetType() == Static {
 		space.StaticBodies = append(space.StaticBodies, body)
 	} else {
 		space.DynamicBodies = append(space.DynamicBodies, body)
@@ -376,7 +376,7 @@ func (space *Space) RemoveBody(body *Body) {
 	// 	log.Fatalln("Space is locked")
 	// }
 	body.Activate()
-	if body.GetType() == BODY_STATIC {
+	if body.GetType() == Static {
 		for i, b := range space.StaticBodies {
 			if b == body {
 				space.StaticBodies = append(space.StaticBodies[:i], space.StaticBodies[i+1:]...)
@@ -508,7 +508,7 @@ func (space *Space) ContactBufferGetArray() []Contact {
 }
 
 func (space *Space) ProcessComponents(dt float64) {
-	sleep := space.SleepTimeThreshold != INFINITY
+	sleep := space.SleepTimeThreshold != Infinity
 
 	// calculate the kinetic energy of all the bodies
 	if sleep {
@@ -522,7 +522,7 @@ func (space *Space) ProcessComponents(dt float64) {
 
 		// update idling and reset component nodes
 		for _, body := range space.DynamicBodies {
-			if body.GetType() != BODY_DYNAMIC {
+			if body.GetType() != Dynamic {
 				continue
 			}
 
@@ -545,10 +545,10 @@ func (space *Space) ProcessComponents(dt float64) {
 		b := arb.body_b
 
 		if sleep {
-			if b.GetType() == BODY_KINEMATIC || a.IsSleeping() {
+			if b.GetType() == Kinematic || a.IsSleeping() {
 				a.Activate()
 			}
-			if a.GetType() == BODY_KINEMATIC || b.IsSleeping() {
+			if a.GetType() == Kinematic || b.IsSleeping() {
 				b.Activate()
 			}
 		}
@@ -560,10 +560,10 @@ func (space *Space) ProcessComponents(dt float64) {
 	if sleep {
 		// Bodies should be held active if connected by a joint to a kinematic.
 		for _, constraint := range space.constraints {
-			if constraint.bodyB.GetType() == BODY_KINEMATIC {
+			if constraint.bodyB.GetType() == Kinematic {
 				constraint.bodyA.Activate()
 			}
-			if constraint.bodyA.GetType() == BODY_KINEMATIC {
+			if constraint.bodyA.GetType() == Kinematic {
 				constraint.bodyB.Activate()
 			}
 		}
@@ -611,7 +611,7 @@ func (space *Space) Step(dt float64) {
 
 	// reset and empty the arbiter lists
 	for _, arb := range space.Arbiters {
-		arb.state = CP_ARBITER_STATE_NORMAL
+		arb.state = ArbiterStateNormal
 
 		// If both bodies are awake, unthread the arbiter from the contact graph.
 		if !arb.body_a.IsSleeping() && !arb.body_b.IsSleeping() {
@@ -624,7 +624,7 @@ func (space *Space) Step(dt float64) {
 	{
 		// Integrate positions
 		for _, body := range space.DynamicBodies {
-			body.position_func(body, dt)
+			body.positionFunc(body, dt)
 		}
 
 		// Find colliding pairs.
@@ -663,7 +663,7 @@ func (space *Space) Step(dt float64) {
 		damping := math.Pow(space.Damping, dt)
 		gravity := space.Gravity
 		for _, body := range space.DynamicBodies {
-			body.velocity_func(body, gravity, damping, dt)
+			body.velocityFunc(body, gravity, damping, dt)
 		}
 
 		// Apply cached impulses
@@ -806,8 +806,8 @@ func (space *Space) NewCollisionHandler(collisionTypeA, collisionTypeB Collision
 func (space *Space) NewWildcardCollisionHandler(collisionType CollisionType) *CollisionHandler {
 	space.UseWildcardDefaultHandler()
 
-	hash := HashPair(HashValue(collisionType), HashValue(WILDCARD_COLLISION_TYPE))
-	handler := &CollisionHandler{collisionType, WILDCARD_COLLISION_TYPE, AlwaysCollide, AlwaysCollide, DoNothing, DoNothing, nil}
+	hash := HashPair(HashValue(collisionType), HashValue(WildcardCollisionType))
+	handler := &CollisionHandler{collisionType, WildcardCollisionType, AlwaysCollide, AlwaysCollide, DoNothing, DoNothing, nil}
 	return space.collisionHandlers.Insert(hash, handler, func(a *CollisionHandler) *CollisionHandler { return a })
 }
 
@@ -958,7 +958,7 @@ func (space *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data 
 }
 
 func (space *Space) ArrayForBodyType(bodyType int) *[]*Body {
-	if bodyType == BODY_STATIC {
+	if bodyType == Static {
 		return &space.StaticBodies
 	}
 	return &space.DynamicBodies
@@ -1103,21 +1103,21 @@ func SpaceCollideShapesFunc(obj interface{}, b *Shape, collisionId uint32, vspac
 	})
 	arb.Update(&info, space)
 
-	if arb.state == CP_ARBITER_STATE_FIRST_COLLISION && !arb.handler.BeginFunc(arb, space, arb.handler.UserData) {
+	if arb.state == ArbiterStateFirstCollision && !arb.handler.BeginFunc(arb, space, arb.handler.UserData) {
 		arb.Ignore()
 	}
 
 	// Ignore the arbiter if it has been flagged
-	if arb.state != CP_ARBITER_STATE_IGNORE &&
+	if arb.state != ArbiterStateIgnore &&
 		// Call PreSolve
 		arb.handler.PreSolveFunc(arb, space, arb.handler.UserData) &&
 		// Check (again) in case the pre-solve() callback called ArbiterIgnored().
-		arb.state != CP_ARBITER_STATE_IGNORE &&
+		arb.state != ArbiterStateIgnore &&
 		// Process, but don't add collisions for sensors.
 		!(a.Sensor || b.Sensor) &&
 		// Don't process collisions between two infinite mass bodies.
 		// This includes collisions between two kinematic bodies, or a kinematic body and a static body.
-		!(a.body.mass == INFINITY && b.body.mass == INFINITY) {
+		!(a.body.mass == Infinity && b.body.mass == Infinity) {
 		space.Arbiters = append(space.Arbiters, arb)
 	} else {
 		space.PopContacts(info.count)
@@ -1126,8 +1126,8 @@ func SpaceCollideShapesFunc(obj interface{}, b *Shape, collisionId uint32, vspac
 
 		// Normally arbiters are set as used after calling the post-solve callback.
 		// However, post-solve() callbacks are not called for sensors or arbiters rejected from pre-solve.
-		if arb.state != CP_ARBITER_STATE_IGNORE {
-			arb.state = CP_ARBITER_STATE_NORMAL
+		if arb.state != ArbiterStateIgnore {
+			arb.state = ArbiterStateNormal
 		}
 	}
 
@@ -1175,7 +1175,7 @@ func ComponentActive(root *Body, threshold float64) bool {
 func FloodFillComponent(root *Body, body *Body) {
 	// Kinematic bodies cannot be put to sleep and prevent bodies they are touching from sleeping.
 	// Static bodies are effectively sleeping all the time.
-	if body.GetType() != BODY_DYNAMIC {
+	if body.GetType() != Dynamic {
 		return
 	}
 

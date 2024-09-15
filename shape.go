@@ -227,7 +227,7 @@ func (s *Shape) Point(i uint32) SupportPoint {
 // The value returned is the distance between the points.
 // A negative distance means the point is inside the shape.
 func (s *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
-	info := PointQueryInfo{nil, vec.Vec2{}, INFINITY, vec.Vec2{}}
+	info := PointQueryInfo{nil, vec.Vec2{}, Infinity, vec.Vec2{}}
 	s.Class.PointQuery(p, &info)
 	return info
 }
@@ -264,9 +264,9 @@ func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
 
 		surfaceVelocity: vec.Vec2{},
 		Filter: ShapeFilter{
-			Group:      NO_GROUP,
-			Categories: ALL_CATEGORIES,
-			Mask:       ALL_CATEGORIES,
+			Group:      NoGroup,
+			Categories: AllCategories,
+			Mask:       AllCategories,
 		},
 	}
 }

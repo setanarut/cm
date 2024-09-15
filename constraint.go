@@ -37,9 +37,9 @@ func NewConstraint(class Constrainer, a, b *Body) *Constraint {
 		bodyB: b,
 		space: nil,
 
-		maxForce:  INFINITY,
+		maxForce:  Infinity,
 		errorBias: math.Pow(1.0-0.1, 60.0),
-		maxBias:   INFINITY,
+		maxBias:   Infinity,
 
 		collideBodies: true,
 		PreSolve:      nil,
