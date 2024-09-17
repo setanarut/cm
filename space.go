@@ -183,7 +183,7 @@ func (space *Space) Activate(body *Body) {
 	}
 
 	// if body.sleepingRoot != nil && body.sleepingNext != nil {
-	// 	log.Fatalln("Activating body non-NULL node pointers.")
+	// 	log.Fatalln("Activating body non-nil node pointers.")
 	// }
 
 	space.DynamicBodies = append(space.DynamicBodies, body)
@@ -417,7 +417,7 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 	b := constraint.bodyB
 
 	// if a == nil && b == nil {
-	// 	log.Fatalln("Constraint is attached to a null body")
+	// 	log.Fatalln("Constraint is attached to a nil body")
 	// }
 
 	a.Activate()
@@ -739,7 +739,7 @@ func (space *Space) Unlock(runPostStep bool) {
 		for _, callback := range space.PostStepCallbacks {
 			f := callback.callback
 
-			// Mark the func as NULL in case calling it calls SpaceRunPostStepCallbacks() again.
+			// Mark the func as nil in case calling it calls SpaceRunPostStepCallbacks() again.
 			// TODO: need more tests around this case I think.
 			callback.callback = nil
 
@@ -936,7 +936,7 @@ func (space *Space) EachConstraint(f func(*Constraint)) {
 	space.Unlock(true)
 }
 
-// Query the space at a point and return the nearest shape found. Returns NULL if no shapes were found.
+// Query the space at a point and return the nearest shape found. Returns nil if no shapes were found.
 func (space *Space) PointQueryNearest(point vec.Vec2, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
 	info := &PointQueryInfo{nil, vec.Vec2{}, maxDistance, vec.Vec2{}}
 	context := &PointQueryContext{point, maxDistance, filter, nil}

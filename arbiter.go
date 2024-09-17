@@ -93,7 +93,7 @@ func (arbiter *Arbiter) unthreadHelper(body *Body) {
 	if prev != nil {
 		prev.ThreadForBody(body).next = next
 	} else if body.arbiterList == arbiter {
-		// IFF prev is NULL and body->arbiterList == arb, is arb at the head of the list.
+		// IFF prev is nil and body->arbiterList == arb, is arb at the head of the list.
 		// This function may be called for an arbiter that was never in a list.
 		// In that case, we need to protect it from wiping out the body->arbiterList pointer.
 		body.arbiterList = next

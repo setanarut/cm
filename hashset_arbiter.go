@@ -32,7 +32,7 @@ func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 }
 
 func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) bool {
-	// Match on the filter shape, or if it's NULL the filter body
+	// Match on the filter shape, or if it's nil the filter body
 	if (body == arb.body_a && (shape == arb.a || shape == nil)) ||
 		(body == arb.body_b && (shape == arb.b || shape == nil)) {
 		// Call separate when removing shapes.

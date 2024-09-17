@@ -33,20 +33,21 @@ type IDrawer interface {
 	Data() interface{}
 }
 
-func DrawShape(shape *Shape, options IDrawer) {
+// DrawShape draws shapes with the drawer implementation
+func DrawShape(shape *Shape, drawer IDrawer) {
 	body := shape.body
-	data := options.Data()
+	data := drawer.Data()
 
-	outline := options.OutlineColor()
-	fill := options.ShapeColor(shape, data)
+	outline := drawer.OutlineColor()
+	fill := drawer.ShapeColor(shape, data)
 
 	switch shape.Class.(type) {
 	case *Circle:
 		circle := shape.Class.(*Circle)
-		options.DrawCircle(circle.transformC, body.angle, circle.radius, outline, fill, data)
+		drawer.DrawCircle(circle.transformC, body.angle, circle.radius, outline, fill, data)
 	case *Segment:
 		seg := shape.Class.(*Segment)
-		options.DrawFatSegment(seg.transformA, seg.transformB, seg.radius, outline, fill, data)
+		drawer.DrawFatSegment(seg.transformA, seg.transformB, seg.radius, outline, fill, data)
 	case *PolyShape:
 		poly := shape.Class.(*PolyShape)
 
@@ -57,7 +58,7 @@ func DrawShape(shape *Shape, options IDrawer) {
 		for i := 0; i < count; i++ {
 			verts[i] = planes[i].v0
 		}
-		options.DrawPolygon(count, verts, poly.radius, outline, fill, data)
+		drawer.DrawPolygon(count, verts, poly.radius, outline, fill, data)
 	default:
 		panic("Unknown shape type")
 	}
@@ -81,9 +82,10 @@ var springVerts = []vec.Vec2{
 	{1.00, 0.0},
 }
 
-func DrawConstraint(constraint *Constraint, options IDrawer) {
-	data := options.Data()
-	color := options.ConstraintColor()
+// DrawConstraint draws constraints with the drawer implementation
+func DrawConstraint(constraint *Constraint, drawer IDrawer) {
+	data := drawer.Data()
+	color := drawer.ConstraintColor()
 
 	bodyA := constraint.bodyA
 	bodyB := constraint.bodyB
@@ -95,26 +97,26 @@ func DrawConstraint(constraint *Constraint, options IDrawer) {
 		a := bodyA.transform.Point(joint.AnchorA)
 		b := bodyB.transform.Point(joint.AnchorB)
 
-		options.DrawDot(5, a, color, data)
-		options.DrawDot(5, b, color, data)
-		options.DrawSegment(a, b, color, data)
+		drawer.DrawDot(5, a, color, data)
+		drawer.DrawDot(5, b, color, data)
+		drawer.DrawSegment(a, b, color, data)
 	case *SlideJoint:
 		joint := constraint.Class.(*SlideJoint)
 
 		a := bodyA.transform.Point(joint.AnchorA)
 		b := bodyB.transform.Point(joint.AnchorB)
 
-		options.DrawDot(5, a, color, data)
-		options.DrawDot(5, b, color, data)
-		options.DrawSegment(a, b, color, data)
+		drawer.DrawDot(5, a, color, data)
+		drawer.DrawDot(5, b, color, data)
+		drawer.DrawSegment(a, b, color, data)
 	case *PivotJoint:
 		joint := constraint.Class.(*PivotJoint)
 
 		a := bodyA.transform.Point(joint.AnchorA)
 		b := bodyB.transform.Point(joint.AnchorB)
 
-		options.DrawDot(5, a, color, data)
-		options.DrawDot(5, b, color, data)
+		drawer.DrawDot(5, a, color, data)
+		drawer.DrawDot(5, b, color, data)
 	case *GrooveJoint:
 		joint := constraint.Class.(*GrooveJoint)
 
@@ -122,15 +124,15 @@ func DrawConstraint(constraint *Constraint, options IDrawer) {
 		b := bodyA.transform.Point(joint.GrooveB)
 		c := bodyB.transform.Point(joint.AnchorB)
 
-		options.DrawDot(5, c, color, data)
-		options.DrawSegment(a, b, color, data)
+		drawer.DrawDot(5, c, color, data)
+		drawer.DrawSegment(a, b, color, data)
 	case *DampedSpring:
 		spring := constraint.Class.(*DampedSpring)
 		a := bodyA.transform.Point(spring.AnchorA)
 		b := bodyB.transform.Point(spring.AnchorB)
 
-		options.DrawDot(5, a, color, data)
-		options.DrawDot(5, b, color, data)
+		drawer.DrawDot(5, a, color, data)
+		drawer.DrawDot(5, b, color, data)
 
 		delta := b.Sub(a)
 		cos := delta.X
@@ -147,7 +149,7 @@ func DrawConstraint(constraint *Constraint, options IDrawer) {
 		}
 
 		for i := 0; i < len(springVerts)-1; i++ {
-			options.DrawSegment(verts[i], verts[i+1], color, data)
+			drawer.DrawSegment(verts[i], verts[i+1], color, data)
 		}
 	// these aren't drawn in Chipmunk, so they aren't drawn here
 	case *GearJoint:
@@ -160,20 +162,21 @@ func DrawConstraint(constraint *Constraint, options IDrawer) {
 	}
 }
 
-func DrawSpace(space *Space, options IDrawer) {
+// DrawSpace draws all shapes in space with the drawer implementation
+func DrawSpace(space *Space, drawer IDrawer) {
 	space.dynamicShapes.class.Each(func(obj *Shape) {
-		DrawShape(obj, options)
+		DrawShape(obj, drawer)
 	})
 	space.staticShapes.class.Each(func(obj *Shape) {
-		DrawShape(obj, options)
+		DrawShape(obj, drawer)
 	})
 
 	for _, constraint := range space.constraints {
-		DrawConstraint(constraint, options)
+		DrawConstraint(constraint, drawer)
 	}
 
-	drawSeg := options.DrawSegment
-	data := options.Data()
+	drawSeg := drawer.DrawSegment
+	data := drawer.Data()
 
 	for _, arb := range space.Arbiters {
 		n := arb.normal
@@ -184,7 +187,7 @@ func DrawSpace(space *Space, options IDrawer) {
 
 			a := p1.Add(n.Scale(-2))
 			b := p2.Add(n.Scale(2))
-			drawSeg(a, b, options.CollisionPointColor(), data)
+			drawSeg(a, b, drawer.CollisionPointColor(), data)
 		}
 	}
 }

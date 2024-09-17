@@ -140,7 +140,7 @@ type ShapeMassInfo struct {
 
 // PointQueryInfo is point query info struct.
 type PointQueryInfo struct {
-	// The nearest shape, NULL if no shape was within range.
+	// The nearest shape, nil if no shape was within range.
 	Shape *Shape
 	// The closest point on the shape's surface. (in world space coordinates)
 	Point vec.Vec2
@@ -153,7 +153,7 @@ type PointQueryInfo struct {
 
 // SegmentQueryInfo is segment query info struct.
 type SegmentQueryInfo struct {
-	// The shape that was hit, or NULL if no collision occurred.
+	// The shape that was hit, or nil if no collision occurred.
 	Shape *Shape
 	// The point of impact.
 	Point vec.Vec2
