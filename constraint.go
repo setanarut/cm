@@ -6,7 +6,7 @@ import (
 
 type Constrainer interface {
 	PreStep(dt float64)
-	ApplyCachedImpulse(dt_coef float64)
+	ApplyCachedImpulse(dtCoef float64)
 	ApplyImpulse(dt float64)
 	GetImpulse() float64
 }

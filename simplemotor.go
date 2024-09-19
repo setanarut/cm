@@ -23,16 +23,16 @@ func (motor *SimpleMotor) PreStep(dt float64) {
 	b := motor.bodyB
 
 	// moment of inertia coefficient
-	motor.iSum = 1.0 / (a.moi_inv + b.moi_inv)
+	motor.iSum = 1.0 / (a.momentOfInertiaInverse + b.momentOfInertiaInverse)
 }
 
-func (motor *SimpleMotor) ApplyCachedImpulse(dt_coef float64) {
+func (motor *SimpleMotor) ApplyCachedImpulse(dtCoef float64) {
 	a := motor.bodyA
 	b := motor.bodyB
 
-	j := motor.jAcc * dt_coef
-	a.w -= j * a.moi_inv
-	b.w += j * b.moi_inv
+	j := motor.jAcc * dtCoef
+	a.w -= j * a.momentOfInertiaInverse
+	b.w += j * b.momentOfInertiaInverse
 }
 
 func (motor *SimpleMotor) ApplyImpulse(dt float64) {
@@ -48,8 +48,8 @@ func (motor *SimpleMotor) ApplyImpulse(dt float64) {
 	motor.jAcc = clamp(jOld+j, -jMax, jMax)
 	j = motor.jAcc - jOld
 
-	a.w -= j * a.moi_inv
-	b.w += j * b.moi_inv
+	a.w -= j * a.momentOfInertiaInverse
+	b.w += j * b.momentOfInertiaInverse
 }
 
 func (motor *SimpleMotor) GetImpulse() float64 {

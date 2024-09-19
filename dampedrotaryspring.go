@@ -31,7 +31,7 @@ func (spring *DampedRotarySpring) PreStep(dt float64) {
 	a := spring.bodyA
 	b := spring.bodyB
 
-	moment := a.moi_inv + b.moi_inv
+	moment := a.momentOfInertiaInverse + b.momentOfInertiaInverse
 	spring.iSum = 1.0 / moment
 
 	spring.wCoef = 1.0 - math.Exp(-spring.Damping*dt*moment)
@@ -40,11 +40,11 @@ func (spring *DampedRotarySpring) PreStep(dt float64) {
 	jSpring := spring.SpringTorqueFunc(spring, a.angle-b.angle) * dt
 	spring.jAcc = jSpring
 
-	a.w -= jSpring * a.moi_inv
-	b.w += jSpring * b.moi_inv
+	a.w -= jSpring * a.momentOfInertiaInverse
+	b.w += jSpring * b.momentOfInertiaInverse
 }
 
-func (joint *DampedRotarySpring) ApplyCachedImpulse(dt_coef float64) {
+func (joint *DampedRotarySpring) ApplyCachedImpulse(dtCoef float64) {
 	// nothing to do here
 }
 
@@ -60,8 +60,8 @@ func (spring *DampedRotarySpring) ApplyImpulse(dt float64) {
 	jDamp := wDamp * spring.iSum
 	spring.jAcc += jDamp
 
-	a.w += jDamp * a.moi_inv
-	b.w -= jDamp * b.moi_inv
+	a.w += jDamp * a.momentOfInertiaInverse
+	b.w -= jDamp * b.momentOfInertiaInverse
 }
 
 func (joint *DampedRotarySpring) GetImpulse() float64 {

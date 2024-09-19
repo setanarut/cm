@@ -42,8 +42,8 @@ func (spring *DampedSpring) PreStep(dt float64) {
 	a := spring.bodyA
 	b := spring.bodyB
 
-	spring.r1 = a.transform.Vect(spring.AnchorA.Sub(a.cog))
-	spring.r2 = b.transform.Vect(spring.AnchorB.Sub(b.cog))
+	spring.r1 = a.transform.Vect(spring.AnchorA.Sub(a.centerOfGravity))
+	spring.r2 = b.transform.Vect(spring.AnchorB.Sub(b.centerOfGravity))
 
 	delta := b.position.Add(spring.r2).Sub(a.position.Add(spring.r1))
 	dist := delta.Mag()
@@ -53,7 +53,7 @@ func (spring *DampedSpring) PreStep(dt float64) {
 		spring.n = delta.Scale(1.0 / Infinity)
 	}
 
-	k := k_scalar(a, b, spring.r1, spring.r2, spring.n)
+	k := kScalar(a, b, spring.r1, spring.r2, spring.n)
 
 	// if k == 0 {
 	// 	log.Fatalln("Unsolvable spring")
@@ -66,10 +66,10 @@ func (spring *DampedSpring) PreStep(dt float64) {
 
 	fSpring := spring.SpringForceFunc(spring, dist)
 	spring.jAcc = fSpring * dt
-	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Scale(spring.jAcc))
+	applyImpulses(a, b, spring.r1, spring.r2, spring.n.Scale(spring.jAcc))
 }
 
-func (spring *DampedSpring) ApplyCachedImpulse(dt_coef float64) {
+func (spring *DampedSpring) ApplyCachedImpulse(dtCoef float64) {
 	// nothing to do here
 }
 
@@ -81,14 +81,14 @@ func (spring *DampedSpring) ApplyImpulse(dt float64) {
 	r1 := spring.r1
 	r2 := spring.r2
 
-	vrn := normal_relative_velocity(a, b, r1, r2, n)
+	vrn := normalRelativeVelocity(a, b, r1, r2, n)
 
 	vDamp := (spring.targetVrn - vrn) * spring.vCoef
 	spring.targetVrn = vrn + vDamp
 
 	jDamp := vDamp * spring.nMass
 	spring.jAcc += jDamp
-	apply_impulses(a, b, spring.r1, spring.r2, spring.n.Scale(jDamp))
+	applyImpulses(a, b, spring.r1, spring.r2, spring.n.Scale(jDamp))
 }
 
 func (spring *DampedSpring) GetImpulse() float64 {

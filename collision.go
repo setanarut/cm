@@ -515,6 +515,6 @@ func Collide(a, b *Shape, collisionID uint32, contacts []Contact) CollisionInfo 
 		info.b = b
 	}
 
-	BuiltinCollisionFuncs[info.a.Order()+info.b.Order()*SHAPE_TYPE_NUM](&info)
+	BuiltinCollisionFuncs[info.a.Order()+info.b.Order()*ShapeTypeNum](&info)
 	return info
 }

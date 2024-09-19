@@ -182,8 +182,8 @@ func DrawSpace(space *Space, drawer IDrawer) {
 		n := arb.normal
 
 		for j := 0; j < arb.count; j++ {
-			p1 := arb.body_a.position.Add(arb.contacts[j].r1)
-			p2 := arb.body_b.position.Add(arb.contacts[j].r2)
+			p1 := arb.bodyA.position.Add(arb.contacts[j].r1)
+			p2 := arb.bodyB.position.Add(arb.contacts[j].r2)
 
 			a := p1.Add(n.Scale(-2))
 			b := p2.Add(n.Scale(2))

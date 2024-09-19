@@ -43,23 +43,23 @@ func (joint *RatchetJoint) PreStep(dt float64) {
 		joint.Angle = math.Floor((delta-phase)/ratchet)*ratchet + phase
 	}
 
-	joint.iSum = 1.0 / (a.moi_inv + b.moi_inv)
+	joint.iSum = 1.0 / (a.momentOfInertiaInverse + b.momentOfInertiaInverse)
 
 	maxBias := joint.maxBias
-	joint.bias = clamp(-bias_coef(joint.errorBias, dt)*pdist/dt, -maxBias, maxBias)
+	joint.bias = clamp(-biasCoef(joint.errorBias, dt)*pdist/dt, -maxBias, maxBias)
 
 	if joint.bias == 0 {
 		joint.jAcc = 0
 	}
 }
 
-func (joint *RatchetJoint) ApplyCachedImpulse(dt_coef float64) {
+func (joint *RatchetJoint) ApplyCachedImpulse(dtCoef float64) {
 	a := joint.bodyA
 	b := joint.bodyB
 
-	j := joint.jAcc * dt_coef
-	a.w -= j * a.moi_inv
-	b.w += j * b.moi_inv
+	j := joint.jAcc * dtCoef
+	a.w -= j * a.momentOfInertiaInverse
+	b.w += j * b.momentOfInertiaInverse
 }
 
 func (joint *RatchetJoint) ApplyImpulse(dt float64) {
@@ -80,8 +80,8 @@ func (joint *RatchetJoint) ApplyImpulse(dt float64) {
 	joint.jAcc = clamp((jOld+j)*ratchet, 0, jMax*math.Abs(ratchet)) / ratchet
 	j = joint.jAcc - jOld
 
-	a.w -= j * a.moi_inv
-	b.w += j * b.moi_inv
+	a.w -= j * a.momentOfInertiaInverse
+	b.w += j * b.momentOfInertiaInverse
 }
 
 func (joint *RatchetJoint) GetImpulse() float64 {

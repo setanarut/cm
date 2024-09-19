@@ -23,29 +23,28 @@ type ShapeClass interface {
 }
 
 const (
-	SHAPE_TYPE_NUM = 3
+	ShapeTypeNum = 3
 )
 
 type Shape struct {
+	UserData any
 	Class    ShapeClass
 	Filter   ShapeFilter
-	UserData interface{}
 	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
 	CollisionType CollisionType
-
-	space    *Space
-	body     *Body
-	massInfo *ShapeMassInfo
-	bb       BB
 	// Sensor is a boolean value if this shape is a Sensor or not.
 	// Sensors only call collision callbacks, and never generate real collisions.
-	Sensor               bool
+	Sensor bool
+
+	space                *Space
+	body                 *Body
+	massInfo             *ShapeMassInfo
+	bb                   BB
 	elasticity, friction float64
 	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
 	// This value is only used when calculating friction, not resolving the collision.
 	surfaceVelocity vec.Vec2
-
-	hashid HashValue
+	hashid          HashValue
 }
 
 func (s Shape) String() string {
@@ -273,7 +272,7 @@ func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
 
 // Return contact information about two shapes.
 func ShapesCollide(a, b *Shape) ContactPointSet {
-	contacts := make([]Contact, MAX_CONTACTS_PER_ARBITER)
+	contacts := make([]Contact, MaxContactsPerArbiter)
 	info := Collide(a, b, 0, contacts)
 
 	var set ContactPointSet

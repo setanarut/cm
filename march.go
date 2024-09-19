@@ -10,7 +10,7 @@ type MarchSegmentFunc func(v0 vec.Vec2, v1 vec.Vec2, segmentData *PolyLineSet)
 // This is a user defined function that gets passed every single point from the bounding
 // box the user passes into the March process - you can use this to sample an image and
 // check for alpha values or really any 2d matrix you define like a tile map.
-// NOTE: I could not determine a use case for the sample_data pointer from the original code
+// NOTE: I could not determine a use case for the sampleData pointer from the original code
 // so I removed it here - open to adding it back in if there is a reason.
 type MarchSampleFunc func(point vec.Vec2) float64
 
@@ -18,20 +18,20 @@ type MarchCellFunc func(t, a, b, c, d, x0, x1, y0, y1 float64, marchSegment Marc
 
 // The looping and sample caching code is shared between MarchHard() and MarchSoft().
 func MarchCells(bb BB, xSamples int64, ySamples int64, t float64, marchSegment MarchSegmentFunc, marchSample MarchSampleFunc, marchCell MarchCellFunc) *PolyLineSet {
-	var x_denom, y_denom float64
-	x_denom = 1.0 / float64(xSamples-1)
-	y_denom = 1.0 / float64(ySamples-1)
+	var xDenom, yDenom float64
+	xDenom = 1.0 / float64(xSamples-1)
+	yDenom = 1.0 / float64(ySamples-1)
 
 	buffer := make([]float64, xSamples)
 	var i, j int64
 	for i = 0; i < xSamples; i++ {
-		buffer[i] = marchSample(vec.Vec2{lerp(bb.L, bb.R, float64(i)*x_denom), bb.B})
+		buffer[i] = marchSample(vec.Vec2{lerp(bb.L, bb.R, float64(i)*xDenom), bb.B})
 	}
 	segmentData := &PolyLineSet{}
 
 	for j = 0; j < ySamples-1; j++ {
-		y0 := lerp(bb.B, bb.T, float64(j+0)*y_denom)
-		y1 := lerp(bb.B, bb.T, float64(j+1)*y_denom)
+		y0 := lerp(bb.B, bb.T, float64(j+0)*yDenom)
+		y1 := lerp(bb.B, bb.T, float64(j+1)*yDenom)
 
 		// a := buffer[0] // unused variable ?
 		b := buffer[0]
@@ -40,8 +40,8 @@ func MarchCells(bb BB, xSamples int64, ySamples int64, t float64, marchSegment M
 		buffer[0] = d
 
 		for i = 0; i < xSamples-1; i++ {
-			x0 := lerp(bb.L, bb.R, float64(i+0)*x_denom)
-			x1 := lerp(bb.L, bb.R, float64(i+1)*x_denom)
+			x0 := lerp(bb.L, bb.R, float64(i+0)*xDenom)
+			x1 := lerp(bb.L, bb.R, float64(i+1)*xDenom)
 
 			a := b // = -> :=
 			b = buffer[i+1]

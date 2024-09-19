@@ -120,9 +120,6 @@ type CollisionInfo struct {
 }
 
 func (info *CollisionInfo) PushContact(p1, p2 vec.Vec2, hash HashValue) {
-	// if info.count > MAX_CONTACTS_PER_ARBITER {
-	// 	log.Fatalln("Internal error: Tried to push too many contacts.")
-	// }
 
 	con := &info.arr[info.count]
 	con.r1 = p1
@@ -325,10 +322,10 @@ func DebugInfo(space *Space) string {
 
 	var ke float64
 	for _, body := range space.DynamicBodies {
-		if body.mass == Infinity || body.moi == Infinity {
+		if body.mass == Infinity || body.momentOfInertia == Infinity {
 			continue
 		}
-		ke += body.mass*body.vel.Dot(body.vel) + body.moi*body.w*body.w
+		ke += body.mass*body.velocity.Dot(body.velocity) + body.momentOfInertia*body.w*body.w
 	}
 
 	return fmt.Sprintf(`Arbiters: %d (%d) - Contact Points: %d (%d)
@@ -338,9 +335,9 @@ KE: %e`, arbiters, maxArbiters,
 		points, maxPoints, len(space.constraints), space.Iterations, constraints, maxConstraints, ke)
 }
 
-func k_scalar_body(body *Body, r, n vec.Vec2) float64 {
+func kScalarBody(body *Body, r, n vec.Vec2) float64 {
 	rcn := r.Cross(n)
-	return body.m_inv + body.moi_inv*rcn*rcn
+	return body.massInverse + body.momentOfInertiaInverse*rcn*rcn
 }
 
 func lerp(f1, f2, t float64) float64 {
@@ -351,38 +348,38 @@ func clamp01(f float64) float64 {
 	return math.Max(0, math.Min(f, 1))
 }
 
-func k_scalar(a, b *Body, r1, r2, n vec.Vec2) float64 {
-	return k_scalar_body(a, r1, n) + k_scalar_body(b, r2, n)
+func kScalar(a, b *Body, r1, r2, n vec.Vec2) float64 {
+	return kScalarBody(a, r1, n) + kScalarBody(b, r2, n)
 }
 
-func normal_relative_velocity(a, b *Body, r1, r2, n vec.Vec2) float64 {
-	return relative_velocity(a, b, r1, r2).Dot(n)
+func normalRelativeVelocity(a, b *Body, r1, r2, n vec.Vec2) float64 {
+	return relativeVelocity(a, b, r1, r2).Dot(n)
 }
 
-func k_tensor(a, b *Body, r1, r2 vec.Vec2) Mat2x2 {
-	m_sum := a.m_inv + b.m_inv
+func kTensor(a, b *Body, r1, r2 vec.Vec2) Mat2x2 {
+	mSum := a.massInverse + b.massInverse
 
-	// start with Identity*m_sum
-	k11 := m_sum
+	// start with Identity*mSum
+	k11 := mSum
 	k12 := 0.0
 	k21 := 0.0
-	k22 := m_sum
+	k22 := mSum
 
 	// add the influence from r1
-	a_i_inv := a.moi_inv
-	r1xsq := r1.X * r1.X * a_i_inv
-	r1ysq := r1.Y * r1.Y * a_i_inv
-	r1nxy := -r1.X * r1.Y * a_i_inv
+	aIInv := a.momentOfInertiaInverse
+	r1xsq := r1.X * r1.X * aIInv
+	r1ysq := r1.Y * r1.Y * aIInv
+	r1nxy := -r1.X * r1.Y * aIInv
 	k11 += r1ysq
 	k12 += r1nxy
 	k21 += r1nxy
 	k22 += r1xsq
 
 	// add the influence from r2
-	b_i_inv := b.moi_inv
-	r2xsq := r2.X * r2.X * b_i_inv
-	r2ysq := r2.Y * r2.Y * b_i_inv
-	r2nxy := -r2.X * r2.Y * b_i_inv
+	bIInv := b.momentOfInertiaInverse
+	r2xsq := r2.X * r2.X * bIInv
+	r2ysq := r2.Y * r2.Y * bIInv
+	r2nxy := -r2.X * r2.Y * bIInv
 	k11 += r2ysq
 	k12 += r2nxy
 	k21 += r2nxy
@@ -394,14 +391,14 @@ func k_tensor(a, b *Body, r1, r2 vec.Vec2) Mat2x2 {
 	// 	log.Fatalln("Unsolvable constraint")
 	// }
 
-	det_inv := 1.0 / det
+	detInv := 1.0 / det
 	return Mat2x2{
-		k22 * det_inv, -k12 * det_inv,
-		-k21 * det_inv, k11 * det_inv,
+		k22 * detInv, -k12 * detInv,
+		-k21 * detInv, k11 * detInv,
 	}
 }
 
-func bias_coef(errorBias, dt float64) float64 {
+func biasCoef(errorBias, dt float64) float64 {
 	return 1.0 - math.Pow(errorBias, dt)
 }
 

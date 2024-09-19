@@ -7,7 +7,7 @@ import (
 	"github.com/setanarut/vec"
 )
 
-func TestSpace_ShapeQuery(t *testing.T) {
+func TestSpaceShapeQuery(t *testing.T) {
 	space := cm.NewSpace()
 	circle := space.AddShape(cm.NewCircle(space.StaticBody, 1, vec.Vec2{}))
 	space.ShapeQuery(circle, func(shape *cm.Shape, points *cm.ContactPointSet) {
@@ -28,7 +28,7 @@ func TestSpace_ShapeQuery(t *testing.T) {
 		t.Error("Box should be just out of range")
 	})
 }
-func TestSpace_AddBody(t *testing.T) {
+func TestSpaceAddBody(t *testing.T) {
 	s := cm.NewSpace()
 	b := s.AddBody(cm.NewBody(1, 12))
 	s.AddBody(b)

@@ -60,10 +60,10 @@ func NewTransformRigidInverse(t Transform) Transform {
 }
 
 func (t Transform) Inverse() Transform {
-	inv_det := 1.0 / (t.a*t.d - t.c*t.b)
+	invDet := 1.0 / (t.a*t.d - t.c*t.b)
 	return NewTransformTranspose(
-		t.d*inv_det, -t.c*inv_det, (t.c*t.ty-t.tx*t.d)*inv_det,
-		-t.b*inv_det, t.a*inv_det, (t.tx*t.b-t.a*t.ty)*inv_det,
+		t.d*invDet, -t.c*invDet, (t.c*t.ty-t.tx*t.d)*invDet,
+		-t.b*invDet, t.a*invDet, (t.tx*t.b-t.a*t.ty)*invDet,
 	)
 }
 
@@ -90,9 +90,9 @@ func (t Transform) BB(bb BB) BB {
 	b := t.c * hh
 	d := t.b * hw
 	e := t.d * hh
-	hw_max := math.Max(math.Abs(a+b), math.Abs(a-b))
-	hh_max := math.Max(math.Abs(d+e), math.Abs(d-e))
-	return NewBBForExtents(t.Point(bb.Center()), hw_max, hh_max)
+	hwMax := math.Max(math.Abs(a+b), math.Abs(a-b))
+	hhMax := math.Max(math.Abs(d+e), math.Abs(d-e))
+	return NewBBForExtents(t.Point(bb.Center()), hwMax, hhMax)
 }
 
 // miscellaneous transform matrices

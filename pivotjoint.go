@@ -46,19 +46,19 @@ func (joint *PivotJoint) PreStep(dt float64) {
 	a := joint.Constraint.bodyA
 	b := joint.Constraint.bodyB
 
-	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.cog))
-	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
+	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.centerOfGravity))
+	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.centerOfGravity))
 
 	// Calculate mass tensor
-	joint.k = k_tensor(a, b, joint.r1, joint.r2)
+	joint.k = kTensor(a, b, joint.r1, joint.r2)
 
 	// calculate bias velocity
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	joint.bias = delta.Scale(-bias_coef(joint.Constraint.errorBias, dt) / dt).ClampMag(joint.Constraint.maxBias)
+	joint.bias = delta.Scale(-biasCoef(joint.Constraint.errorBias, dt) / dt).ClampMag(joint.Constraint.maxBias)
 }
 
-func (joint *PivotJoint) ApplyCachedImpulse(dt_coef float64) {
-	apply_impulses(joint.bodyA, joint.bodyB, joint.r1, joint.r2, joint.jAcc.Scale(dt_coef))
+func (joint *PivotJoint) ApplyCachedImpulse(dtCoef float64) {
+	applyImpulses(joint.bodyA, joint.bodyB, joint.r1, joint.r2, joint.jAcc.Scale(dtCoef))
 }
 
 func (joint *PivotJoint) ApplyImpulse(dt float64) {
@@ -69,7 +69,7 @@ func (joint *PivotJoint) ApplyImpulse(dt float64) {
 	r2 := joint.r2
 
 	// compute relative velocity
-	vr := relative_velocity(a, b, r1, r2)
+	vr := relativeVelocity(a, b, r1, r2)
 
 	// compute normal impulse
 	j := joint.k.Transform(joint.bias.Sub(vr))
@@ -77,7 +77,7 @@ func (joint *PivotJoint) ApplyImpulse(dt float64) {
 	joint.jAcc = joint.jAcc.Add(j).ClampMag(joint.Constraint.maxForce * dt)
 	j = joint.jAcc.Sub(jOld)
 
-	apply_impulses(a, b, joint.r1, joint.r2, j)
+	applyImpulses(a, b, joint.r1, joint.r2, j)
 }
 
 func (joint *PivotJoint) GetImpulse() float64 {

@@ -47,8 +47,8 @@ func (joint *PinJoint) PreStep(dt float64) {
 	a := joint.bodyA
 	b := joint.bodyB
 
-	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.cog))
-	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
+	joint.r1 = a.transform.Vect(joint.AnchorA.Sub(a.centerOfGravity))
+	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.centerOfGravity))
 
 	delta := b.position.Add(joint.r2.Sub(a.position.Add(joint.r1)))
 	dist := delta.Mag()
@@ -58,15 +58,15 @@ func (joint *PinJoint) PreStep(dt float64) {
 		joint.n = delta.Scale(1 / Infinity)
 	}
 
-	joint.nMass = 1 / k_scalar(a, b, joint.r1, joint.r2, joint.n)
+	joint.nMass = 1 / kScalar(a, b, joint.r1, joint.r2, joint.n)
 
 	maxBias := joint.maxBias
-	joint.bias = clamp(-bias_coef(joint.errorBias, dt)*(dist-joint.Dist)/dt, -maxBias, maxBias)
+	joint.bias = clamp(-biasCoef(joint.errorBias, dt)*(dist-joint.Dist)/dt, -maxBias, maxBias)
 }
 
-func (joint *PinJoint) ApplyCachedImpulse(dt_coef float64) {
-	j := joint.n.Scale(joint.jnAcc * dt_coef)
-	apply_impulses(joint.bodyA, joint.bodyB, joint.r1, joint.r2, j)
+func (joint *PinJoint) ApplyCachedImpulse(dtCoef float64) {
+	j := joint.n.Scale(joint.jnAcc * dtCoef)
+	applyImpulses(joint.bodyA, joint.bodyB, joint.r1, joint.r2, j)
 }
 
 func (joint *PinJoint) ApplyImpulse(dt float64) {
@@ -74,7 +74,7 @@ func (joint *PinJoint) ApplyImpulse(dt float64) {
 	b := joint.bodyB
 	n := joint.n
 
-	vrn := normal_relative_velocity(a, b, joint.r1, joint.r2, n)
+	vrn := normalRelativeVelocity(a, b, joint.r1, joint.r2, n)
 
 	jnMax := joint.maxForce * dt
 
@@ -83,7 +83,7 @@ func (joint *PinJoint) ApplyImpulse(dt float64) {
 	joint.jnAcc = clamp(jnOld+jn, -jnMax, jnMax)
 	jn = joint.jnAcc - jnOld
 
-	apply_impulses(a, b, joint.r1, joint.r2, n.Scale(jn))
+	applyImpulses(a, b, joint.r1, joint.r2, n.Scale(jn))
 }
 
 func (joint *PinJoint) GetImpulse() float64 {

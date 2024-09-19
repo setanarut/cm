@@ -251,15 +251,15 @@ func (tree *BBTree) SubtreeInsert(subtree *Node, leaf *Node) *Node {
 		return tree.NewNode(leaf, subtree)
 	}
 
-	cost_a := subtree.b.bb.Area() + subtree.a.bb.MergedArea(leaf.bb)
-	cost_b := subtree.a.bb.Area() + subtree.b.bb.MergedArea(leaf.bb)
+	costA := subtree.b.bb.Area() + subtree.a.bb.MergedArea(leaf.bb)
+	costB := subtree.a.bb.Area() + subtree.b.bb.MergedArea(leaf.bb)
 
-	if cost_a == cost_b {
-		cost_a = subtree.a.bb.Proximity(leaf.bb)
-		cost_b = subtree.b.bb.Proximity(leaf.bb)
+	if costA == costB {
+		costA = subtree.a.bb.Proximity(leaf.bb)
+		costB = subtree.b.bb.Proximity(leaf.bb)
 	}
 
-	if cost_b < cost_a {
+	if costB < costA {
 		NodeSetB(subtree, tree.SubtreeInsert(subtree.b, leaf))
 	} else {
 		NodeSetA(subtree, tree.SubtreeInsert(subtree.a, leaf))
@@ -415,7 +415,7 @@ func (subtree *Node) SubtreeQuery(obj interface{}, bb BB, query SpatialIndexQuer
 	}
 }
 
-func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
+func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data interface{}) float64 {
 	if subtree.IsLeaf() {
 		return f(obj, subtree.obj, data)
 	}
@@ -424,28 +424,28 @@ func (subtree *Node) SubtreeSegmentQuery(obj interface{}, a, b vec.Vec2, t_exit 
 	tB := subtree.b.bb.SegmentQuery(a, b)
 
 	if tA < tB {
-		if tA < t_exit {
-			t_exit = math.Min(t_exit, subtree.a.SubtreeSegmentQuery(obj, a, b, t_exit, f, data))
+		if tA < tExit {
+			tExit = math.Min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
-		if tB < t_exit {
-			t_exit = math.Min(t_exit, subtree.b.SubtreeSegmentQuery(obj, a, b, t_exit, f, data))
+		if tB < tExit {
+			tExit = math.Min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	} else {
-		if tB < t_exit {
-			t_exit = math.Min(t_exit, subtree.b.SubtreeSegmentQuery(obj, a, b, t_exit, f, data))
+		if tB < tExit {
+			tExit = math.Min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
-		if tA < t_exit {
-			t_exit = math.Min(t_exit, subtree.a.SubtreeSegmentQuery(obj, a, b, t_exit, f, data))
+		if tA < tExit {
+			tExit = math.Min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	}
 
-	return t_exit
+	return tExit
 }
 
-func (tree *BBTree) SegmentQuery(obj interface{}, a, b vec.Vec2, t_exit float64, f SpatialIndexSegmentQuery, data interface{}) {
+func (tree *BBTree) SegmentQuery(obj interface{}, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data interface{}) {
 	root := tree.root
 	if root != nil {
-		root.SubtreeSegmentQuery(obj, a, b, t_exit, f, data)
+		root.SubtreeSegmentQuery(obj, a, b, tExit, f, data)
 	}
 }
 

@@ -9,10 +9,11 @@ import (
 	"github.com/setanarut/vec"
 )
 
-const MAX_CONTACTS_PER_ARBITER = 2
-const CONTACTS_BUFFER_SIZE = 1024
+const MaxContactsPerArbiter = 2
+const ContactsBufferSize = 1024
 
 type Space struct {
+	UserData interface{}
 
 	// Iterations is number of iterations to use in the impulse solver to solve contacts and other constrain.
 	// Must be non-zero.
@@ -57,19 +58,17 @@ type Space struct {
 	// Number of frames that contact information should persist.
 	// Defaults to 3. There is probably never a reason to change this value.
 	CollisionPersistence uint
+	Arbiters             []*Arbiter
+	DynamicBodies        []*Body
+	StaticBodies         []*Body
 
-	Arbiters          []*Arbiter
-	DynamicBodies     []*Body
-	StaticBodies      []*Body
-	PostStepCallbacks []*PostStepCallback
-	UserData          interface{}
-	staticShapes      *SpatialIndex
-	dynamicShapes     *SpatialIndex
-
-	stamp              uint
-	curr_dt            float64
+	// private
 	rousedBodies       []*Body
 	sleepingComponents []*Body
+	staticShapes       *SpatialIndex
+	dynamicShapes      *SpatialIndex
+	stamp              uint
+	currDT             float64
 	shapeIDCounter     uint
 	constraints        []*Constraint
 	contactBuffersHead *ContactBuffer
@@ -79,6 +78,7 @@ type Space struct {
 	usesWildcards      bool
 	collisionHandlers  *HashSet[*CollisionHandler, *CollisionHandler]
 	defaultHandler     *CollisionHandler
+	PostStepCallbacks  []*PostStepCallback
 	skipPostStep       bool
 }
 
@@ -127,20 +127,6 @@ func NewSpace() *Space {
 	return space
 }
 
-// func (space *Space) Arbiters() []*Arbiter {
-// 	return space.arbiters
-// }
-
-// // DynamicBodies returns dynamic body list of the space
-// func (space *Space) DynamicBodies() []*Body {
-// 	return space.dynamicBodies
-// }
-
-// // StaticBodies returns static body list of the space
-// func (space *Space) StaticBodies() []*Body {
-// 	return space.staticBodies
-// }
-
 // DynamicBodyCount returns the total number of dynamic bodies in space
 func (space *Space) DynamicBodyCount() int {
 	return len(space.DynamicBodies)
@@ -171,9 +157,6 @@ func (space *Space) SetStaticBody(body *Body) {
 }
 
 func (space *Space) Activate(body *Body) {
-	// if body.GetType() != BODY_DYNAMIC {
-	// 	log.Fatalln("Attempting to activate a non-dynamic body")
-	// }
 
 	if space.locked != 0 {
 		if !Contains(space.rousedBodies, body) {
@@ -181,10 +164,6 @@ func (space *Space) Activate(body *Body) {
 		}
 		return
 	}
-
-	// if body.sleepingRoot != nil && body.sleepingNext != nil {
-	// 	log.Fatalln("Activating body non-nil node pointers.")
-	// }
 
 	space.DynamicBodies = append(space.DynamicBodies, body)
 
@@ -194,7 +173,7 @@ func (space *Space) Activate(body *Body) {
 	}
 
 	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.Next(body) {
-		bodyA := arbiter.body_a
+		bodyA := arbiter.bodyA
 
 		// Arbiters are shared between two bodies that are always woken up together.
 		// You only want to restore the arbiter once, so bodyA is arbitrarily chosen to own the arbiter.
@@ -210,8 +189,8 @@ func (space *Space) Activate(body *Body) {
 			space.PushContacts(numContacts)
 
 			// reinsert the arbiter into the arbiter cache
-			a := arbiter.a
-			b := arbiter.b
+			a := arbiter.shapeA
+			b := arbiter.shapeB
 			shapePair := ShapePair{a, b}
 			arbHashId := HashPair(HashValue(unsafe.Pointer(a)), HashValue(unsafe.Pointer(b)))
 			space.cachedArbiters.Insert(arbHashId, shapePair, func(_ ShapePair) *Arbiter {
@@ -232,9 +211,6 @@ func (space *Space) Activate(body *Body) {
 }
 
 func (space *Space) Deactivate(body *Body) {
-	// if body.GetType() != BODY_DYNAMIC {
-	// 	log.Fatalln("Attempting to deactivate non-dynamic body.")
-	// }
 	for i, v := range space.DynamicBodies {
 		if v == body {
 			space.DynamicBodies = append(space.DynamicBodies[:i], space.DynamicBodies[i+1:]...)
@@ -248,7 +224,7 @@ func (space *Space) Deactivate(body *Body) {
 	}
 
 	for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
-		bodyA := arb.body_a
+		bodyA := arb.bodyA
 		if body == bodyA || bodyA.GetType() == Static {
 			space.UncacheArbiter(arb)
 			// Save contact values to a new block of memory so they won't time out
@@ -277,16 +253,6 @@ func (space *Space) Deactivate(body *Body) {
 func (space *Space) AddShape(shape *Shape) *Shape {
 	var body *Body = shape.Body()
 
-	// if shape.space == space {
-	// 	log.Fatalln("You have already added this shape to this space. You must not add it a second time.")
-	// }
-	// if shape.space != nil {
-	// 	log.Fatalln("You have already added this shape to another space. You cannot add it to a second.")
-	// }
-	// if space.locked != 0 {
-	// 	log.Fatalln("This operation cannot be done safely during a call to SpaceStep() or during a query. Put these calls into a post-step callback.")
-	// }
-
 	isStatic := body.GetType() == Static
 	if !isStatic {
 		body.Activate()
@@ -311,14 +277,6 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 func (space *Space) RemoveShape(shape *Shape) {
 	body := shape.body
 
-	// if !space.ContainsShape(shape) {
-	// 	log.Fatalln("Shape is not in space")
-	// }
-
-	// if space.locked != 0 {
-	// 	log.Fatalln("space.locked is not zero")
-	// }
-
 	isStatic := body.GetType() == Static
 	if isStatic {
 		body.ActivateStatic(shape)
@@ -339,13 +297,7 @@ func (space *Space) RemoveShape(shape *Shape) {
 
 // AddBody adds a body to the space if not in space.
 func (space *Space) AddBody(body *Body) *Body {
-	// if space.ContainsBody(body) {
-	// 	log.Fatalln("Body already added to space")
-	// }
 
-	// if body.space != nil {
-	// 	log.Fatalln("Body already added to another space")
-	// }
 	if body.GetType() == Static {
 		space.StaticBodies = append(space.StaticBodies, body)
 	} else {
@@ -366,15 +318,7 @@ func (space *Space) AddBodyWidthShapes(body *Body) *Body {
 
 // RemoveBody removes a body from the simulation
 func (space *Space) RemoveBody(body *Body) {
-	// if body == space.StaticBody {
-	// 	log.Fatalln("Body is space.Staticbody")
-	// }
-	// if !space.ContainsBody(body) {
-	// 	log.Fatalln("Body is not in space")
-	// }
-	// if space.locked != 0 {
-	// 	log.Fatalln("Space is locked")
-	// }
+
 	body.Activate()
 	if body.GetType() == Static {
 		for i, b := range space.StaticBodies {
@@ -403,23 +347,9 @@ func (space *Space) RemoveBodyWithShapes(body *Body) {
 }
 
 func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
-	// if constraint.space == space {
-	// 	log.Fatalln("Already added to this space")
-	// }
-	// if constraint.space != nil {
-	// 	log.Fatalln("Already added to another space")
-	// }
-	// if space.locked != 0 {
-	// 	log.Fatalln("Space is locked")
-	// }
 
 	a := constraint.bodyA
 	b := constraint.bodyB
-
-	// if a == nil && b == nil {
-	// 	log.Fatalln("Constraint is attached to a nil body")
-	// }
-
 	a.Activate()
 	b.Activate()
 	space.constraints = append(space.constraints, constraint)
@@ -436,14 +366,6 @@ func (space *Space) AddConstraint(constraint *Constraint) *Constraint {
 }
 
 func (space *Space) RemoveConstraint(constraint *Constraint) {
-
-	// if !space.ContainsConstraint(constraint) {
-	// 	log.Fatalln("Constraint not found")
-	// }
-
-	// if space.locked != 0 {
-	// 	log.Fatalln("Space is locked")
-	// }
 
 	constraint.bodyA.Activate()
 	constraint.bodyB.Activate()
@@ -499,12 +421,12 @@ func (space *Space) PushFreshContactBuffer() {
 }
 
 func (space *Space) ContactBufferGetArray() []Contact {
-	if space.contactBuffersHead.numContacts+MAX_CONTACTS_PER_ARBITER > CONTACTS_BUFFER_SIZE {
+	if space.contactBuffersHead.numContacts+MaxContactsPerArbiter > ContactsBufferSize {
 		space.PushFreshContactBuffer()
 	}
 
 	head := space.contactBuffersHead
-	return head.contacts[head.numContacts : head.numContacts+MAX_CONTACTS_PER_ARBITER]
+	return head.contacts[head.numContacts : head.numContacts+MaxContactsPerArbiter]
 }
 
 func (space *Space) ProcessComponents(dt float64) {
@@ -541,8 +463,8 @@ func (space *Space) ProcessComponents(dt float64) {
 
 	// Awaken any sleeping bodies found and then push arbiters to the bodies' lists.
 	for _, arb := range space.Arbiters {
-		a := arb.body_a
-		b := arb.body_b
+		a := arb.bodyA
+		b := arb.bodyB
 
 		if sleep {
 			if b.GetType() == Kinematic || a.IsSleeping() {
@@ -606,15 +528,15 @@ func (space *Space) Step(dt float64) {
 
 	space.stamp++
 
-	prev_dt := space.curr_dt
-	space.curr_dt = dt
+	prevDT := space.currDT
+	space.currDT = dt
 
 	// reset and empty the arbiter lists
 	for _, arb := range space.Arbiters {
 		arb.state = ArbiterStateNormal
 
 		// If both bodies are awake, unthread the arbiter from the contact graph.
-		if !arb.body_a.IsSleeping() && !arb.body_b.IsSleeping() {
+		if !arb.bodyA.IsSleeping() && !arb.bodyB.IsSleeping() {
 			arb.Unthread()
 		}
 	}
@@ -667,17 +589,17 @@ func (space *Space) Step(dt float64) {
 		}
 
 		// Apply cached impulses
-		var dt_coef float64
-		if prev_dt != 0 {
-			dt_coef = dt / prev_dt
+		var dtCoef float64
+		if prevDT != 0 {
+			dtCoef = dt / prevDT
 		}
 
 		for _, arbiter := range space.Arbiters {
-			arbiter.ApplyCachedImpulse(dt_coef)
+			arbiter.ApplyCachedImpulse(dtCoef)
 		}
 
 		for _, constraint := range space.constraints {
-			constraint.Class.ApplyCachedImpulse(dt_coef)
+			constraint.Class.ApplyCachedImpulse(dtCoef)
 		}
 
 		// Run the impulse solver.
@@ -754,8 +676,8 @@ func (space *Space) Unlock(runPostStep bool) {
 }
 
 func (space *Space) UncacheArbiter(arb *Arbiter) {
-	a := arb.a
-	b := arb.b
+	a := arb.shapeA
+	b := arb.shapeB
 	shapePair := ShapePair{a, b}
 	arbHashId := HashPair(HashValue(unsafe.Pointer(a)), HashValue(unsafe.Pointer(b)))
 	space.cachedArbiters.Remove(arbHashId, shapePair)
@@ -773,9 +695,7 @@ func (space *Space) UncacheArbiter(arb *Arbiter) {
 }
 
 func (space *Space) PushContacts(count int) {
-	// if count > MAX_CONTACTS_PER_ARBITER {
-	// 	log.Fatalln("Contact buffer overflow")
-	// }
+
 	space.contactBuffersHead.numContacts += count
 }
 
@@ -983,7 +903,7 @@ func (space *Space) SegmentQueryFirst(start, end vec.Vec2, radius float64, filte
 }
 
 func (space *Space) TimeStep() float64 {
-	return space.curr_dt
+	return space.currDT
 }
 
 func (space *Space) PostStepCallback(key interface{}) *PostStepCallback {
@@ -1180,15 +1100,15 @@ func FloodFillComponent(root *Body, body *Body) {
 	}
 
 	// body.sleeping.root
-	other_root := body.ComponentRoot()
-	if other_root == nil {
+	otherRoot := body.ComponentRoot()
+	if otherRoot == nil {
 		root.ComponentAdd(body)
 
 		for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
-			if body == arb.body_a {
-				FloodFillComponent(root, arb.body_b)
+			if body == arb.bodyA {
+				FloodFillComponent(root, arb.bodyB)
 			} else {
-				FloodFillComponent(root, arb.body_a)
+				FloodFillComponent(root, arb.bodyA)
 			}
 		}
 
@@ -1200,17 +1120,17 @@ func FloodFillComponent(root *Body, body *Body) {
 			}
 		}
 	} else {
-		if other_root != root {
+		if otherRoot != root {
 			log.Fatalln("Inconsistency detected in the contact graph (FFC)")
 		}
 	}
 }
 
 func ArbiterNext(arb *Arbiter, body *Body) *Arbiter {
-	if arb.body_a == body {
-		return arb.thread_a.next
+	if arb.bodyA == body {
+		return arb.threadA.next
 	}
-	return arb.thread_b.next
+	return arb.threadB.next
 }
 
 func Contains(bodies []*Body, body *Body) bool {
@@ -1265,11 +1185,11 @@ func arbiterSetEql(shapes ShapePair, arb *Arbiter) bool {
 	a := shapes.a
 	b := shapes.b
 
-	return (a == arb.a && b == arb.b) || (b == arb.a && a == arb.b)
+	return (a == arb.shapeA && b == arb.shapeB) || (b == arb.shapeA && a == arb.shapeB)
 }
 
 var ShapeVelocityFunc = func(obj interface{}) vec.Vec2 {
-	return obj.(*Shape).body.vel
+	return obj.(*Shape).body.velocity
 }
 
 var ShapeUpdateFunc = func(shape *Shape) {

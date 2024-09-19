@@ -39,7 +39,7 @@ func (joint *GrooveJoint) PreStep(dt float64) {
 	d := ta.Dot(n)
 
 	joint.grooveTn = n
-	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.cog))
+	joint.r2 = b.transform.Vect(joint.AnchorB.Sub(b.centerOfGravity))
 
 	td := b.position.Add(joint.r2).Cross(n)
 
@@ -54,17 +54,17 @@ func (joint *GrooveJoint) PreStep(dt float64) {
 		joint.r1 = n.Perp().Scale(-td).Add(n.Scale(d)).Sub(a.position)
 	}
 
-	joint.k = k_tensor(a, b, joint.r1, joint.r2)
+	joint.k = kTensor(a, b, joint.r1, joint.r2)
 
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	joint.bias = delta.Scale(-bias_coef(joint.errorBias, dt) / dt).ClampMag(joint.maxBias)
+	joint.bias = delta.Scale(-biasCoef(joint.errorBias, dt) / dt).ClampMag(joint.maxBias)
 }
 
-func (joint *GrooveJoint) ApplyCachedImpulse(dt_coef float64) {
+func (joint *GrooveJoint) ApplyCachedImpulse(dtCoef float64) {
 	a := joint.bodyA
 	b := joint.bodyB
 
-	apply_impulses(a, b, joint.r1, joint.r2, joint.jAcc.Scale(dt_coef))
+	applyImpulses(a, b, joint.r1, joint.r2, joint.jAcc.Scale(dtCoef))
 }
 
 func (joint *GrooveJoint) grooveConstrain(j vec.Vec2, dt float64) vec.Vec2 {
@@ -85,14 +85,14 @@ func (joint *GrooveJoint) ApplyImpulse(dt float64) {
 	r1 := joint.r1
 	r2 := joint.r2
 
-	vr := relative_velocity(a, b, r1, r2)
+	vr := relativeVelocity(a, b, r1, r2)
 
 	j := joint.k.Transform(joint.bias.Sub(vr))
 	jOld := joint.jAcc
 	joint.jAcc = joint.grooveConstrain(jOld.Add(j), dt)
 	j = joint.jAcc.Sub(jOld)
 
-	apply_impulses(a, b, joint.r1, joint.r2, j)
+	applyImpulses(a, b, joint.r1, joint.r2, j)
 }
 
 func (joint *GrooveJoint) GetImpulse() float64 {
