@@ -24,7 +24,6 @@ type BodyVelocityFunc func(body *Body, gravity vec.Vec2, damping float64, dt flo
 type BodyPositionFunc func(body *Body, dt float64)
 
 type Body struct {
-
 	// UserData is an object that this constraint is associated with.
 	//
 	// You can use this get a reference to your game object or controller object from within callbacks.
@@ -52,9 +51,8 @@ type Body struct {
 	sleepingRoot           *Body
 	sleepingNext           *Body
 	sleepingIdleTime       float64
-
-	vBias vec.Vec2 // "pseudo-velocities" used for eliminating overlap. (Erin Catto)
-	wBias float64  // "pseudo-velocities" used for eliminating overlap. (Erin Catto)
+	vBias                  vec.Vec2 // "pseudo-velocities" used for eliminating overlap. (Erin Catto)
+	wBias                  float64  // "pseudo-velocities" used for eliminating overlap. (Erin Catto)
 }
 
 // String returns body id as string

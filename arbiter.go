@@ -16,54 +16,41 @@ var WildcardCollisionType CollisionType = ^CollisionType(0)
 type Arbiter struct {
 	UserData interface{}
 
-	shapeA, shapeB   *Shape
-	bodyA, bodyB     *Body
-	threadA, threadB ArbiterThread
-
-	e, u      float64
-	surfaceVr vec.Vec2
-	count     int
-
-	// a slice onto the current buffer array of contacts
-	contacts []Contact
-	normal   vec.Vec2
-
-	// Regular, wildcard A and wildcard B collision handlers.
-	handler, handlerA, handlerB *CollisionHandler
+	shapeA, shapeB              *Shape
+	bodyA, bodyB                *Body
+	threadA, threadB            ArbiterThread
+	e, u                        float64
+	count                       int
+	state                       int       // Arbiter state enum
+	contacts                    []Contact // a slice onto the current buffer array of contacts
+	surfaceVr                   vec.Vec2
+	normal                      vec.Vec2
+	handler, handlerA, handlerB *CollisionHandler // Regular, wildcard A and wildcard B collision handlers.
 	swapped                     bool
-
-	stamp uint
-	state int // Arbiter state enum
+	stamp                       uint
 }
 
 // Init initializes and returns Arbiter
 func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 	arbiter.handler = nil
 	arbiter.swapped = false
-
 	arbiter.handlerA = nil
 	arbiter.handlerB = nil
-
 	arbiter.e = 0
 	arbiter.u = 0
 	arbiter.surfaceVr = vec.Vec2{}
-
 	arbiter.count = 0
 	arbiter.contacts = nil
-
 	arbiter.shapeA = a
 	arbiter.bodyA = a.body
 	arbiter.shapeB = b
 	arbiter.bodyB = b.body
-
 	arbiter.threadA.next = nil
 	arbiter.threadB.next = nil
 	arbiter.threadA.prev = nil
 	arbiter.threadB.prev = nil
-
 	arbiter.stamp = 0
 	arbiter.state = ArbiterStateFirstCollision
-
 	arbiter.UserData = nil
 	return arbiter
 }
