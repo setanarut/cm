@@ -30,7 +30,8 @@ type Shape struct {
 	UserData any
 	Class    ShapeClass
 	Filter   ShapeFilter
-	// You can assign types to collision shapes that trigger callbacks when objects of certain types touch.
+	// You can assign types to collision shapes that triggercallbacks when objects
+	// of certain types touch.
 	CollisionType CollisionType
 	// Sensor is a boolean value if this shape is a Sensor or not.
 	// Sensors only call collision callbacks, and never generate real collisions.
@@ -41,8 +42,9 @@ type Shape struct {
 	massInfo             *ShapeMassInfo
 	bb                   BB
 	elasticity, friction float64
-	// The surface velocity of the object. Useful for creating conveyor belts or players that move around.
-	// This value is only used when calculating friction, not resolving the collision.
+	// The surface velocity of the object. Useful for creating conveyor belts or
+	// players that move around. This value is only used when calculating friction,
+	// not resolving the collision.
 	surfaceVelocity vec.Vec2
 	hashid          HashValue
 }
@@ -71,144 +73,146 @@ func (s *Shape) Order() int {
 
 // SetSensor sets sensor. A boolean value if this shape is a sensor or not.
 // Sensors only call collision callbacks, and never generate real collisions.
-func (s *Shape) SetSensor(sensor bool) {
-	s.body.Activate()
-	s.Sensor = sensor
+func (sh *Shape) SetSensor(sensor bool) {
+	sh.body.Activate()
+	sh.Sensor = sensor
 }
 
-func (s *Shape) Space() *Space {
-	return s.space
+func (sh *Shape) Space() *Space {
+	return sh.space
 }
 
-func (s *Shape) Body() *Body {
-	return s.body
+func (sh *Shape) Body() *Body {
+	return sh.body
 }
 
-func (s *Shape) MassInfo() *ShapeMassInfo {
-	return s.massInfo
+func (sh *Shape) MassInfo() *ShapeMassInfo {
+	return sh.massInfo
 }
 
-func (s *Shape) Mass() float64 {
-	return s.massInfo.m
+func (sh *Shape) Mass() float64 {
+	return sh.massInfo.m
 }
 
-func (s *Shape) SetMass(mass float64) {
-	s.body.Activate()
+func (sh *Shape) SetMass(mass float64) {
+	sh.body.Activate()
 
-	s.massInfo.m = mass
-	s.body.AccumulateMassFromShapes()
+	sh.massInfo.m = mass
+	sh.body.AccumulateMassFromShapes()
 }
 
-func (s *Shape) Density() float64 {
-	return s.massInfo.m / s.massInfo.area
+func (sh *Shape) Density() float64 {
+	return sh.massInfo.m / sh.massInfo.area
 }
 
-func (s *Shape) SetDensity(density float64) {
-	s.SetMass(density * s.massInfo.area)
+func (sh *Shape) SetDensity(density float64) {
+	sh.SetMass(density * sh.massInfo.area)
 }
 
-func (s *Shape) Moment() float64 {
-	return s.massInfo.m * s.massInfo.i
+func (sh *Shape) Moment() float64 {
+	return sh.massInfo.m * sh.massInfo.i
 }
 
-func (s *Shape) Area() float64 {
-	return s.massInfo.area
+func (sh *Shape) Area() float64 {
+	return sh.massInfo.area
 }
 
-func (s *Shape) CenterOfGravity() vec.Vec2 {
-	return s.massInfo.cog
+func (sh *Shape) CenterOfGravity() vec.Vec2 {
+	return sh.massInfo.cog
 }
 
-func (s *Shape) HashId() HashValue {
-	return s.hashid
+func (sh *Shape) HashId() HashValue {
+	return sh.hashid
 }
 
-func (s *Shape) SetHashId(hashid HashValue) {
-	s.hashid = hashid
+func (sh *Shape) SetHashId(hashid HashValue) {
+	sh.hashid = hashid
 }
 
-func (s *Shape) SetSpace(space *Space) {
-	s.space = space
+func (sh *Shape) SetSpace(space *Space) {
+	sh.space = space
 }
 
 // BB returns 2D axis-aligned bounding box of this shape.
-func (s *Shape) BB() BB {
-	return s.bb
+func (sh *Shape) BB() BB {
+	return sh.bb
 }
 
-func (s *Shape) SetBB(bb BB) {
-	s.bb = bb
+func (sh *Shape) SetBB(bb BB) {
+	sh.bb = bb
 }
 
 // SetCollisionType sets collision type.
-// You can assign types to shapes that trigger callbacks (CollisionHandler) when objects of certain types touch
-func (s *Shape) SetCollisionType(collisionType CollisionType) {
-	s.body.Activate()
-	s.CollisionType = collisionType
+// You can assign types to shapes that trigger callbacks (CollisionHandler) when
+// objects of certain types touch
+func (sh *Shape) SetCollisionType(collisionType CollisionType) {
+	sh.body.Activate()
+	sh.CollisionType = collisionType
 }
 
-func (s *Shape) Friction() float64 {
-	return s.friction
+func (sh *Shape) Friction() float64 {
+	return sh.friction
 }
 
-func (s *Shape) SetFriction(u float64) {
+func (sh *Shape) SetFriction(u float64) {
 	// if s.friction < 0 {
 	// 	log.Fatalln("Friction must be positive")
 	// }
-	s.body.Activate()
-	s.friction = u
+	sh.body.Activate()
+	sh.friction = u
 }
 
 // SurfaceVelocity returns the surface velocity of this shape.
-func (s *Shape) SurfaceVelocity() vec.Vec2 {
-	return s.surfaceVelocity
+func (sh *Shape) SurfaceVelocity() vec.Vec2 {
+	return sh.surfaceVelocity
 }
 
-// SetSurfaceVelocity sets the surface velocity of the object. Useful for creating conveyor belts or players that move around.
+// SetSurfaceVelocity sets the surface velocity of the object.
+// Useful for creating conveyor belts or players that move around.
 // This value is only used when calculating friction, not resolving the collision.
-func (s *Shape) SetSurfaceVelocity(surfaceV vec.Vec2) {
-	s.surfaceVelocity = surfaceV
+func (sh *Shape) SetSurfaceVelocity(surfaceV vec.Vec2) {
+	sh.surfaceVelocity = surfaceV
 }
 
-func (s *Shape) Elasticity() float64 {
-	return s.elasticity
+func (sh *Shape) Elasticity() float64 {
+	return sh.elasticity
 }
 
 // SetElasticity sets elasticity (0-1 range)
-func (s *Shape) SetElasticity(e float64) {
+func (sh *Shape) SetElasticity(e float64) {
 	// if s.elasticity < 0 {
 	// 	log.Fatalln("Elasticity must be positive")
 	// }
-	s.body.Activate()
-	s.elasticity = e
+	sh.body.Activate()
+	sh.elasticity = e
 }
 
-func (s *Shape) SetShapeFilter(filter ShapeFilter) {
-	s.body.Activate()
-	s.Filter = filter
+func (sh *Shape) SetShapeFilter(filter ShapeFilter) {
+	sh.body.Activate()
+	sh.Filter = filter
 }
 
-func (s *Shape) CacheBB() BB {
-	return s.Update(s.body.transform)
+func (sh *Shape) CacheBB() BB {
+	return sh.Update(sh.body.transform)
 }
 
-func (s *Shape) Update(transform Transform) BB {
-	s.bb = s.Class.CacheData(transform)
-	return s.bb
+func (sh *Shape) Update(transform Transform) BB {
+	sh.bb = sh.Class.CacheData(transform)
+	return sh.bb
 }
 
-func (s *Shape) Point(i uint32) SupportPoint {
-	switch s.Class.(type) {
+func (sh *Shape) Point(i uint32) SupportPoint {
+	switch sh.Class.(type) {
 	case *Circle:
-		return NewSupportPoint(s.Class.(*Circle).transformC, 0)
+		return NewSupportPoint(sh.Class.(*Circle).transformC, 0)
 	case *Segment:
-		seg := s.Class.(*Segment)
+		seg := sh.Class.(*Segment)
 		if i == 0 {
 			return NewSupportPoint(seg.transformA, i)
 		}
 		return NewSupportPoint(seg.transformB, i)
 	case *PolyShape:
-		poly := s.Class.(*PolyShape)
+		poly := sh.Class.(*PolyShape)
 		// Poly shapes may change vertex count.
 		var index int
 		if i < uint32(poly.count) {
@@ -225,16 +229,16 @@ func (s *Shape) Point(i uint32) SupportPoint {
 // It finds the closest point on the surface of shape to a specific point.
 // The value returned is the distance between the points.
 // A negative distance means the point is inside the shape.
-func (s *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
+func (sh *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
 	info := PointQueryInfo{nil, vec.Vec2{}, Infinity, vec.Vec2{}}
-	s.Class.PointQuery(p, &info)
+	sh.Class.PointQuery(p, &info)
 	return info
 }
 
 // Perform a segment query against a shape.
 //
 // info must be a pointer to a valid SegmentQueryInfo structure.
-func (shape *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) bool {
+func (sh *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) bool {
 	blank := SegmentQueryInfo{nil, b, vec.Vec2{}, 1}
 	if info != nil {
 		*info = blank
@@ -243,13 +247,13 @@ func (shape *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQue
 	}
 
 	var nearest PointQueryInfo
-	shape.Class.PointQuery(a, &nearest)
+	sh.Class.PointQuery(a, &nearest)
 	if nearest.Distance <= radius {
-		info.Shape = shape
+		info.Shape = sh
 		info.Alpha = 0
 		info.Normal = a.Sub(nearest.Point).Unit()
 	} else {
-		shape.Class.SegmentQuery(a, b, radius, info)
+		sh.Class.SegmentQuery(a, b, radius, info)
 	}
 
 	return info.Shape != nil

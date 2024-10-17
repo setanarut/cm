@@ -15,8 +15,8 @@ const ContactsBufferSize = 1024
 type Space struct {
 	UserData interface{}
 
-	// Iterations is number of iterations to use in the impulse solver to solve contacts and other constrain.
-	// Must be non-zero.
+	// Iterations is number of iterations to use in the impulse solver to solve
+	// contacts and other constrain. Must be non-zero.
 	Iterations uint
 
 	// IdleSpeedThreshold is speed threshold for a body to be considered idle.
@@ -150,7 +150,8 @@ func (space *Space) SetGravity(gravity vec.Vec2) {
 func (space *Space) SetStaticBody(body *Body) {
 	if space.StaticBody != nil {
 		space.StaticBody.space = nil
-		panic("Internal Error: Changing the designated static body while the old one still had shapes attached.")
+		panic(`Internal Error: Changing the designated static
+		body while the old one still had shapes attached.`)
 	}
 	space.StaticBody = body
 	body.space = space
@@ -314,6 +315,20 @@ func (space *Space) AddBodyWidthShapes(body *Body) *Body {
 	}
 	return space.AddBody(body)
 
+}
+
+// ReindexShape re-computes the hash of the shape in both the dynamic and static list.
+func (space *Space) ReindexShape(shape *Shape) {
+
+	if space.IsLocked() {
+		log.Fatalln(`You cannot manually reindex objects while the space is locked.
+			 Wait until the current query or step is complete.`)
+	}
+	shape.CacheBB()
+
+	// attempt to rehash the shape in both hashes
+	space.dynamicShapes.class.ReindexObject(shape, shape.hashid)
+	space.staticShapes.class.ReindexObject(shape, shape.hashid)
 }
 
 // RemoveBody removes a body from the simulation

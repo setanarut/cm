@@ -182,12 +182,18 @@ func NewShapeFilter(group, categories, mask uint) ShapeFilter {
 	return ShapeFilter{group, categories, mask}
 }
 
-func (a ShapeFilter) Reject(b ShapeFilter) bool {
-	// Reject the collision if:
-	return (a.Group != 0 && a.Group == b.Group) ||
-		// One of the category/mask combinations fails.
-		(a.Categories&b.Mask) == 0 ||
-		(b.Categories&a.Mask) == 0
+// Reject checks whether two ShapeFilter objects should be considered incompatible.
+// It returns true if the filters should be rejected based on the following conditions:
+// - If both filters belong to the same group (and the group is not 0).
+// - If the category/mask combination of either filter does not match the other.
+//   - Specifically, it checks if the categories of the first filter don't match
+//     the mask of the second, or vice versa.
+//
+// Returns true if the filters are considered incompatible, otherwise false.
+func (sf ShapeFilter) Reject(other ShapeFilter) bool {
+	return (sf.Group != 0 && sf.Group == other.Group) ||
+		(sf.Categories&other.Mask) == 0 ||
+		(other.Categories&sf.Mask) == 0
 }
 
 // Mat2x2 is a 2x2 matrix type used for tensors and such.

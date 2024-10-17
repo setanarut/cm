@@ -14,10 +14,6 @@ type PolyLineSet struct {
 	Lines []*PolyLine
 }
 
-func Next(i, count int) int {
-	return (i + 1) % count
-}
-
 func Sharpness(a, b, c vec.Vec2) float64 {
 	return a.Sub(b).Unit().Dot(c.Sub(b).Unit())
 }
@@ -36,11 +32,19 @@ func (pl *PolyLine) IsClosed() bool {
 	return len(pl.Verts) > 1 && pl.Verts[0].Equal(pl.Verts[len(pl.Verts)-1])
 }
 
+// IsShort checks if the total length of a polyline segment is less than 'min'.
+// It iterates from 'start' to 'end', summing the distances between consecutive
+// vertices. If the length exceeds 'min', it returns false, otherwise true.
+//
+//	Parameters:
+//	- count: // Total number of vertices in the polyline.
+//	- start: // Starting index for the length calculation.
+//	- end: // Ending index for the length calculation.
+//	- min: // Minimum length threshold.
 func (pl *PolyLine) IsShort(count, start, end int, min float64) bool {
 	var length float64
-	// Next doesn't have side effects and its return value is ignored (SA4017)go-staticcheck
-	for i := start; i != end; Next(i, count) {
-		length += pl.Verts[i].Distance(pl.Verts[Next(i, count)])
+	for i := start; i != end; i = next(i, count) {
+		length += pl.Verts[i].Distance(pl.Verts[next(i, count)])
 		if length > min {
 			return false
 		}
@@ -71,7 +75,12 @@ func (pl *PolyLine) SimplifyVertexes(tol float64) *PolyLine {
 }
 
 // Recursive function used by PolylineSimplifyCurves().
-func DouglasPeucker(verts []vec.Vec2, reduced *PolyLine, length, start, end int, min, tol float64) *PolyLine {
+func DouglasPeucker(
+	verts []vec.Vec2,
+	reduced *PolyLine,
+	length, start, end int,
+	min, tol float64,
+) *PolyLine {
 	// Early exit if the points are adjacent
 	if (end-start+length)%length < 2 {
 		return reduced
@@ -92,7 +101,7 @@ func DouglasPeucker(verts []vec.Vec2, reduced *PolyLine, length, start, end int,
 	n := b.Sub(a).Perp().Unit()
 	d := n.Dot(a)
 
-	for i := Next(start, length); i != end; i = Next(i, length) {
+	for i := next(start, length); i != end; i = next(i, length) {
 		dist := math.Abs(n.Dot(verts[i]) - d)
 
 		if dist > max {
@@ -189,4 +198,8 @@ func PolyLineCollectSegment(v0, v1 vec.Vec2, pls *PolyLineSet) {
 	} else {
 		pls.Push(&PolyLine{Verts: []vec.Vec2{v0, v1}})
 	}
+}
+
+func next(i, count int) int {
+	return (i + 1) % count
 }
