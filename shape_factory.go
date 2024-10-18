@@ -8,7 +8,7 @@ import (
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func NewSegmentShapeWithBody(body *Body, a, b vec.Vec2, r float64) {
+func NewSegmentShapeWithBody(body *Body, a, b vec.Vec2, r float64) *Shape {
 	segment := &Segment{
 		a: a,
 		b: b,
@@ -20,11 +20,12 @@ func NewSegmentShapeWithBody(body *Body, a, b vec.Vec2, r float64) {
 	}
 	segment.Shape = NewShape(segment, body, NewSegmentMassInfo(0, a, b, r))
 	body.AttachShape(segment.Shape)
+	return segment.Shape
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func NewBoxShapeWithBody(body *Body, w, h, roundingRadius float64) {
+func NewBoxShapeWithBody(body *Body, w, h, roundingRadius float64) *Shape {
 	hw := w / 2.0
 	hh := h / 2.0
 	bb := &BB{-hw, -hh, hw, hh}
@@ -36,11 +37,12 @@ func NewBoxShapeWithBody(body *Body, w, h, roundingRadius float64) {
 	}
 	shape := NewPolyShapeRaw(body, 4, verts, roundingRadius)
 	body.AttachShape(shape)
+	return shape
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func NewBoxShapeWithBody2(body *Body, bb BB, roundingRadius float64) {
+func NewBoxShapeWithBody2(body *Body, bb BB, roundingRadius float64) *Shape {
 	verts := []vec.Vec2{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
@@ -49,17 +51,19 @@ func NewBoxShapeWithBody2(body *Body, bb BB, roundingRadius float64) {
 	}
 	shape := NewPolyShapeRaw(body, 4, verts, roundingRadius)
 	body.AttachShape(shape)
+	return shape
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func NewCircleShapeWithBody(body *Body, radius float64, offset vec.Vec2) {
+func NewCircleShapeWithBody(body *Body, radius float64, offset vec.Vec2) *Shape {
 	circle := &Circle{
 		c:      offset,
 		radius: radius,
 	}
 	circle.Shape = NewShape(circle, body, CircleShapeMassInfo(0, radius, offset))
 	body.AttachShape(circle.Shape)
+	return circle.Shape
 }
 
 // The shape will be added to the Body.
@@ -70,7 +74,7 @@ func NewPolyShapeWithBody(
 	verts []vec.Vec2,
 	transform Transform,
 	roundingRadius float64,
-) {
+) *Shape {
 	hullVerts := []vec.Vec2{}
 	// Transform the verts before building the hull in case of a negative scale.
 	for i := 0; i < vectCount; i++ {
@@ -80,29 +84,30 @@ func NewPolyShapeWithBody(
 	hullCount := convexHull(vectCount, hullVerts, nil, 0)
 	plshape := NewPolyShapeRaw(body, hullCount, hullVerts, roundingRadius)
 	body.AttachShape(plshape)
+	return plshape
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func MakeDynamicCircleBody(radius float64, mass float64) (*Body, *Shape) {
+func MakeDynamicCircleBody(radius float64, mass float64, offset vec.Vec2) (*Body, *Shape) {
 	body := NewBody(mass, MomentForCircle2(mass, radius))
-	NewCircleShapeWithBody(body, 5, vec.Vec2{})
+	NewCircleShapeWithBody(body, radius, offset)
 	return body, body.Shapes[0]
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func MakeDynamicBoxBody(mass, w, h float64) (*Body, *Shape) {
+func MakeDynamicBoxBody(mass, w, h float64, roundingRadius float64) (*Body, *Shape) {
 	body := NewBody(mass, MomentForBox(mass, w, h))
-	NewBoxShapeWithBody(body, w, h, 0)
+	NewBoxShapeWithBody(body, w, h, roundingRadius)
 	return body, body.Shapes[0]
 }
 
 // The shape will be added to the Body.
 // The Body of the Shape is set to the given body.
-func MakeStaticBoxBody(w, h float64) (*Body, *Shape) {
+func MakeStaticBoxBody(w, h float64, roundingRadius float64) (*Body, *Shape) {
 	body := NewStaticBody()
-	NewBoxShapeWithBody(body, w, h, 0)
+	NewBoxShapeWithBody(body, w, h, roundingRadius)
 	return body, body.Shapes[0]
 }
 
