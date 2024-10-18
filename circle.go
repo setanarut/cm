@@ -12,15 +12,6 @@ type Circle struct {
 	radius        float64
 }
 
-func NewCircle(body *Body, radius float64, offset vec.Vec2) *Shape {
-	circle := &Circle{
-		c:      offset,
-		radius: radius,
-	}
-	circle.Shape = NewShape(circle, body, CircleShapeMassInfo(0, radius, offset))
-	return circle.Shape
-}
-
 func (circle *Circle) CacheData(transform Transform) BB {
 	circle.transformC = transform.Point(circle.c)
 	return NewBBForCircle(circle.transformC, circle.radius)
@@ -65,7 +56,7 @@ func (circle *Circle) SetRadius(r float64) {
 	mass := circle.massInfo.m
 	circle.massInfo = CircleShapeMassInfo(mass, circle.radius, circle.c)
 	if mass > 0 {
-		circle.body.AccumulateMassFromShapes()
+		circle.Body.AccumulateMassFromShapes()
 	}
 }
 

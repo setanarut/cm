@@ -33,7 +33,7 @@ type Shape struct {
 	Elasticity, Friction float64
 	BB                   BB
 	Space                *Space
-	body                 *Body
+	Body                 *Body
 	massInfo             *ShapeMassInfo
 	hashid               HashValue
 }
@@ -64,12 +64,8 @@ func (s *Shape) Order() int {
 // sensor is a boolean value if this shape is a sensor or not.
 // Sensors only call collision callbacks, and never generate real collisions.
 func (sh *Shape) SetSensor(sensor bool) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.Sensor = sensor
-}
-
-func (sh *Shape) Body() *Body {
-	return sh.body
 }
 
 func (sh *Shape) MassInfo() *ShapeMassInfo {
@@ -82,9 +78,9 @@ func (sh *Shape) Mass() float64 {
 
 // SetMass wakes up sleeping or idle body then sets mass
 func (sh *Shape) SetMass(mass float64) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.massInfo.m = mass
-	sh.body.AccumulateMassFromShapes()
+	sh.Body.AccumulateMassFromShapes()
 }
 
 func (sh *Shape) Density() float64 {
@@ -93,6 +89,9 @@ func (sh *Shape) Density() float64 {
 
 func (sh *Shape) SetDensity(density float64) {
 	sh.SetMass(density * sh.massInfo.area)
+}
+func (sh *Shape) SetBody(b *Body) {
+	sh.Body = b
 }
 
 func (sh *Shape) Moment() float64 {
@@ -119,28 +118,28 @@ func (sh *Shape) SetHashId(hashid HashValue) {
 // You can assign types to shapes that trigger callbacks (CollisionHandler) when
 // objects of certain types touch
 func (sh *Shape) SetCollisionType(collisionType CollisionType) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.CollisionType = collisionType
 }
 
 func (sh *Shape) SetFriction(u float64) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.Friction = u
 }
 
 // SetElasticity sets elasticity (0-1 range)
 func (sh *Shape) SetElasticity(e float64) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.Elasticity = e
 }
 
 func (sh *Shape) SetShapeFilter(filter ShapeFilter) {
-	sh.body.Activate()
+	sh.Body.Activate()
 	sh.Filter = filter
 }
 
 func (sh *Shape) CacheBB() BB {
-	return sh.Update(sh.body.transform)
+	return sh.Update(sh.Body.transform)
 }
 
 func (sh *Shape) Update(transform Transform) BB {
@@ -209,7 +208,7 @@ func (sh *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryI
 func NewShape(class IShape, body *Body, massInfo *ShapeMassInfo) *Shape {
 	return &Shape{
 		Class:    class,
-		body:     body,
+		Body:     body,
 		massInfo: massInfo,
 
 		SurfaceVelocity: vec.Vec2{},
@@ -219,6 +218,7 @@ func NewShape(class IShape, body *Body, massInfo *ShapeMassInfo) *Shape {
 			Mask:       AllCategories,
 		},
 	}
+
 }
 
 // Return contact information about two shapes.

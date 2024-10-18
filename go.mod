@@ -8,4 +8,6 @@ retract (
 	v1.0.1 // fatal mistake
 )
 
-require github.com/setanarut/vec v1.1.0
+require (
+	github.com/setanarut/vec v1.1.0
+)

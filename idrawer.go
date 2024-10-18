@@ -35,7 +35,7 @@ type IDrawer interface {
 
 // DrawShape draws shapes with the drawer implementation
 func DrawShape(shape *Shape, drawer IDrawer) {
-	body := shape.body
+	body := shape.Body
 	data := drawer.Data()
 
 	outline := drawer.OutlineColor()

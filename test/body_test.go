@@ -9,20 +9,17 @@ import (
 
 func TestBodyMassFromShapes(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	circle := cm.NewCircle(body, 5, vec.Vec2{0, 0})
-	circle2 := cm.NewCircle(body, 5, vec.Vec2{0, 0})
+	cm.NewCircleShapeWithBody(body, 5, vec.Vec2{0, 0})
+	cm.NewCircleShapeWithBody(body, 5, vec.Vec2{0, 0})
 
 	mass := 10.0
-	circle.SetMass(mass)
-	body.AddShape(circle)
+	body.ShapeAtIndex(0).SetMass(mass)
 
 	if body.Mass() != mass {
 		t.Fail()
 	}
 
-	circle2.SetMass(mass)
-	body.AddShape(circle2)
-
+	body.ShapeAtIndex(1).SetMass(mass)
 	if body.Mass() != mass*2 {
 		t.Fail()
 	}
@@ -30,23 +27,20 @@ func TestBodyMassFromShapes(t *testing.T) {
 
 func TestBodyCoGFromShapes(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	circle := cm.NewCircle(body, 5, vec.Vec2{0, 0})
-	circle2 := cm.NewCircle(body, 5, vec.Vec2{10, 0})
+	cm.NewCircleShapeWithBody(body, 5, vec.Vec2{0, 0})
+	cm.NewCircleShapeWithBody(body, 5, vec.Vec2{10, 0})
 
 	mass := 10.0
 
-	circle.SetMass(mass)
-	body.AddShape(circle)
-
-	circle2.SetMass(mass)
-	body.AddShape(circle2)
+	body.ShapeAtIndex(0).SetMass(mass)
+	body.ShapeAtIndex(1).SetMass(mass)
 
 	cog := body.CenterOfGravity()
 	if cog.X != 5.0 || cog.Y != 0.0 {
 		t.Fail()
 	}
 
-	body.RemoveShape(circle)
+	body.RemoveShape(body.ShapeAtIndex(0))
 	cog = body.CenterOfGravity()
 	if cog.X != 10.0 || cog.Y != 0.0 {
 		t.Fail()

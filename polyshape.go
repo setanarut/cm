@@ -168,7 +168,7 @@ func (ps *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Trans
 		hullVerts[i] = transform.Point(verts[i])
 	}
 
-	hullCount := ConvexHull(count, hullVerts, nil, 0)
+	hullCount := convexHull(count, hullVerts, nil, 0)
 	ps.SetVertsRaw(hullCount, hullVerts)
 }
 
@@ -177,14 +177,14 @@ func (p *PolyShape) SetVertsRaw(count int, verts []vec.Vec2) {
 	mass := p.massInfo.m
 	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.Radius)
 	if mass > 0 {
-		p.body.AccumulateMassFromShapes()
+		p.Body.AccumulateMassFromShapes()
 	}
 }
 
 // QuickHull seemed like a neat algorithm, and efficient-ish for large input sets.
 // My implementation performs an in place reduction using the result array as scratch space.
-func ConvexHull(count int, verts []vec.Vec2, first *int, tol float64) int {
-	start, end := LoopIndexes(verts, count)
+func convexHull(count int, verts []vec.Vec2, first *int, tol float64) int {
+	start, end := loopIndexes(verts, count)
 	if start == end {
 		if first != nil {
 			*first = 0
@@ -209,7 +209,7 @@ func ConvexHull(count int, verts []vec.Vec2, first *int, tol float64) int {
 	return QHullReduce(tol, verts[2:], count-2, a, b, a, verts[1:]) + 1
 }
 
-func LoopIndexes(verts []vec.Vec2, count int) (int, int) {
+func loopIndexes(verts []vec.Vec2, count int) (int, int) {
 	start := 0
 	end := 0
 
@@ -287,49 +287,20 @@ func QHullPartition(verts []vec.Vec2, count int, a, b vec.Vec2, tol float64) int
 	return head
 }
 
-func NewPolyShape(body *Body, vectCount int, verts []vec.Vec2, transform Transform, radius float64) *Shape {
-	hullVerts := []vec.Vec2{}
-	// Transform the verts before building the hull in case of a negative scale.
-	for i := 0; i < vectCount; i++ {
-		hullVerts = append(hullVerts, transform.Point(verts[i]))
-	}
-
-	hullCount := ConvexHull(vectCount, hullVerts, nil, 0)
-	return NewPolyShapeRaw(body, hullCount, hullVerts, radius)
-}
-
-func NewPolyShapeRaw(body *Body, count int, verts []vec.Vec2, radius float64) *Shape {
+func NewPolyShapeRaw(
+	body *Body,
+	count int,
+	verts []vec.Vec2,
+	roundingRadius float64,
+) *Shape {
 	poly := &PolyShape{
-		Radius: radius,
+		Radius: roundingRadius,
 		count:  count,
 		planes: []SplittingPlane{},
 	}
-	poly.Shape = NewShape(poly, body, PolyShapeMassInfo(0, count, verts, radius))
+	poly.Shape = NewShape(poly, body, PolyShapeMassInfo(0, count, verts, roundingRadius))
 	poly.SetVerts(count, verts)
 	return poly.Shape
-}
-
-func NewBox(body *Body, w, h, r float64) *Shape {
-	hw := w / 2.0
-	hh := h / 2.0
-	bb := &BB{-hw, -hh, hw, hh}
-	verts := []vec.Vec2{
-		{bb.R, bb.B},
-		{bb.R, bb.T},
-		{bb.L, bb.T},
-		{bb.L, bb.B},
-	}
-	return NewPolyShapeRaw(body, 4, verts, r)
-}
-
-func NewBox2(body *Body, bb BB, r float64) *Shape {
-	verts := []vec.Vec2{
-		{bb.R, bb.B},
-		{bb.R, bb.T},
-		{bb.L, bb.T},
-		{bb.L, bb.B},
-	}
-	return NewPolyShapeRaw(body, 4, verts, r)
 }
 
 func PolyShapeMassInfo(mass float64, count int, verts []vec.Vec2, r float64) *ShapeMassInfo {

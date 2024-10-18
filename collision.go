@@ -132,7 +132,7 @@ func CircleToSegment(info *CollisionInfo) {
 		}
 		n := info.n
 
-		rot := segment.Shape.body.Rotation()
+		rot := segment.Shape.Body.Rotation()
 		if (closestT != 0.0 || n.Dot(segment.aTangent.RotateComplex(rot)) >= 0.0) &&
 			(closestT != 1.0 || n.Dot(segment.bTangent.RotateComplex(rot)) >= 0.0) {
 			info.PushContact(center.Add(n.Scale(circle.radius)), closest.Add(n.Scale(-segment.radius)), 0)
@@ -148,8 +148,8 @@ func SegmentToSegment(info *CollisionInfo) {
 	points := GJK(context, &info.collisionId)
 
 	n := points.n
-	rot1 := seg1.body.Rotation()
-	rot2 := seg2.body.Rotation()
+	rot1 := seg1.Body.Rotation()
+	rot2 := seg2.Body.Rotation()
 
 	if points.d > (seg1.radius + seg2.radius) {
 		return
@@ -181,7 +181,7 @@ func SegmentToPoly(info *CollisionInfo) {
 	points := GJK(context, &info.collisionId)
 
 	n := points.n
-	rot := info.a.body.Rotation()
+	rot := info.a.Body.Rotation()
 
 	segment := info.a.Class.(*Segment)
 	polyshape := info.b.Class.(*PolyShape)

@@ -128,7 +128,7 @@ func (pl *PolyLine) SimplifyCurves(tol float64) *PolyLine {
 	min := tol / 2.0
 
 	if pl.IsClosed() {
-		start, end := LoopIndexes(pl.Verts, len(pl.Verts)-1)
+		start, end := loopIndexes(pl.Verts, len(pl.Verts)-1)
 
 		reduced = reduced.Push(pl.Verts[start])
 		reduced = DouglasPeucker(pl.Verts, reduced, len(pl.Verts)-1, start, end, min, tol)

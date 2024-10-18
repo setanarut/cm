@@ -8,11 +8,13 @@ import (
 	"github.com/setanarut/vec"
 )
 
-// Body types
+type BodyType uint8
+
+// Body type
 const (
-	Dynamic = iota
-	Kinematic
-	Static
+	Dynamic   BodyType = 0
+	Kinematic BodyType = 1
+	Static    BodyType = 2
 )
 
 var bodyCur int = 0
@@ -28,8 +30,10 @@ type Body struct {
 	//
 	// You can use this get a reference to your game object or controller object from within callbacks.
 	UserData any
+	Space    *Space
 
-	id                     int              // Body id
+	id                     int // Body id
+	Shapes                 []*Shape
 	velocityFunc           BodyVelocityFunc // Integration function
 	positionFunc           BodyPositionFunc // Integration function
 	mass                   float64          // Mass
@@ -44,8 +48,6 @@ type Body struct {
 	velocity               vec.Vec2         // Velocity
 	force                  vec.Vec2         // Force
 	transform              Transform
-	space                  *Space
-	shapeList              []*Shape
 	arbiterList            *Arbiter
 	constraintList         *Constraint
 	sleepingRoot           *Body
@@ -57,17 +59,12 @@ type Body struct {
 
 // String returns body id as string
 func (b Body) String() string {
-	return fmt.Sprint("Body ", b.id, ", Shapes ", b.shapeList)
+	return fmt.Sprint("Body ", b.id, ", Shapes ", b.Shapes)
 }
 
-// Shapes returns shapes attached to this body
-func (b *Body) Shapes() []*Shape {
-	return b.shapeList
-}
-
-// FirstShape returns first shape attached to this body
-func (b *Body) FirstShape() *Shape {
-	return b.shapeList[0]
+// ShapeAtIndex returns shape at index attached to this body
+func (b *Body) ShapeAtIndex(index int) *Shape {
+	return b.Shapes[index]
 }
 
 // NewBody Initializes a rigid body with the given mass and moment of inertia.
@@ -75,22 +72,15 @@ func (b *Body) FirstShape() *Shape {
 // Guessing the moment of inertia is usually a bad idea. Use the moment estimation functions MomentFor*().
 func NewBody(mass, moment float64) *Body {
 	body := &Body{
-		id:              bodyCur,
-		centerOfGravity: vec.Vec2{},
-		position:        vec.Vec2{},
-		velocity:        vec.Vec2{},
-		force:           vec.Vec2{},
-		vBias:           vec.Vec2{},
-		transform:       NewTransformIdentity(),
-		velocityFunc:    BodyUpdateVelocity,
-		positionFunc:    BodyUpdatePosition,
+		id:           bodyCur,
+		transform:    NewTransformIdentity(),
+		velocityFunc: BodyUpdateVelocity,
+		positionFunc: BodyUpdatePosition,
 	}
 	bodyCur++
-
 	body.SetMass(mass)
 	body.SetMoment(moment)
 	body.SetAngle(0)
-
 	return body
 }
 
@@ -145,19 +135,19 @@ func (body *Body) IdleTime() float64 {
 }
 
 // SetType sets the type of the body.
-func (body *Body) SetType(newType int) {
-	oldType := body.GetType()
-	if oldType == newType {
+func (body *Body) SetType(bt BodyType) {
+	oldType := body.Type()
+	if oldType == bt {
 		return
 	}
 
-	if newType == Static {
+	if bt == Static {
 		body.sleepingIdleTime = infinity
 	} else {
 		body.sleepingIdleTime = 0
 	}
 
-	if newType == Dynamic {
+	if bt == Dynamic {
 		body.mass = 0
 		body.momentOfInertia = 0
 		body.massInverse = infinity
@@ -175,10 +165,10 @@ func (body *Body) SetType(newType int) {
 	}
 
 	// If the body is added to a space already, we'll need to update some space data structures.
-	if body.space == nil {
+	if body.Space == nil {
 		return
 	}
-	if body.space.locked != 0 {
+	if body.Space.locked != 0 {
 		log.Fatalln("Space is locked")
 	}
 
@@ -187,46 +177,46 @@ func (body *Body) SetType(newType int) {
 	}
 
 	if oldType == Static {
-		for i, b := range body.space.StaticBodies {
+		for i, b := range body.Space.StaticBodies {
 			if b == body {
-				body.space.StaticBodies = append(body.space.StaticBodies[:i], body.space.StaticBodies[i+1:]...)
+				body.Space.StaticBodies = append(body.Space.StaticBodies[:i], body.Space.StaticBodies[i+1:]...)
 				break
 			}
 		}
-		body.space.DynamicBodies = append(body.space.DynamicBodies, body)
-	} else if newType == Static {
-		for i, b := range body.space.DynamicBodies {
+		body.Space.DynamicBodies = append(body.Space.DynamicBodies, body)
+	} else if bt == Static {
+		for i, b := range body.Space.DynamicBodies {
 			if b == body {
-				body.space.DynamicBodies = append(body.space.DynamicBodies[:i], body.space.DynamicBodies[i+1:]...)
+				body.Space.DynamicBodies = append(body.Space.DynamicBodies[:i], body.Space.DynamicBodies[i+1:]...)
 				break
 			}
 		}
-		body.space.StaticBodies = append(body.space.StaticBodies, body)
+		body.Space.StaticBodies = append(body.Space.StaticBodies, body)
 	}
 
 	var fromIndex, toIndex *SpatialIndex
 	if oldType == Static {
-		fromIndex = body.space.staticShapes
+		fromIndex = body.Space.staticShapes
 	} else {
-		fromIndex = body.space.dynamicShapes
+		fromIndex = body.Space.dynamicShapes
 	}
 
-	if newType == Static {
-		toIndex = body.space.staticShapes
+	if bt == Static {
+		toIndex = body.Space.staticShapes
 	} else {
-		toIndex = body.space.dynamicShapes
+		toIndex = body.Space.dynamicShapes
 	}
 
-	if oldType != newType {
-		for _, shape := range body.shapeList {
+	if oldType != bt {
+		for _, shape := range body.Shapes {
 			fromIndex.class.Remove(shape, shape.hashid)
 			toIndex.class.Insert(shape, shape.hashid)
 		}
 	}
 }
 
-// GetType returns the type of the body.
-func (body *Body) GetType() int {
+// Type returns the type of the body.
+func (body *Body) Type() BodyType {
 	if body.sleepingIdleTime == infinity {
 		return Static
 	}
@@ -238,7 +228,7 @@ func (body *Body) GetType() int {
 
 // AccumulateMassFromShapes should *only* be called when shapes with mass info are modified, added or removed.
 func (body *Body) AccumulateMassFromShapes() {
-	if body == nil || body.GetType() != Dynamic {
+	if body == nil || body.Type() != Dynamic {
 		return
 	}
 
@@ -249,7 +239,7 @@ func (body *Body) AccumulateMassFromShapes() {
 	// cache position, realign at the end
 	pos := body.Position()
 
-	for _, shape := range body.shapeList {
+	for _, shape := range body.Shapes {
 		info := shape.MassInfo()
 		m := info.m
 
@@ -317,7 +307,7 @@ func (body *Body) SetVelocityVector(v vec.Vec2) {
 
 // UpdateVelocity is the default velocity integration function.
 func (body *Body) UpdateVelocity(gravity vec.Vec2, damping, dt float64) {
-	if body.GetType() == Kinematic {
+	if body.Type() == Kinematic {
 		return
 	}
 	// if body.mass < 0 && body.moi < 0 {
@@ -382,13 +372,13 @@ func (body *Body) Transform() Transform {
 
 // Activate wakes up a sleeping or idle body.
 func (body *Body) Activate() {
-	if !(body != nil && body.GetType() == Dynamic) {
+	if !(body != nil && body.Type() == Dynamic) {
 		return
 	}
 	body.sleepingIdleTime = 0
 	root := body.ComponentRoot()
 	if root != nil && root.IsSleeping() {
-		space := root.space
+		space := root.Space
 		// in the chipmunk code they shadow body, so here I am not
 		bodyToo := root
 		for bodyToo != nil {
@@ -418,7 +408,7 @@ func (body *Body) Activate() {
 		} else {
 			other = arbiter.bodyA
 		}
-		if other.GetType() != Static {
+		if other.Type() != Static {
 			other.sleepingIdleTime = 0
 		}
 	}
@@ -442,13 +432,12 @@ func (body *Body) IsSleeping() bool {
 	return body.sleepingRoot != nil
 }
 
-// AddShape adds shape to the body and returns added shape
-func (body *Body) AddShape(shape *Shape) *Shape {
-	body.shapeList = append(body.shapeList, shape)
+// AttachShape adds shape to the body
+func (body *Body) AttachShape(shape *Shape) {
+	body.Shapes = append(body.Shapes, shape)
 	if shape.MassInfo().m > 0 {
 		body.AccumulateMassFromShapes()
 	}
-	return shape
 }
 
 // KineticEnergy returns the kinetic energy of this body.
@@ -555,19 +544,24 @@ func (body *Body) RemoveConstraint(constraint *Constraint) {
 
 // RemoveShape removes collision shape from the body.
 func (body *Body) RemoveShape(shape *Shape) {
-	for i, s := range body.shapeList {
+	for i, s := range body.Shapes {
 		if s == shape {
 			// leak-free delete from slice
-			last := len(body.shapeList) - 1
-			body.shapeList[i] = body.shapeList[last]
-			body.shapeList[last] = nil
-			body.shapeList = body.shapeList[:last]
+			last := len(body.Shapes) - 1
+			body.Shapes[i] = body.Shapes[last]
+			body.Shapes[last] = nil
+			body.Shapes = body.Shapes[:last]
 			break
 		}
 	}
-	if body.GetType() == Dynamic && shape.massInfo.m > 0 {
+	if body.Type() == Dynamic && shape.massInfo.m > 0 {
 		body.AccumulateMassFromShapes()
 	}
+}
+
+// RemoveShapeAtIndex removes collision shape from the body.
+func (body *Body) RemoveShapeAtIndex(index int) {
+	body.RemoveShape(body.Shapes[index])
 }
 
 // SetVelocityUpdateFunc sets the callback used to update a body's velocity.
@@ -597,8 +591,8 @@ func (body *Body) EachArbiter(f func(*Arbiter)) {
 
 // EachShape calls f once for each shape attached to this body
 func (body *Body) EachShape(f func(*Shape)) {
-	for i := 0; i < len(body.shapeList); i++ {
-		f(body.shapeList[i])
+	for i := 0; i < len(body.Shapes); i++ {
+		f(body.Shapes[i])
 	}
 }
 
@@ -625,7 +619,7 @@ func filterConstraints(node *Constraint, body *Body, filter *Constraint) *Constr
 
 // BodyUpdateVelocity is default velocity integration function.
 func BodyUpdateVelocity(body *Body, gravity vec.Vec2, damping, dt float64) {
-	if body.GetType() == Kinematic {
+	if body.Type() == Kinematic {
 		return
 	}
 

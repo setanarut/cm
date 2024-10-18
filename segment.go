@@ -118,7 +118,7 @@ func (seg *Segment) SetRadius(r float64) {
 	mass := seg.massInfo.m
 	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
 	if mass > 0 {
-		seg.body.AccumulateMassFromShapes()
+		seg.Body.AccumulateMassFromShapes()
 	}
 }
 
@@ -142,7 +142,7 @@ func (seg *Segment) SetEndpoints(a, b vec.Vec2) {
 	mass := seg.massInfo.m
 	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
 	if mass > 0 {
-		seg.body.AccumulateMassFromShapes()
+		seg.Body.AccumulateMassFromShapes()
 	}
 }
 
@@ -156,20 +156,6 @@ func (seg *Segment) A() vec.Vec2 {
 
 func (seg *Segment) B() vec.Vec2 {
 	return seg.b
-}
-
-func NewSegment(body *Body, a, b vec.Vec2, r float64) *Shape {
-	segment := &Segment{
-		a: a,
-		b: b,
-		n: b.Sub(a).Unit().ReversePerp(),
-
-		radius:   r,
-		aTangent: vec.Vec2{},
-		bTangent: vec.Vec2{},
-	}
-	segment.Shape = NewShape(segment, body, NewSegmentMassInfo(0, a, b, r))
-	return segment.Shape
 }
 
 func NewSegmentMassInfo(mass float64, a, b vec.Vec2, r float64) *ShapeMassInfo {

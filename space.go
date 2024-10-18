@@ -9,8 +9,10 @@ import (
 	"github.com/setanarut/vec"
 )
 
-const MaxContactsPerArbiter = 2
-const ContactsBufferSize = 1024
+const (
+	MaxContactsPerArbiter int = 2
+	ContactsBufferSize    int = 1024
+)
 
 type Space struct {
 	UserData any
@@ -118,7 +120,7 @@ func NewSpace() *Space {
 		PostStepCallbacks: []*PostStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
-	for i := 0; i < PooledBufferSize; i++ {
+	for i := 0; i < pooledBufferSize; i++ {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
 	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
@@ -149,12 +151,12 @@ func (s *Space) SetGravity(gravity vec.Vec2) {
 
 func (s *Space) SetStaticBody(body *Body) {
 	if s.StaticBody != nil {
-		s.StaticBody.space = nil
+		s.StaticBody.Space = nil
 		panic(`Internal Error: Changing the designated static
 		body while the old one still had shapes attached.`)
 	}
 	s.StaticBody = body
-	body.space = s
+	body.Space = s
 }
 
 func (s *Space) Activate(body *Body) {
@@ -168,7 +170,7 @@ func (s *Space) Activate(body *Body) {
 
 	s.DynamicBodies = append(s.DynamicBodies, body)
 
-	for _, shape := range body.shapeList {
+	for _, shape := range body.Shapes {
 		s.staticShapes.class.Remove(shape, shape.hashid)
 		s.dynamicShapes.class.Insert(shape, shape.hashid)
 	}
@@ -180,7 +182,7 @@ func (s *Space) Activate(body *Body) {
 		// You only want to restore the arbiter once, so bodyA is arbitrarily chosen to own the arbiter.
 		// The edge case is when static bodies are involved as the static bodies never actually sleep.
 		// If the static body is bodyB then all is good. If the static body is bodyA, that can easily be checked.
-		if body == bodyA || bodyA.GetType() == Static {
+		if body == bodyA || bodyA.Type() == Static {
 			numContacts := arbiter.count
 			contacts := arbiter.contacts
 
@@ -205,7 +207,7 @@ func (s *Space) Activate(body *Body) {
 	}
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
-		if body == constraint.bodyA || constraint.bodyA.GetType() == Static {
+		if body == constraint.bodyA || constraint.bodyA.Type() == Static {
 			s.constraints = append(s.constraints, constraint)
 		}
 	}
@@ -219,14 +221,14 @@ func (s *Space) Deactivate(body *Body) {
 		}
 	}
 
-	for _, shape := range body.shapeList {
+	for _, shape := range body.Shapes {
 		s.dynamicShapes.class.Remove(shape, shape.hashid)
 		s.staticShapes.class.Insert(shape, shape.hashid)
 	}
 
 	for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
 		bodyA := arb.bodyA
-		if body == bodyA || bodyA.GetType() == Static {
+		if body == bodyA || bodyA.Type() == Static {
 			s.UncacheArbiter(arb)
 			// Save contact values to a new block of memory so they won't time out
 			contacts := make([]Contact, arb.count)
@@ -238,7 +240,7 @@ func (s *Space) Deactivate(body *Body) {
 
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
 		bodyA := constraint.bodyA
-		if body == bodyA || bodyA.GetType() == Static {
+		if body == bodyA || bodyA.Type() == Static {
 			for i, c := range s.constraints {
 				if c == constraint {
 					s.constraints = append(s.constraints[0:i], s.constraints[i+1:]...)
@@ -252,17 +254,15 @@ func (s *Space) Deactivate(body *Body) {
 //
 // If the shape is attached to a static body, it will be added as a static shape
 func (s *Space) AddShape(shape *Shape) *Shape {
-	var body *Body = shape.Body()
-
-	isStatic := body.GetType() == Static
+	isStatic := shape.Body.Type() == Static
 	if !isStatic {
-		body.Activate()
+		shape.Body.Activate()
 	}
-	body.AddShape(shape)
+	// shape.Body.AppendShape(shape)
 
 	shape.SetHashId(HashValue(s.shapeIDCounter))
 	s.shapeIDCounter += 1
-	shape.Update(body.transform)
+	shape.Update(shape.Body.transform)
 
 	if isStatic {
 		s.staticShapes.class.Insert(shape, shape.HashId())
@@ -276,9 +276,9 @@ func (s *Space) AddShape(shape *Shape) *Shape {
 
 // RemoveShape removes a collision shape from the simulation.
 func (s *Space) RemoveShape(shape *Shape) {
-	body := shape.body
+	body := shape.Body
 
-	isStatic := body.GetType() == Static
+	isStatic := body.Type() == Static
 	if isStatic {
 		body.ActivateStatic(shape)
 	} else {
@@ -296,25 +296,42 @@ func (s *Space) RemoveShape(shape *Shape) {
 	shape.hashid = 0
 }
 
-// AddBody adds a body to the space if not in s.
-func (s *Space) AddBody(body *Body) *Body {
-
-	if body.GetType() == Static {
+// AddBody adds body to the space.
+//
+// Do not add the same Body twice.
+func (s *Space) AddBody(body *Body) {
+	if body.Type() == Static {
 		s.StaticBodies = append(s.StaticBodies, body)
 	} else {
 		s.DynamicBodies = append(s.DynamicBodies, body)
 	}
-	body.space = s
-	return body
+	body.Space = s
 }
 
-// AddBodyWidthShapes adds a body to the space with body's Shapes.
-func (s *Space) AddBodyWidthShapes(body *Body) *Body {
-	for _, v := range body.Shapes() {
-		s.AddShape(v)
+// AddBodyWithShapes adds body to the space with body's shapes.
+//
+// Do not add the same Body twice.
+func (s *Space) AddBodyWithShapes(body *Body) {
+	s.AddBody(body)
+	for _, shape := range body.Shapes {
+		s.AddShape(shape)
 	}
-	return s.AddBody(body)
+}
 
+// AddDynamicBody appends body to the space.
+//
+// Do not add the same Body twice.
+func (s *Space) AddDynamicBody(body *Body) {
+	s.DynamicBodies = append(s.DynamicBodies, body)
+	body.Space = s
+}
+
+// AddStaticBody appends body to the space.
+//
+// Do not add the same Body twice.
+func (s *Space) AddStaticBody(body *Body) {
+	s.StaticBodies = append(s.StaticBodies, body)
+	body.Space = s
 }
 
 // ReindexShape re-computes the hash of the shape in both the dynamic and static list.
@@ -335,7 +352,7 @@ func (s *Space) ReindexShape(shape *Shape) {
 func (s *Space) RemoveBody(body *Body) {
 
 	body.Activate()
-	if body.GetType() == Static {
+	if body.Type() == Static {
 		for i, b := range s.StaticBodies {
 			if b == body {
 				s.StaticBodies = append(s.StaticBodies[:i], s.StaticBodies[i+1:]...)
@@ -350,7 +367,7 @@ func (s *Space) RemoveBody(body *Body) {
 			}
 		}
 	}
-	body.space = nil
+	body.Space = nil
 }
 
 // RemoveBodyWithShapes removes a body and body's shapes from the simulation
@@ -415,7 +432,7 @@ func (s *Space) ContainsShape(shape *Shape) bool {
 }
 
 func (s *Space) ContainsBody(body *Body) bool {
-	return body.space == s
+	return body.Space == s
 }
 
 func (s *Space) PushFreshContactBuffer() {
@@ -459,7 +476,7 @@ func (s *Space) ProcessComponents(dt float64) {
 
 		// update idling and reset component nodes
 		for _, body := range s.DynamicBodies {
-			if body.GetType() != Dynamic {
+			if body.Type() != Dynamic {
 				continue
 			}
 
@@ -482,10 +499,10 @@ func (s *Space) ProcessComponents(dt float64) {
 		b := arb.bodyB
 
 		if sleep {
-			if b.GetType() == Kinematic || a.IsSleeping() {
+			if b.Type() == Kinematic || a.IsSleeping() {
 				a.Activate()
 			}
-			if a.GetType() == Kinematic || b.IsSleeping() {
+			if a.Type() == Kinematic || b.IsSleeping() {
 				b.Activate()
 			}
 		}
@@ -497,10 +514,10 @@ func (s *Space) ProcessComponents(dt float64) {
 	if sleep {
 		// Bodies should be held active if connected by a joint to a kinematic.
 		for _, constraint := range s.constraints {
-			if constraint.bodyB.GetType() == Kinematic {
+			if constraint.bodyB.Type() == Kinematic {
 				constraint.bodyA.Activate()
 			}
-			if constraint.bodyA.GetType() == Kinematic {
+			if constraint.bodyA.Type() == Kinematic {
 				constraint.bodyB.Activate()
 			}
 		}
@@ -846,6 +863,16 @@ func (s *Space) EachDynamicShape(f func(*Shape)) {
 	s.Unlock(true)
 }
 
+func (s *Space) DynamicShapeCount() int {
+	return s.dynamicShapes.class.Count()
+}
+func (s *Space) StaticShapeCount() int {
+	return s.staticShapes.class.Count()
+}
+func (s *Space) ShapeCount() int {
+	return s.staticShapes.class.Count() + s.dynamicShapes.class.Count()
+}
+
 // EachShape calls func f for each shape in the space
 func (s *Space) EachShape(f func(*Shape)) {
 	s.Lock()
@@ -898,8 +925,8 @@ func (s *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data any)
 	s.Unlock(true)
 }
 
-func (s *Space) ArrayForBodyType(bodyType int) *[]*Body {
-	if bodyType == Static {
+func (s *Space) ArrayForBodyType(bt BodyType) *[]*Body {
+	if bt == Static {
 		return &s.StaticBodies
 	}
 	return &s.DynamicBodies
@@ -966,7 +993,7 @@ func (s *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data any) bool 
 
 // ShapeQuery queries a space for any shapes overlapping the this shape and call the callback for each shape found.
 func (s *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points *ContactPointSet)) bool {
-	body := shape.body
+	body := shape.Body
 	var bb BB
 	if body != nil {
 		bb = shape.Update(body.transform)
@@ -1050,7 +1077,7 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 		!(a.Sensor || b.Sensor) &&
 		// Don't process collisions between two infinite mass bodies.
 		// This includes collisions between two kinematic bodies, or a kinematic body and a static body.
-		!(a.body.mass == infinity && b.body.mass == infinity) {
+		!(a.Body.mass == infinity && b.Body.mass == infinity) {
 		space.Arbiters = append(space.Arbiters, arb)
 	} else {
 		space.PopContacts(info.count)
@@ -1070,7 +1097,7 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 }
 
 func QueryReject(a, b *Shape) bool {
-	if a.body == b.body {
+	if a.Body == b.Body {
 		return true
 	}
 	if a.Filter.Reject(b.Filter) {
@@ -1079,7 +1106,7 @@ func QueryReject(a, b *Shape) bool {
 	if !a.BB.Intersects(b.BB) {
 		return true
 	}
-	if QueryRejectConstraints(a.body, b.body) {
+	if QueryRejectConstraints(a.Body, b.Body) {
 		return true
 	}
 	return false
@@ -1108,7 +1135,7 @@ func ComponentActive(root *Body, threshold float64) bool {
 func FloodFillComponent(root *Body, body *Body) {
 	// Kinematic bodies cannot be put to sleep and prevent bodies they are touching from sleeping.
 	// Static bodies are effectively sleeping all the time.
-	if body.GetType() != Dynamic {
+	if body.Type() != Dynamic {
 		return
 	}
 
@@ -1202,7 +1229,7 @@ func arbiterSetEql(shapes ShapePair, arb *Arbiter) bool {
 }
 
 var ShapeVelocityFunc = func(obj any) vec.Vec2 {
-	return obj.(*Shape).body.velocity
+	return obj.(*Shape).Body.velocity
 }
 
 var ShapeUpdateFunc = func(shape *Shape) {

@@ -42,9 +42,9 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 	arbiter.count = 0
 	arbiter.contacts = nil
 	arbiter.shapeA = a
-	arbiter.bodyA = a.body
+	arbiter.bodyA = a.Body
 	arbiter.shapeB = b
-	arbiter.bodyB = b.body
+	arbiter.bodyB = b.Body
 	arbiter.threadA.next = nil
 	arbiter.threadB.next = nil
 	arbiter.threadA.prev = nil
@@ -186,9 +186,9 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 
 	// For collisions between two similar primitive types, the order could have been swapped since the last frame.
 	arb.shapeA = a
-	arb.bodyA = a.body
+	arb.bodyA = a.Body
 	arb.shapeB = b
-	arb.bodyB = b.body
+	arb.bodyB = b.Body
 
 	// Iterate over the possible pairs to look for hash value matches.
 	for i := 0; i < info.count; i++ {
@@ -196,8 +196,8 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 
 		// r1 and r2 store absolute offsets at init time.
 		// Need to convert them to relative offsets.
-		con.r1 = con.r1.Sub(a.body.position)
-		con.r2 = con.r2.Sub(b.body.position)
+		con.r1 = con.r1.Sub(a.Body.position)
+		con.r2 = con.r2.Sub(b.Body.position)
 
 		// Cached impulses are not zeroed at init time.
 		con.jnAcc = 0
@@ -434,7 +434,7 @@ func (arb *Arbiter) Shapes() (*Shape, *Shape) {
 // The order of the space.CollisionType the bodies are associated with values will match the order set when the collision handler was registered.
 func (arb *Arbiter) Bodies() (*Body, *Body) {
 	shapeA, shapeB := arb.Shapes()
-	return shapeA.body, shapeB.body
+	return shapeA.Body, shapeB.Body
 }
 
 func (arb *Arbiter) Normal() vec.Vec2 {

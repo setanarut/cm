@@ -42,8 +42,8 @@ func NewBBForCircle(p vec.Vec2, r float64) BB {
 }
 
 // Intersects returns true if a and b intersect.
-func (a BB) Intersects(b BB) bool {
-	return a.L <= b.R && b.L <= a.R && a.B <= b.T && b.B <= a.T
+func (bb BB) Intersects(b BB) bool {
+	return bb.L <= b.R && b.L <= bb.R && bb.B <= b.T && b.B <= bb.T
 }
 
 // Contains returns true if other lies completely within bb.

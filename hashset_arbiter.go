@@ -9,7 +9,7 @@ func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 	a := arb.bodyA
 	b := arb.bodyB
 
-	if (a.GetType() == Static || a.IsSleeping()) && (b.GetType() == Static || b.IsSleeping()) {
+	if (a.Type() == Static || a.IsSleeping()) && (b.Type() == Static || b.IsSleeping()) {
 		return true
 	}
 
