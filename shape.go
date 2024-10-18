@@ -6,17 +6,7 @@ import (
 	"github.com/setanarut/vec"
 )
 
-type Shaper interface {
-	Body() *Body
-	MassInfo() *ShapeMassInfo
-	HashId() HashValue
-	SetHashId(HashValue)
-	SetSpace(*Space)
-	BB() BB
-	SetBB(BB)
-}
-
-type ShapeClass interface {
+type IShape interface {
 	CacheData(transform Transform) BB
 	PointQuery(p vec.Vec2, info *PointQueryInfo)
 	SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo)
@@ -27,8 +17,8 @@ const (
 )
 
 type Shape struct {
+	Class    IShape
 	UserData any
-	Class    ShapeClass
 	Filter   ShapeFilter
 	// You can assign types to collision shapes that triggercallbacks when objects
 	// of certain types touch.
@@ -36,17 +26,16 @@ type Shape struct {
 	// Sensor is a boolean value if this shape is a Sensor or not.
 	// Sensors only call collision callbacks, and never generate real collisions.
 	Sensor bool
-
-	space                *Space
-	body                 *Body
-	massInfo             *ShapeMassInfo
-	bb                   BB
-	elasticity, friction float64
 	// The surface velocity of the object. Useful for creating conveyor belts or
 	// players that move around. This value is only used when calculating friction,
 	// not resolving the collision.
-	surfaceVelocity vec.Vec2
-	hashid          HashValue
+	SurfaceVelocity      vec.Vec2
+	Elasticity, Friction float64
+	BB                   BB
+	Space                *Space
+	body                 *Body
+	massInfo             *ShapeMassInfo
+	hashid               HashValue
 }
 
 func (s Shape) String() string {
@@ -71,15 +60,12 @@ func (s *Shape) Order() int {
 // 	return s.sensor
 // }
 
-// SetSensor sets sensor. A boolean value if this shape is a sensor or not.
+// SetSensor wakes up sleeping or idle body then sets Shape.Sensor.
+// sensor is a boolean value if this shape is a sensor or not.
 // Sensors only call collision callbacks, and never generate real collisions.
 func (sh *Shape) SetSensor(sensor bool) {
 	sh.body.Activate()
 	sh.Sensor = sensor
-}
-
-func (sh *Shape) Space() *Space {
-	return sh.space
 }
 
 func (sh *Shape) Body() *Body {
@@ -94,9 +80,9 @@ func (sh *Shape) Mass() float64 {
 	return sh.massInfo.m
 }
 
+// SetMass wakes up sleeping or idle body then sets mass
 func (sh *Shape) SetMass(mass float64) {
 	sh.body.Activate()
-
 	sh.massInfo.m = mass
 	sh.body.AccumulateMassFromShapes()
 }
@@ -129,19 +115,6 @@ func (sh *Shape) SetHashId(hashid HashValue) {
 	sh.hashid = hashid
 }
 
-func (sh *Shape) SetSpace(space *Space) {
-	sh.space = space
-}
-
-// BB returns 2D axis-aligned bounding box of this shape.
-func (sh *Shape) BB() BB {
-	return sh.bb
-}
-
-func (sh *Shape) SetBB(bb BB) {
-	sh.bb = bb
-}
-
 // SetCollisionType sets collision type.
 // You can assign types to shapes that trigger callbacks (CollisionHandler) when
 // objects of certain types touch
@@ -150,41 +123,15 @@ func (sh *Shape) SetCollisionType(collisionType CollisionType) {
 	sh.CollisionType = collisionType
 }
 
-func (sh *Shape) Friction() float64 {
-	return sh.friction
-}
-
 func (sh *Shape) SetFriction(u float64) {
-	// if s.friction < 0 {
-	// 	log.Fatalln("Friction must be positive")
-	// }
 	sh.body.Activate()
-	sh.friction = u
-}
-
-// SurfaceVelocity returns the surface velocity of this shape.
-func (sh *Shape) SurfaceVelocity() vec.Vec2 {
-	return sh.surfaceVelocity
-}
-
-// SetSurfaceVelocity sets the surface velocity of the object.
-// Useful for creating conveyor belts or players that move around.
-// This value is only used when calculating friction, not resolving the collision.
-func (sh *Shape) SetSurfaceVelocity(surfaceV vec.Vec2) {
-	sh.surfaceVelocity = surfaceV
-}
-
-func (sh *Shape) Elasticity() float64 {
-	return sh.elasticity
+	sh.Friction = u
 }
 
 // SetElasticity sets elasticity (0-1 range)
 func (sh *Shape) SetElasticity(e float64) {
-	// if s.elasticity < 0 {
-	// 	log.Fatalln("Elasticity must be positive")
-	// }
 	sh.body.Activate()
-	sh.elasticity = e
+	sh.Elasticity = e
 }
 
 func (sh *Shape) SetShapeFilter(filter ShapeFilter) {
@@ -197,8 +144,8 @@ func (sh *Shape) CacheBB() BB {
 }
 
 func (sh *Shape) Update(transform Transform) BB {
-	sh.bb = sh.Class.CacheData(transform)
-	return sh.bb
+	sh.BB = sh.Class.CacheData(transform)
+	return sh.BB
 }
 
 func (sh *Shape) Point(i uint32) SupportPoint {
@@ -230,7 +177,7 @@ func (sh *Shape) Point(i uint32) SupportPoint {
 // The value returned is the distance between the points.
 // A negative distance means the point is inside the shape.
 func (sh *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
-	info := PointQueryInfo{nil, vec.Vec2{}, Infinity, vec.Vec2{}}
+	info := PointQueryInfo{nil, vec.Vec2{}, infinity, vec.Vec2{}}
 	sh.Class.PointQuery(p, &info)
 	return info
 }
@@ -259,13 +206,13 @@ func (sh *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryI
 	return info.Shape != nil
 }
 
-func NewShape(class ShapeClass, body *Body, massInfo *ShapeMassInfo) *Shape {
+func NewShape(class IShape, body *Body, massInfo *ShapeMassInfo) *Shape {
 	return &Shape{
 		Class:    class,
 		body:     body,
 		massInfo: massInfo,
 
-		surfaceVelocity: vec.Vec2{},
+		SurfaceVelocity: vec.Vec2{},
 		Filter: ShapeFilter{
 			Group:      NoGroup,
 			Categories: AllCategories,

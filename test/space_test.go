@@ -38,16 +38,16 @@ func TestSpaceAddBody(t *testing.T) {
 func TestSpace_ReindexShape(t *testing.T) {
 	space := cm.NewSpace()
 	circle := space.AddShape(cm.NewCircle(space.StaticBody, 1, vec.Vec2{}))
-	bb1 := circle.BB()
+	bb1 := circle.BB
 	space.ReindexShape(circle)
-	bb2 := circle.BB()
+	bb2 := circle.BB
 	// check unchanged
 	if got, want := bb1.String(), bb2.String(); got != want {
 		t.Errorf("got [%[1]v:%[1]T] want [%[2]v:%[2]T]", got, want)
 	}
 	circle.Body().SetPosition(vec.Vec2{X: 12.0, Y: 34.0})
 	space.ReindexShape(circle)
-	bb3 := circle.BB()
+	bb3 := circle.BB
 	// check changed
 	if got, want := bb2.String(), bb3.String(); got == want {
 		t.Errorf("got [%[1]v:%[1]T] want [%[2]v:%[2]T]", got, want)

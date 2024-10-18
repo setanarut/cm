@@ -46,7 +46,7 @@ func CircleSupportPoint(shape *Shape, _ vec.Vec2) SupportPoint {
 }
 
 func PolySupportPointIndex(count int, planes []SplittingPlane, n vec.Vec2) int {
-	max := -Infinity
+	max := -infinity
 	var index int
 	for i := 0; i < count; i++ {
 		v := planes[i].v0
@@ -170,9 +170,9 @@ func CircleToPoly(info *CollisionInfo) {
 	circle := info.a.Class.(*Circle)
 	poly := info.b.Class.(*PolyShape)
 
-	if points.d <= circle.radius+poly.radius {
+	if points.d <= circle.radius+poly.Radius {
 		info.n = points.n
-		info.PushContact(points.a.Add(info.n.Scale(circle.radius)), points.b.Add(info.n.Scale(poly.radius)), 0)
+		info.PushContact(points.a.Add(info.n.Scale(circle.radius)), points.b.Add(info.n.Scale(poly.Radius)), 0)
 	}
 }
 
@@ -187,7 +187,7 @@ func SegmentToPoly(info *CollisionInfo) {
 	polyshape := info.b.Class.(*PolyShape)
 
 	// If the closest points are nearer than the sum of the radii...
-	if points.d-segment.radius-polyshape.radius <= 0 && (
+	if points.d-segment.radius-polyshape.Radius <= 0 && (
 	// Reject endcap collisions if tangents are provided.
 	(!points.a.Equal(segment.transformA) || n.Dot(segment.aTangent.RotateComplex(rot)) <= 0) &&
 		(!points.a.Equal(segment.transformB) || n.Dot(segment.bTangent.RotateComplex(rot)) <= 0)) {
@@ -203,7 +203,7 @@ func PolyToPoly(info *CollisionInfo) {
 
 	poly1 := info.a.Class.(*PolyShape)
 	poly2 := info.b.Class.(*PolyShape)
-	if points.d-poly1.radius-poly2.radius <= 0 {
+	if points.d-poly1.Radius-poly2.Radius <= 0 {
 		ContactPoints(SupportEdgeForPoly(poly1, points.n), SupportEdgeForPoly(poly2, points.n.Neg()), points, info)
 	}
 }
@@ -297,7 +297,7 @@ func SupportEdgeForPoly(poly *PolyShape, n vec.Vec2) Edge {
 		return Edge{
 			EdgePoint{planes[i0].v0, HashPair(hashId, HashValue(i0))},
 			EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
-			poly.radius,
+			poly.Radius,
 			planes[i1].n,
 		}
 	}
@@ -305,7 +305,7 @@ func SupportEdgeForPoly(poly *PolyShape, n vec.Vec2) Edge {
 	return Edge{
 		EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
 		EdgePoint{planes[i2].v0, HashPair(hashId, HashValue(i2))},
-		poly.radius,
+		poly.Radius,
 		planes[i2].n,
 	}
 }
@@ -368,7 +368,7 @@ func GJK(ctx SupportContext, collisionId *uint32) ClosestPoints {
 		v1 = NewMinkowskiPoint(ctx.shape1.Point((*collisionId>>8)&0xFF), ctx.shape2.Point((*collisionId)&0xFF))
 	} else {
 		// No cached indexes, use the shapes' bounding box centers as a guess for a starting axis.
-		axis := ctx.shape1.bb.Center().Sub(ctx.shape2.bb.Center()).Perp()
+		axis := ctx.shape1.BB.Center().Sub(ctx.shape2.BB.Center()).Perp()
 		v0 = ctx.Support(axis)
 		v1 = ctx.Support(axis.Neg())
 	}
@@ -427,7 +427,7 @@ func EPA(ctx SupportContext, v0, v1, v2 MinkowskiPoint) ClosestPoints {
 // Each recursion adds a point to the convex hull until it's known that we have the closest point on the surface.
 func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration int) ClosestPoints {
 	mini := 0
-	minDist := Infinity
+	minDist := infinity
 
 	// TODO: precalculate this when building the hull and save a step.
 	// Find the closest segment hull[i] and hull[i + 1] to (0, 0)

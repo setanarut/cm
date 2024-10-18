@@ -21,6 +21,31 @@ func NewCircle(body *Body, radius float64, offset vec.Vec2) *Shape {
 	return circle.Shape
 }
 
+func (circle *Circle) CacheData(transform Transform) BB {
+	circle.transformC = transform.Point(circle.c)
+	return NewBBForCircle(circle.transformC, circle.radius)
+}
+
+func (circle *Circle) PointQuery(p vec.Vec2, info *PointQueryInfo) {
+	delta := p.Sub(circle.transformC)
+	d := delta.Mag()
+	r := circle.radius
+
+	info.Shape = circle.Shape
+	info.Point = circle.transformC.Add(delta.Scale(r / d))
+	info.Distance = d - r
+
+	if d > magicEpsilon {
+		info.Gradient = delta.Scale(1 / d)
+	} else {
+		info.Gradient = vec.Vec2{0, 1}
+	}
+}
+
+func (circle *Circle) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) {
+	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
+}
+
 func CircleShapeMassInfo(mass, radius float64, center vec.Vec2) *ShapeMassInfo {
 	return &ShapeMassInfo{
 		m:    mass,
@@ -28,11 +53,6 @@ func CircleShapeMassInfo(mass, radius float64, center vec.Vec2) *ShapeMassInfo {
 		cog:  center,
 		area: AreaForCircle(0, radius),
 	}
-}
-
-func (circle *Circle) CacheData(transform Transform) BB {
-	circle.transformC = transform.Point(circle.c)
-	return NewBBForCircle(circle.transformC, circle.radius)
 }
 
 func (circle *Circle) Radius() float64 {
@@ -51,26 +71,6 @@ func (circle *Circle) SetRadius(r float64) {
 
 func (circle *Circle) TransformC() vec.Vec2 {
 	return circle.transformC
-}
-
-func (circle *Circle) PointQuery(p vec.Vec2, info *PointQueryInfo) {
-	delta := p.Sub(circle.transformC)
-	d := delta.Mag()
-	r := circle.radius
-
-	info.Shape = circle.Shape
-	info.Point = circle.transformC.Add(delta.Scale(r / d))
-	info.Distance = d - r
-
-	if d > MagicEpsilon {
-		info.Gradient = delta.Scale(1 / d)
-	} else {
-		info.Gradient = vec.Vec2{0, 1}
-	}
-}
-
-func (circle *Circle) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) {
-	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
 }
 
 func CircleSegmentQuery(shape *Shape, center vec.Vec2, r1 float64, a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {

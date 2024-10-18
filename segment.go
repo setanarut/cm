@@ -38,52 +38,6 @@ func (seg *Segment) CacheData(transform Transform) BB {
 	return BB{l - rad, b - rad, r + rad, t + rad}
 }
 
-func (seg *Segment) SetRadius(r float64) {
-	seg.radius = r
-
-	mass := seg.massInfo.m
-	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
-	if mass > 0 {
-		seg.body.AccumulateMassFromShapes()
-	}
-}
-
-func (seg *Segment) Radius() float64 {
-	return seg.radius
-}
-
-func (seg *Segment) TransformA() vec.Vec2 {
-	return seg.transformA
-}
-
-func (seg *Segment) TransformB() vec.Vec2 {
-	return seg.transformB
-}
-
-func (seg *Segment) SetEndpoints(a, b vec.Vec2) {
-	seg.a = a
-	seg.b = b
-	seg.n = b.Sub(a).Unit().Perp()
-
-	mass := seg.massInfo.m
-	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
-	if mass > 0 {
-		seg.body.AccumulateMassFromShapes()
-	}
-}
-
-func (seg *Segment) Normal() vec.Vec2 {
-	return seg.n
-}
-
-func (seg *Segment) A() vec.Vec2 {
-	return seg.a
-}
-
-func (seg *Segment) B() vec.Vec2 {
-	return seg.b
-}
-
 func (seg *Segment) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	closest := closestPointOnSegment(p, seg.transformA, seg.transformB)
 
@@ -101,7 +55,7 @@ func (seg *Segment) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	info.Distance = d - r
 
 	// Use the segment's normal if the distance is very small.
-	if d > MagicEpsilon {
+	if d > magicEpsilon {
 		info.Gradient = g
 	} else {
 		info.Gradient = seg.n
@@ -156,6 +110,52 @@ func (seg *Segment) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryIn
 			*info = info2
 		}
 	}
+}
+
+func (seg *Segment) SetRadius(r float64) {
+	seg.radius = r
+
+	mass := seg.massInfo.m
+	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
+	if mass > 0 {
+		seg.body.AccumulateMassFromShapes()
+	}
+}
+
+func (seg *Segment) Radius() float64 {
+	return seg.radius
+}
+
+func (seg *Segment) TransformA() vec.Vec2 {
+	return seg.transformA
+}
+
+func (seg *Segment) TransformB() vec.Vec2 {
+	return seg.transformB
+}
+
+func (seg *Segment) SetEndpoints(a, b vec.Vec2) {
+	seg.a = a
+	seg.b = b
+	seg.n = b.Sub(a).Unit().Perp()
+
+	mass := seg.massInfo.m
+	seg.massInfo = NewSegmentMassInfo(seg.massInfo.m, seg.a, seg.b, seg.radius)
+	if mass > 0 {
+		seg.body.AccumulateMassFromShapes()
+	}
+}
+
+func (seg *Segment) Normal() vec.Vec2 {
+	return seg.n
+}
+
+func (seg *Segment) A() vec.Vec2 {
+	return seg.a
+}
+
+func (seg *Segment) B() vec.Vec2 {
+	return seg.b
 }
 
 func NewSegment(body *Body, a, b vec.Vec2, r float64) *Shape {

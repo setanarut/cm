@@ -14,7 +14,7 @@ var WildcardCollisionType CollisionType = ^CollisionType(0)
 // They are also used in conjuction with collision handler callbacks allowing you to retrieve information on the collision or change it.
 // A unique arbiter value is used for each pair of colliding objects. It persists until the shapes separate.
 type Arbiter struct {
-	UserData interface{}
+	UserData any
 
 	shapeA, shapeB              *Shape
 	bodyA, bodyB                *Body
@@ -219,10 +219,10 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	arb.count = info.count
 	arb.normal = info.n
 
-	arb.e = a.elasticity * b.elasticity
-	arb.u = a.friction * b.friction
+	arb.e = a.Elasticity * b.Elasticity
+	arb.u = a.Friction * b.Friction
 
-	surfaceVr := b.surfaceVelocity.Sub(a.surfaceVelocity)
+	surfaceVr := b.SurfaceVelocity.Sub(a.SurfaceVelocity)
 	arb.surfaceVr = surfaceVr.Sub(info.n.Scale(surfaceVr.Dot(info.n)))
 
 	typeA := info.a.CollisionType
@@ -369,28 +369,28 @@ var CollisionHandlerDefault = CollisionHandler{
 	nil,
 }
 
-func AlwaysCollide(_ *Arbiter, _ *Space, _ interface{}) bool {
+func AlwaysCollide(_ *Arbiter, _ *Space, _ any) bool {
 	return true
 }
 
-func DoNothing(_ *Arbiter, _ *Space, _ interface{}) {
+func DoNothing(_ *Arbiter, _ *Space, _ any) {
 
 }
 
-func DefaultBegin(arb *Arbiter, space *Space, _ interface{}) bool {
+func DefaultBegin(arb *Arbiter, space *Space, _ any) bool {
 	return arb.CallWildcardBeginA(space) && arb.CallWildcardBeginB(space)
 }
 
-func DefaultPreSolve(arb *Arbiter, space *Space, _ interface{}) bool {
+func DefaultPreSolve(arb *Arbiter, space *Space, _ any) bool {
 	return arb.CallWildcardPreSolveA(space) && arb.CallWildcardPreSolveB(space)
 }
 
-func DefaultPostSolve(arb *Arbiter, space *Space, _ interface{}) {
+func DefaultPostSolve(arb *Arbiter, space *Space, _ any) {
 	arb.CallWildcardPostSolveA(space)
 	arb.CallWildcardPostSolveB(space)
 }
 
-func DefaultSeparate(arb *Arbiter, space *Space, _ interface{}) {
+func DefaultSeparate(arb *Arbiter, space *Space, _ any) {
 	arb.CallWildcardSeparateA(space)
 	arb.CallWildcardSeparateB(space)
 }

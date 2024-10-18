@@ -19,18 +19,18 @@ type FColor struct {
 }
 
 type IDrawer interface {
-	DrawCircle(pos vec.Vec2, angle, radius float64, outline, fill FColor, data interface{})
-	DrawSegment(a, b vec.Vec2, fill FColor, data interface{})
-	DrawFatSegment(a, b vec.Vec2, radius float64, outline, fill FColor, data interface{})
-	DrawPolygon(count int, verts []vec.Vec2, radius float64, outline, fill FColor, data interface{})
-	DrawDot(size float64, pos vec.Vec2, fill FColor, data interface{})
+	DrawCircle(pos vec.Vec2, angle, radius float64, outline, fill FColor, data any)
+	DrawSegment(a, b vec.Vec2, fill FColor, data any)
+	DrawFatSegment(a, b vec.Vec2, radius float64, outline, fill FColor, data any)
+	DrawPolygon(count int, verts []vec.Vec2, radius float64, outline, fill FColor, data any)
+	DrawDot(size float64, pos vec.Vec2, fill FColor, data any)
 
 	Flags() uint
 	OutlineColor() FColor
-	ShapeColor(shape *Shape, data interface{}) FColor
+	ShapeColor(shape *Shape, data any) FColor
 	ConstraintColor() FColor
 	CollisionPointColor() FColor
-	Data() interface{}
+	Data() any
 }
 
 // DrawShape draws shapes with the drawer implementation
@@ -58,7 +58,7 @@ func DrawShape(shape *Shape, drawer IDrawer) {
 		for i := 0; i < count; i++ {
 			verts[i] = planes[i].v0
 		}
-		drawer.DrawPolygon(count, verts, poly.radius, outline, fill, data)
+		drawer.DrawPolygon(count, verts, poly.Radius, outline, fill, data)
 	default:
 		panic("Unknown shape type")
 	}

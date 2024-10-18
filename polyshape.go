@@ -8,46 +8,21 @@ import (
 
 type PolyShape struct {
 	*Shape
-	radius float64
+	Radius float64
 	count  int
 	// The untransformed planes are appended at the end of the transformed planes.
 	planes []SplittingPlane
 }
 
-func (poly PolyShape) Count() int {
-	return poly.count
-}
+func (ps *PolyShape) CacheData(transform Transform) BB {
+	count := ps.count
+	dst := ps.planes[0:count]
+	src := ps.planes[count:]
 
-func (poly PolyShape) Vert(i int) vec.Vec2 {
-	// if i < 0 && i > poly.count {
-	// 	log.Fatalln("Vert index error")
-	// }
-
-	return poly.planes[i+poly.count].v0
-}
-
-func (poly PolyShape) TransformVert(i int) vec.Vec2 {
-	return poly.planes[i].v0
-}
-
-// Radius returns the radius of a polygon shape.
-func (poly PolyShape) Radius() float64 {
-	return poly.radius
-}
-
-func (poly *PolyShape) SetRadius(r float64) {
-	poly.radius = r
-}
-
-func (poly *PolyShape) CacheData(transform Transform) BB {
-	count := poly.count
-	dst := poly.planes[0:count]
-	src := poly.planes[count:]
-
-	l := Infinity
-	r := -Infinity
-	b := Infinity
-	t := -Infinity
+	l := infinity
+	r := -infinity
+	b := infinity
+	t := -infinity
 
 	for i := 0; i < count; i++ {
 		v := transform.Point(src[i].v0)
@@ -62,18 +37,18 @@ func (poly *PolyShape) CacheData(transform Transform) BB {
 		t = math.Max(t, v.Y)
 	}
 
-	radius := poly.radius
-	poly.Shape.bb = BB{l - radius, b - radius, r + radius, t + radius}
-	return poly.Shape.bb
+	radius := ps.Radius
+	ps.Shape.BB = BB{l - radius, b - radius, r + radius, t + radius}
+	return ps.Shape.BB
 }
 
-func (poly *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
-	count := poly.count
-	planes := poly.planes
-	r := poly.radius
+func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
+	count := ps.count
+	planes := ps.planes
+	r := ps.Radius
 
 	v0 := planes[count-1].v0
-	minDist := Infinity
+	minDist := infinity
 	closestPoint := vec.Vec2{}
 	closestNormal := vec.Vec2{}
 	outside := false
@@ -104,21 +79,21 @@ func (poly *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	}
 	g := p.Sub(closestPoint).Scale(1.0 / dist)
 
-	info.Shape = poly.Shape
+	info.Shape = ps.Shape
 	info.Point = closestPoint.Add(g.Scale(r))
 	info.Distance = dist - r
 
-	if minDist > MagicEpsilon {
+	if minDist > magicEpsilon {
 		info.Gradient = g
 	} else {
 		info.Gradient = closestNormal
 	}
 }
 
-func (poly *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {
-	planes := poly.planes
-	count := poly.count
-	r := poly.radius
+func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {
+	planes := ps.planes
+	count := ps.count
+	r := ps.Radius
 	rsum := r + r2
 
 	for i := 0; i < count; i++ {
@@ -141,7 +116,7 @@ func (poly *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQuer
 		dtMax := n.Cross(planes[i].v0)
 
 		if dtMin <= dt && dt <= dtMax {
-			info.Shape = poly.Shape
+			info.Shape = ps.Shape
 			info.Point = a.Lerp(b, t).Sub(n.Scale(r2))
 			info.Normal = n
 			info.Alpha = t
@@ -152,7 +127,7 @@ func (poly *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQuer
 	if rsum > 0 {
 		for i := 0; i < count; i++ {
 			circleInfo := SegmentQueryInfo{nil, b, vec.Vec2{}, 1}
-			CircleSegmentQuery(poly.Shape, planes[i].v0, r, a, b, r2, &circleInfo)
+			CircleSegmentQuery(ps.Shape, planes[i].v0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {
 				*info = circleInfo
 			}
@@ -160,66 +135,33 @@ func (poly *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQuer
 	}
 }
 
-func NewPolyShape(body *Body, vectCount int, verts []vec.Vec2, transform Transform, radius float64) *Shape {
-	hullVerts := []vec.Vec2{}
-	// Transform the verts before building the hull in case of a negative scale.
-	for i := 0; i < vectCount; i++ {
-		hullVerts = append(hullVerts, transform.Point(verts[i]))
-	}
-
-	hullCount := ConvexHull(vectCount, hullVerts, nil, 0)
-	return NewPolyShapeRaw(body, hullCount, hullVerts, radius)
+func (ps *PolyShape) Count() int {
+	return ps.count
 }
 
-func NewPolyShapeRaw(body *Body, count int, verts []vec.Vec2, radius float64) *Shape {
-	poly := &PolyShape{
-		radius: radius,
-		count:  count,
-		planes: []SplittingPlane{},
-	}
-	poly.Shape = NewShape(poly, body, PolyShapeMassInfo(0, count, verts, radius))
-	poly.SetVerts(count, verts)
-	return poly.Shape
+func (ps *PolyShape) Vert(vertIndex int) vec.Vec2 {
+	return ps.planes[vertIndex+ps.count].v0
 }
 
-func NewBox(body *Body, w, h, r float64) *Shape {
-	hw := w / 2.0
-	hh := h / 2.0
-	bb := &BB{-hw, -hh, hw, hh}
-	verts := []vec.Vec2{
-		{bb.R, bb.B},
-		{bb.R, bb.T},
-		{bb.L, bb.T},
-		{bb.L, bb.B},
-	}
-	return NewPolyShapeRaw(body, 4, verts, r)
+func (ps *PolyShape) TransformVert(i int) vec.Vec2 {
+	return ps.planes[i].v0
 }
 
-func NewBox2(body *Body, bb BB, r float64) *Shape {
-	verts := []vec.Vec2{
-		{bb.R, bb.B},
-		{bb.R, bb.T},
-		{bb.L, bb.T},
-		{bb.L, bb.B},
-	}
-	return NewPolyShapeRaw(body, 4, verts, r)
-}
-
-func (p *PolyShape) SetVerts(count int, verts []vec.Vec2) {
-	p.count = count
-	p.planes = make([]SplittingPlane, count*2)
+func (ps *PolyShape) SetVerts(count int, verts []vec.Vec2) {
+	ps.count = count
+	ps.planes = make([]SplittingPlane, count*2)
 
 	for i := 0; i < count; i++ {
 		a := verts[(i-1+count)%count]
 		b := verts[i]
 		n := b.Sub(a).ReversePerp().Unit()
 
-		p.planes[i+count].v0 = b
-		p.planes[i+count].n = n
+		ps.planes[i+count].v0 = b
+		ps.planes[i+count].n = n
 	}
 }
 
-func (p *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Transform) {
+func (ps *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Transform) {
 	hullVerts := make([]vec.Vec2, count)
 
 	for i := 0; i < count; i++ {
@@ -227,25 +169,15 @@ func (p *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Transf
 	}
 
 	hullCount := ConvexHull(count, hullVerts, nil, 0)
-	p.SetVertsRaw(hullCount, hullVerts)
+	ps.SetVertsRaw(hullCount, hullVerts)
 }
 
 func (p *PolyShape) SetVertsRaw(count int, verts []vec.Vec2) {
 	p.SetVerts(count, verts)
 	mass := p.massInfo.m
-	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.radius)
+	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.Radius)
 	if mass > 0 {
 		p.body.AccumulateMassFromShapes()
-	}
-}
-
-func PolyShapeMassInfo(mass float64, count int, verts []vec.Vec2, r float64) *ShapeMassInfo {
-	centroid := CentroidForPoly(count, verts)
-	return &ShapeMassInfo{
-		m:    mass,
-		i:    MomentForPoly(1, count, verts, centroid.Neg(), r),
-		cog:  centroid,
-		area: AreaForPoly(count, verts, r),
 	}
 }
 
@@ -353,4 +285,59 @@ func QHullPartition(verts []vec.Vec2, count int, a, b vec.Vec2, tol float64) int
 		verts[0], verts[pivot] = verts[pivot], verts[0]
 	}
 	return head
+}
+
+func NewPolyShape(body *Body, vectCount int, verts []vec.Vec2, transform Transform, radius float64) *Shape {
+	hullVerts := []vec.Vec2{}
+	// Transform the verts before building the hull in case of a negative scale.
+	for i := 0; i < vectCount; i++ {
+		hullVerts = append(hullVerts, transform.Point(verts[i]))
+	}
+
+	hullCount := ConvexHull(vectCount, hullVerts, nil, 0)
+	return NewPolyShapeRaw(body, hullCount, hullVerts, radius)
+}
+
+func NewPolyShapeRaw(body *Body, count int, verts []vec.Vec2, radius float64) *Shape {
+	poly := &PolyShape{
+		Radius: radius,
+		count:  count,
+		planes: []SplittingPlane{},
+	}
+	poly.Shape = NewShape(poly, body, PolyShapeMassInfo(0, count, verts, radius))
+	poly.SetVerts(count, verts)
+	return poly.Shape
+}
+
+func NewBox(body *Body, w, h, r float64) *Shape {
+	hw := w / 2.0
+	hh := h / 2.0
+	bb := &BB{-hw, -hh, hw, hh}
+	verts := []vec.Vec2{
+		{bb.R, bb.B},
+		{bb.R, bb.T},
+		{bb.L, bb.T},
+		{bb.L, bb.B},
+	}
+	return NewPolyShapeRaw(body, 4, verts, r)
+}
+
+func NewBox2(body *Body, bb BB, r float64) *Shape {
+	verts := []vec.Vec2{
+		{bb.R, bb.B},
+		{bb.R, bb.T},
+		{bb.L, bb.T},
+		{bb.L, bb.B},
+	}
+	return NewPolyShapeRaw(body, 4, verts, r)
+}
+
+func PolyShapeMassInfo(mass float64, count int, verts []vec.Vec2, r float64) *ShapeMassInfo {
+	centroid := CentroidForPoly(count, verts)
+	return &ShapeMassInfo{
+		m:    mass,
+		i:    MomentForPoly(1, count, verts, centroid.Neg(), r),
+		cog:  centroid,
+		area: AreaForPoly(count, verts, r),
+	}
 }

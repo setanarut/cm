@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	Infinity         = math.MaxFloat64
-	MagicEpsilon     = 1e-5
-	RadianConst      = math.Pi / 180
-	DegreeConst      = 180 / math.Pi
 	PooledBufferSize = 1024
+	infinity         = math.MaxFloat64
+	magicEpsilon     = 1e-5
+	radianConst      = math.Pi / 180
+	degreeConst      = 180 / math.Pi
 )
 
 // Arbiter states
@@ -22,9 +22,9 @@ const (
 	// Arbiter is active and its not the first collision.
 	ArbiterStateNormal
 	// Collision has been explicitly ignored.
-	// Either by returning false from a begin collision handler or calling cmArbiterIgnore().
+	// Either by returning false from a begin collision handler or calling ArbiterIgnore().
 	ArbiterStateIgnore
-	// Collison is no longer active. A space will cache an arbiter for up to cmSpace.collisionPersistence more steps.
+	// Collison is no longer active. A space will cache an arbiter for up to Space.collisionPersistence more steps.
 	ArbiterStateCached
 	// Collison arbiter is invalid because one of the shapes was removed.
 	ArbiterStateInvalidated
@@ -44,18 +44,18 @@ var ShapeFilterNone = ShapeFilter{NoGroup, ^AllCategories, ^AllCategories}
 // CollisionBeginFunc is collision begin event function callback type.
 //
 // Returning false from a begin callback causes the collision to be ignored until the the separate callback is called when the objects stop colliding.
-type CollisionBeginFunc func(arb *Arbiter, space *Space, userData interface{}) bool
+type CollisionBeginFunc func(arb *Arbiter, space *Space, userData any) bool
 
 // CollisionPreSolveFunc is collision pre-solve event function callback type.
 //
 // Returning false from a pre-step callback causes the collision to be ignored until the next step.
-type CollisionPreSolveFunc func(arb *Arbiter, space *Space, userData interface{}) bool
+type CollisionPreSolveFunc func(arb *Arbiter, space *Space, userData any) bool
 
 // CollisionPostSolveFunc is collision post-solve event function callback type.
-type CollisionPostSolveFunc func(arb *Arbiter, space *Space, userData interface{})
+type CollisionPostSolveFunc func(arb *Arbiter, space *Space, userData any)
 
 // CollisionSeparateFunc is collision separate event function callback type.
-type CollisionSeparateFunc func(arb *Arbiter, space *Space, userData interface{})
+type CollisionSeparateFunc func(arb *Arbiter, space *Space, userData any)
 
 type CollisionType uintptr
 
@@ -79,7 +79,7 @@ type CollisionHandler struct {
 	// This function is called when two shapes with types that match this collision handler stop colliding.
 	SeparateFunc CollisionSeparateFunc
 	// This is a user definable context pointer that is passed to all of the collision handler functions.
-	UserData interface{}
+	UserData any
 }
 
 type Contact struct {
@@ -132,7 +132,8 @@ func (info *CollisionInfo) PushContact(p1, p2 vec.Vec2, hash HashValue) {
 // ShapeMassInfo is mass info struct
 type ShapeMassInfo struct {
 	m, i, area float64
-	cog        vec.Vec2
+	// Center of gravity
+	cog vec.Vec2
 }
 
 // PointQueryInfo is point query info struct.
@@ -328,7 +329,7 @@ func DebugInfo(space *Space) string {
 
 	var ke float64
 	for _, body := range space.DynamicBodies {
-		if body.mass == Infinity || body.momentOfInertia == Infinity {
+		if body.mass == infinity || body.momentOfInertia == infinity {
 			continue
 		}
 		ke += body.mass*body.velocity.Dot(body.velocity) + body.momentOfInertia*body.w*body.w

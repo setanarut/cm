@@ -27,7 +27,7 @@ type Constraint struct {
 	PreSolve      ConstraintPreSolveFunc
 	PostSolve     ConstraintPostSolveFunc
 
-	UserData interface{}
+	UserData any
 }
 
 func NewConstraint(class Constrainer, a, b *Body) *Constraint {
@@ -37,9 +37,9 @@ func NewConstraint(class Constrainer, a, b *Body) *Constraint {
 		bodyB: b,
 		space: nil,
 
-		maxForce:  Infinity,
+		maxForce:  infinity,
 		errorBias: math.Pow(1.0-0.1, 60.0),
-		maxBias:   Infinity,
+		maxBias:   infinity,
 
 		collideBodies: true,
 		PreSolve:      nil,
