@@ -1,13 +1,9 @@
 module github.com/setanarut/cm
 
-go 1.23.1
+go 1.23.2
 
-retract (
-	v1.3.0 // fatal mistake
-	v1.2.0 // fatal mistake
-	v1.0.1 // fatal mistake
-)
+retract [v1.0.0, v1.11.0])
 
 require (
-	github.com/setanarut/vec v1.1.0
+	github.com/setanarut/vec v1.1.1
 )
