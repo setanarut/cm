@@ -8,9 +8,9 @@ import (
 	"github.com/setanarut/vec"
 )
 
+// BodyType for bodies; Dynamic, Kinematic or Static
 type BodyType uint8
 
-// Body type
 const (
 	Dynamic   BodyType = 0
 	Kinematic BodyType = 1
@@ -25,6 +25,13 @@ type BodyVelocityFunc func(body *Body, gravity vec.Vec2, damping float64, dt flo
 // BodyPositionFunc is rigid body position update function type.
 type BodyPositionFunc func(body *Body, dt float64)
 
+// Kinematic bodies are bodies that are controlled from your code instead of
+// inside the physics engine. They arent affected by gravity and they have an
+// infinite amount of mass so they don’t react to collisions or forces with other bodies.
+// Kinematic bodies are controlled by setting their velocity, which will cause them to move.
+// Good examples of kinematic bodies might include
+// things like moving platforms. Objects that are touching or jointed to a
+// kinematic body are never allowed to fall asleep.
 type Body struct {
 	// UserData is an object that this constraint is associated with.
 	//

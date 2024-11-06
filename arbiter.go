@@ -7,7 +7,7 @@ import (
 	"github.com/setanarut/vec"
 )
 
-var WildcardCollisionType CollisionType = ^CollisionType(0)
+const WildcardCollisionType CollisionType = ^CollisionType(0)
 
 // Arbiter struct tracks pairs of colliding shapes.
 //

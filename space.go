@@ -318,22 +318,6 @@ func (s *Space) AddBodyWithShapes(body *Body) {
 	}
 }
 
-// AddDynamicBody appends body to the space.
-//
-// Do not add the same Body twice.
-func (s *Space) AddDynamicBody(body *Body) {
-	s.DynamicBodies = append(s.DynamicBodies, body)
-	body.Space = s
-}
-
-// AddStaticBody appends body to the space.
-//
-// Do not add the same Body twice.
-func (s *Space) AddStaticBody(body *Body) {
-	s.StaticBodies = append(s.StaticBodies, body)
-	body.Space = s
-}
-
 // ReindexShape re-computes the hash of the shape in both the dynamic and static list.
 func (s *Space) ReindexShape(shape *Shape) {
 
@@ -734,6 +718,7 @@ func (s *Space) PopContacts(count int) {
 	s.contactBuffersHead.numContacts -= count
 }
 
+// LookupHandler finds and returns the matching a/b handler
 func (s *Space) LookupHandler(a, b CollisionType, defaultHandler *CollisionHandler) *CollisionHandler {
 	types := &CollisionHandler{TypeA: a, TypeB: b}
 	handler := s.collisionHandlers.Find(HashPair(HashValue(a), HashValue(b)), types)
@@ -743,23 +728,70 @@ func (s *Space) LookupHandler(a, b CollisionType, defaultHandler *CollisionHandl
 	return defaultHandler
 }
 
-// NewCollisionHandler sets a collision handler to handle specific collision types.
+// AddCollisionHandler adds and returns the CollisionHandler for collisions between objects of type a and b.
 //
-// The methods are called only when shapes with the specified CollisionTypeA and CollisionTypeB collide.
+// Fill the desired collision callback functions, for details see the CollisionHandler object.
 //
-// Use Shape.SetCollisionType() to set type.
-func (s *Space) NewCollisionHandler(collisionTypeA, collisionTypeB CollisionType) *CollisionHandler {
-	hash := HashPair(HashValue(collisionTypeA), HashValue(collisionTypeB))
-	handler := &CollisionHandler{collisionTypeA, collisionTypeB, DefaultBegin, DefaultPreSolve, DefaultPostSolve, DefaultSeparate, nil}
-	return s.collisionHandlers.Insert(hash, handler, func(a *CollisionHandler) *CollisionHandler { return a })
+// Whenever shapes with collision types (Shape.CollisionType) a and b collide,
+// this handler will be used to process the collision events. When a new collision
+// handler is created, the callbacks will all be set to builtin callbacks that perform
+// the default behavior (call the wildcard handlers, and accept all collisions).
+func (s *Space) AddCollisionHandler(a, b CollisionType) *CollisionHandler {
+	hash := HashPair(HashValue(a), HashValue(b))
+	handler := &CollisionHandler{
+		a,
+		b,
+		DefaultBegin,
+		DefaultPreSolve,
+		DefaultPostSolve,
+		DefaultSeparate,
+		nil,
+	}
+	return s.collisionHandlers.Insert(
+		hash,
+		handler,
+		func(a *CollisionHandler) *CollisionHandler { return a },
+	)
 }
 
-func (s *Space) NewWildcardCollisionHandler(collisionType CollisionType) *CollisionHandler {
+// AddCollisionHandler adds handler to space, for details see the CollisionHandler{} struct.
+func (s *Space) AddCollisionHandler2(handler *CollisionHandler) {
+	hash := HashPair(HashValue(handler.TypeA), HashValue(handler.TypeB))
+
+	s.collisionHandlers.Insert(
+		hash,
+		handler,
+		func(a *CollisionHandler) *CollisionHandler { return a },
+	)
+}
+
+// AddWildcardCollisionHandler sets a collision handler for given collision type.
+// This handler will be used any time an object with this type collides with
+// another object, regardless of its type. A good example is a projectile that
+// should be destroyed the first time it hits anything. There may be a specific
+// collision handler and two wildcard handlers. It’s up to the specific handler
+// to decide if and when to call the wildcard handlers and what to do with their
+// return values. When a new wildcard handler is created, the callbacks will all
+// be set to builtin callbacks that perform the default behavior. (accept all
+// collisions in Begin() and PreSolve(), or do nothing for PostSolve() and Separate().
+func (s *Space) AddWildcardCollisionHandler(typeA CollisionType) *CollisionHandler {
 	s.UseWildcardDefaultHandler()
 
-	hash := HashPair(HashValue(collisionType), HashValue(WildcardCollisionType))
-	handler := &CollisionHandler{collisionType, WildcardCollisionType, AlwaysCollide, AlwaysCollide, DoNothing, DoNothing, nil}
-	return s.collisionHandlers.Insert(hash, handler, func(a *CollisionHandler) *CollisionHandler { return a })
+	hash := HashPair(HashValue(typeA), HashValue(WildcardCollisionType))
+	handler := &CollisionHandler{
+		typeA,
+		WildcardCollisionType,
+		AlwaysCollide,
+		AlwaysCollide,
+		DoNothing,
+		DoNothing,
+		nil,
+	}
+	return s.collisionHandlers.Insert(
+		hash,
+		handler,
+		func(a *CollisionHandler) *CollisionHandler { return a },
+	)
 }
 
 func (s *Space) UseWildcardDefaultHandler() {
@@ -925,8 +957,9 @@ func (s *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data any)
 	s.Unlock(true)
 }
 
-func (s *Space) ArrayForBodyType(bt BodyType) *[]*Body {
-	if bt == Static {
+// SliceForBodyType returns bodies of the given type in the space.
+func (s *Space) SliceForBodyType(t BodyType) *[]*Body {
+	if t == Static {
 		return &s.StaticBodies
 	}
 	return &s.DynamicBodies
@@ -1096,6 +1129,7 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 	return info.collisionId
 }
 
+// QueryReject returns true if shapes a and b reject to collide.
 func QueryReject(a, b *Shape) bool {
 	if a.Body == b.Body {
 		return true
