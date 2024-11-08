@@ -22,7 +22,7 @@ type Arbiter struct {
 	e, u                        float64
 	count                       int
 	state                       int       // Arbiter state enum
-	contacts                    []Contact // a slice onto the current buffer array of contacts
+	Contacts                    []Contact // a slice onto the current buffer array of contacts
 	surfaceVr                   vec.Vec2
 	normal                      vec.Vec2
 	handler, handlerA, handlerB *CollisionHandler // Regular, wildcard A and wildcard B collision handlers.
@@ -40,7 +40,7 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 	arbiter.u = 0
 	arbiter.surfaceVr = vec.Vec2{}
 	arbiter.count = 0
-	arbiter.contacts = nil
+	arbiter.Contacts = nil
 	arbiter.shapeA = a
 	arbiter.bodyA = a.Body
 	arbiter.shapeB = b
@@ -108,9 +108,9 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dtCoef float64) {
 	}
 
 	for i := 0; i < arbiter.count; i++ {
-		contact := arbiter.contacts[i]
+		contact := arbiter.Contacts[i]
 		j := arbiter.normal.RotateComplex(vec.Vec2{contact.jnAcc, contact.jtAcc})
-		applyImpulses(arbiter.bodyA, arbiter.bodyB, contact.r1, contact.r2, j.Scale(dtCoef))
+		applyImpulses(arbiter.bodyA, arbiter.bodyB, contact.R1, contact.R2, j.Scale(dtCoef))
 	}
 }
 
@@ -122,10 +122,10 @@ func (arbiter *Arbiter) ApplyImpulse() {
 	friction := arbiter.u
 
 	for i := 0; i < arbiter.count; i++ {
-		con := &arbiter.contacts[i]
+		con := &arbiter.Contacts[i]
 		nMass := con.nMass
-		r1 := con.r1
-		r2 := con.r2
+		r1 := con.R1
+		r2 := con.R2
 
 		vb1 := a.vBias.Add(r1.Perp().Scale(a.wBias))
 		vb2 := b.vBias.Add(r2.Perp().Scale(b.wBias))
@@ -167,19 +167,19 @@ func (arb *Arbiter) PreStep(dt, slop, bias float64) {
 	bodyDelta := b.position.Sub(a.position)
 
 	for i := 0; i < arb.count; i++ {
-		con := &arb.contacts[i]
+		con := &arb.Contacts[i]
 
 		// Calculate the mass normal and mass tangent.
-		con.nMass = 1.0 / kScalar(a, b, con.r1, con.r2, n)
-		con.tMass = 1.0 / kScalar(a, b, con.r1, con.r2, n.Perp())
+		con.nMass = 1.0 / kScalar(a, b, con.R1, con.R2, n)
+		con.tMass = 1.0 / kScalar(a, b, con.R1, con.R2, n.Perp())
 
 		// Calculate the target bias velocity.
-		dist := con.r2.Sub(con.r1).Add(bodyDelta).Dot(n)
+		dist := con.R2.Sub(con.R1).Add(bodyDelta).Dot(n)
 		con.bias = -bias * math.Min(0, dist+slop) / dt
 		con.jBias = 0.0
 
 		// Calculate the target bounce velocity.
-		con.bounce = normalRelativeVelocity(a, b, con.r1, con.r2, n) * arb.e
+		con.bounce = normalRelativeVelocity(a, b, con.R1, con.R2, n) * arb.e
 	}
 }
 
@@ -200,15 +200,15 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 
 		// r1 and r2 store absolute offsets at init time.
 		// Need to convert them to relative offsets.
-		con.r1 = con.r1.Sub(a.Body.position)
-		con.r2 = con.r2.Sub(b.Body.position)
+		con.R1 = con.R1.Sub(a.Body.position)
+		con.R2 = con.R2.Sub(b.Body.position)
 
 		// Cached impulses are not zeroed at init time.
 		con.jnAcc = 0
 		con.jtAcc = 0
 
 		for j := 0; j < arb.count; j++ {
-			old := arb.contacts[j]
+			old := arb.Contacts[j]
 
 			// This could trigger false positives, but is fairly unlikely nor serious if it does.
 			if con.hash == old.hash {
@@ -219,7 +219,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 		}
 	}
 
-	arb.contacts = info.arr[:info.count]
+	arb.Contacts = info.arr[:info.count]
 	arb.count = info.count
 	arb.normal = info.n
 
@@ -407,7 +407,7 @@ func (arb *Arbiter) TotalImpulse() vec.Vec2 {
 
 	count := arb.Count()
 	for i := 0; i < count; i++ {
-		con := arb.contacts[i]
+		con := arb.Contacts[i]
 		sum = sum.Add(arb.normal.RotateComplex(vec.Vec2{con.jnAcc, con.jtAcc}))
 	}
 
@@ -481,8 +481,8 @@ func (arb *Arbiter) ContactPointSet() ContactPointSet {
 
 	for i := 0; i < set.Count; i++ {
 		// Contact points are relative to body CoGs;
-		p1 := arb.bodyA.position.Add(arb.contacts[i].r1)
-		p2 := arb.bodyB.position.Add(arb.contacts[i].r2)
+		p1 := arb.bodyA.position.Add(arb.Contacts[i].R1)
+		p2 := arb.bodyB.position.Add(arb.Contacts[i].R2)
 
 		if swapped {
 			set.Points[i].PointA = p2
@@ -518,11 +518,11 @@ func (arb *Arbiter) SetContactPointSet(set *ContactPointSet) {
 		p2 := set.Points[i].PointB
 
 		if swapped {
-			arb.contacts[i].r1 = p2.Sub(arb.bodyA.position)
-			arb.contacts[i].r2 = p1.Sub(arb.bodyB.position)
+			arb.Contacts[i].R1 = p2.Sub(arb.bodyA.position)
+			arb.Contacts[i].R2 = p1.Sub(arb.bodyB.position)
 		} else {
-			arb.contacts[i].r1 = p1.Sub(arb.bodyA.position)
-			arb.contacts[i].r2 = p2.Sub(arb.bodyB.position)
+			arb.Contacts[i].R1 = p1.Sub(arb.bodyA.position)
+			arb.Contacts[i].R2 = p2.Sub(arb.bodyB.position)
 		}
 	}
 }

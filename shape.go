@@ -178,7 +178,7 @@ func (sh *Shape) Point(i uint32) SupportPoint {
 		if i < uint32(poly.count) {
 			index = int(i)
 		}
-		return NewSupportPoint(poly.planes[index].v0, uint32(index))
+		return NewSupportPoint(poly.Planes[index].V0, uint32(index))
 	default:
 		return NewSupportPoint(vec.Vec2{}, 0)
 	}

@@ -10,14 +10,14 @@ type PolyShape struct {
 	*Shape
 	Radius float64
 	count  int
-	// The untransformed planes are appended at the end of the transformed planes.
-	planes []SplittingPlane
+	// The untransformed Planes are appended at the end of the transformed Planes.
+	Planes []SplittingPlane
 }
 
 func (ps *PolyShape) CacheData(transform Transform) BB {
 	count := ps.count
-	dst := ps.planes[0:count]
-	src := ps.planes[count:]
+	dst := ps.Planes[0:count]
+	src := ps.Planes[count:]
 
 	l := infinity
 	r := -infinity
@@ -25,11 +25,11 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 	t := -infinity
 
 	for i := 0; i < count; i++ {
-		v := transform.Apply(src[i].v0)
-		n := transform.ApplyVector(src[i].n)
+		v := transform.Apply(src[i].V0)
+		n := transform.ApplyVector(src[i].N)
 
-		dst[i].v0 = v
-		dst[i].n = n
+		dst[i].V0 = v
+		dst[i].N = n
 
 		l = math.Min(l, v.X)
 		r = math.Max(r, v.X)
@@ -44,19 +44,19 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 
 func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	count := ps.count
-	planes := ps.planes
+	planes := ps.Planes
 	r := ps.Radius
 
-	v0 := planes[count-1].v0
+	v0 := planes[count-1].V0
 	minDist := infinity
 	closestPoint := vec.Vec2{}
 	closestNormal := vec.Vec2{}
 	outside := false
 
 	for i := 0; i < count; i++ {
-		v1 := planes[i].v0
+		v1 := planes[i].V0
 		if !outside {
-			outside = planes[i].n.Dot(p.Sub(v1)) > 0
+			outside = planes[i].N.Dot(p.Sub(v1)) > 0
 		}
 
 		closest := closestPointOnSegment(p, v0, v1)
@@ -65,7 +65,7 @@ func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 		if dist < minDist {
 			minDist = dist
 			closestPoint = closest
-			closestNormal = planes[i].n
+			closestNormal = planes[i].N
 		}
 
 		v0 = v1
@@ -91,15 +91,15 @@ func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 }
 
 func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {
-	planes := ps.planes
+	planes := ps.Planes
 	count := ps.count
 	r := ps.Radius
 	rsum := r + r2
 
 	for i := 0; i < count; i++ {
-		n := planes[i].n
+		n := planes[i].N
 		an := a.Dot(n)
-		d := an - planes[i].v0.Dot(n) - rsum
+		d := an - planes[i].V0.Dot(n) - rsum
 		if d < 0 {
 			continue
 		}
@@ -112,8 +112,8 @@ func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryI
 
 		point := a.Lerp(b, t)
 		dt := n.Cross(point)
-		dtMin := n.Cross(planes[(i-1+count)%count].v0)
-		dtMax := n.Cross(planes[i].v0)
+		dtMin := n.Cross(planes[(i-1+count)%count].V0)
+		dtMax := n.Cross(planes[i].V0)
 
 		if dtMin <= dt && dt <= dtMax {
 			info.Shape = ps.Shape
@@ -127,7 +127,7 @@ func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryI
 	if rsum > 0 {
 		for i := 0; i < count; i++ {
 			circleInfo := SegmentQueryInfo{nil, b, vec.Vec2{}, 1}
-			CircleSegmentQuery(ps.Shape, planes[i].v0, r, a, b, r2, &circleInfo)
+			CircleSegmentQuery(ps.Shape, planes[i].V0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {
 				*info = circleInfo
 			}
@@ -140,24 +140,24 @@ func (ps *PolyShape) Count() int {
 }
 
 func (ps *PolyShape) Vert(vertIndex int) vec.Vec2 {
-	return ps.planes[vertIndex+ps.count].v0
+	return ps.Planes[vertIndex+ps.count].V0
 }
 
 func (ps *PolyShape) TransformVert(i int) vec.Vec2 {
-	return ps.planes[i].v0
+	return ps.Planes[i].V0
 }
 
 func (ps *PolyShape) SetVerts(count int, verts []vec.Vec2) {
 	ps.count = count
-	ps.planes = make([]SplittingPlane, count*2)
+	ps.Planes = make([]SplittingPlane, count*2)
 
 	for i := 0; i < count; i++ {
 		a := verts[(i-1+count)%count]
 		b := verts[i]
 		n := b.Sub(a).ReversePerp().Unit()
 
-		ps.planes[i+count].v0 = b
-		ps.planes[i+count].n = n
+		ps.Planes[i+count].V0 = b
+		ps.Planes[i+count].N = n
 	}
 }
 

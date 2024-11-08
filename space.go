@@ -184,11 +184,11 @@ func (s *Space) Activate(body *Body) {
 		// If the static body is bodyB then all is good. If the static body is bodyA, that can easily be checked.
 		if body == bodyA || bodyA.Type() == Static {
 			numContacts := arbiter.count
-			contacts := arbiter.contacts
+			contacts := arbiter.Contacts
 
 			// Restore contact values back to the space's contact buffer memory
-			arbiter.contacts = s.ContactBufferGetArray()[:numContacts]
-			copy(arbiter.contacts, contacts)
+			arbiter.Contacts = s.ContactBufferGetArray()[:numContacts]
+			copy(arbiter.Contacts, contacts)
 			s.PushContacts(numContacts)
 
 			// reinsert the arbiter into the arbiter cache
@@ -232,8 +232,8 @@ func (s *Space) Deactivate(body *Body) {
 			s.UncacheArbiter(arb)
 			// Save contact values to a new block of memory so they won't time out
 			contacts := make([]Contact, arb.count)
-			copy(contacts, arb.contacts[:arb.count])
-			arb.contacts = contacts
+			copy(contacts, arb.Contacts[:arb.count])
+			arb.Contacts = contacts
 
 		}
 	}
@@ -1114,7 +1114,7 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 		space.Arbiters = append(space.Arbiters, arb)
 	} else {
 		space.PopContacts(info.count)
-		arb.contacts = nil
+		arb.Contacts = nil
 		arb.count = 0
 
 		// Normally arbiters are set as used after calling the post-solve callback.

@@ -52,11 +52,11 @@ func DrawShape(shape *Shape, drawer IDrawer) {
 		poly := shape.Class.(*PolyShape)
 
 		count := poly.count
-		planes := poly.planes
+		planes := poly.Planes
 		verts := make([]vec.Vec2, count)
 
 		for i := 0; i < count; i++ {
-			verts[i] = planes[i].v0
+			verts[i] = planes[i].V0
 		}
 		drawer.DrawPolygon(count, verts, poly.Radius, outline, fill, data)
 	default:
@@ -182,8 +182,8 @@ func DrawSpace(space *Space, drawer IDrawer) {
 		n := arb.normal
 
 		for j := 0; j < arb.count; j++ {
-			p1 := arb.bodyA.position.Add(arb.contacts[j].r1)
-			p2 := arb.bodyB.position.Add(arb.contacts[j].r2)
+			p1 := arb.bodyA.position.Add(arb.Contacts[j].R1)
+			p2 := arb.bodyB.position.Add(arb.Contacts[j].R2)
 
 			a := p1.Add(n.Scale(-2))
 			b := p2.Add(n.Scale(2))

@@ -86,7 +86,7 @@ type CollisionHandler struct {
 }
 
 type Contact struct {
-	r1, r2 vec.Vec2
+	R1, R2 vec.Vec2
 
 	nMass, tMass float64
 	bounce       float64 // TODO: look for an alternate bounce solution
@@ -99,8 +99,8 @@ type Contact struct {
 
 func (c *Contact) Clone() Contact {
 	return Contact{
-		r1:     c.r1,
-		r2:     c.r2,
+		R1:     c.R1,
+		R2:     c.R2,
 		nMass:  c.nMass,
 		tMass:  c.tMass,
 		bounce: c.bounce,
@@ -125,8 +125,8 @@ type CollisionInfo struct {
 func (info *CollisionInfo) PushContact(p1, p2 vec.Vec2, hash HashValue) {
 
 	con := &info.arr[info.count]
-	con.r1 = p1
-	con.r2 = p2
+	con.R1 = p1
+	con.R2 = p2
 	con.hash = hash
 
 	info.count++
@@ -165,7 +165,7 @@ type SegmentQueryInfo struct {
 }
 
 type SplittingPlane struct {
-	v0, n vec.Vec2
+	V0, N vec.Vec2
 }
 
 // ShapeFilter is fast collision filtering type that is used to determine if two objects collide before calling collision or query callbacks.

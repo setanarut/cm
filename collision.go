@@ -27,9 +27,9 @@ type SupportPointFunc func(shape *Shape, n vec.Vec2) SupportPoint
 
 func PolySupportPoint(shape *Shape, n vec.Vec2) SupportPoint {
 	poly := shape.Class.(*PolyShape)
-	planes := poly.planes
+	planes := poly.Planes
 	i := PolySupportPointIndex(poly.count, planes, n)
-	return NewSupportPoint(planes[i].v0, uint32(i))
+	return NewSupportPoint(planes[i].V0, uint32(i))
 }
 
 func SegmentSupportPoint(shape *Shape, n vec.Vec2) SupportPoint {
@@ -49,7 +49,7 @@ func PolySupportPointIndex(count int, planes []SplittingPlane, n vec.Vec2) int {
 	max := -infinity
 	var index int
 	for i := 0; i < count; i++ {
-		v := planes[i].v0
+		v := planes[i].V0
 		d := v.Dot(n)
 		if d > max {
 			max = d
@@ -285,28 +285,28 @@ func SupportEdgeForSegment(seg *Segment, n vec.Vec2) Edge {
 
 func SupportEdgeForPoly(poly *PolyShape, n vec.Vec2) Edge {
 	count := poly.count
-	i1 := PolySupportPointIndex(poly.count, poly.planes, n)
+	i1 := PolySupportPointIndex(poly.count, poly.Planes, n)
 
 	i0 := (i1 - 1 + count) % count
 	i2 := (i1 + 1) % count
 
-	planes := poly.planes
+	planes := poly.Planes
 	hashId := poly.hashid
 
-	if n.Dot(planes[i1].n) > n.Dot(planes[i2].n) {
+	if n.Dot(planes[i1].N) > n.Dot(planes[i2].N) {
 		return Edge{
-			EdgePoint{planes[i0].v0, HashPair(hashId, HashValue(i0))},
-			EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
+			EdgePoint{planes[i0].V0, HashPair(hashId, HashValue(i0))},
+			EdgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
 			poly.Radius,
-			planes[i1].n,
+			planes[i1].N,
 		}
 	}
 
 	return Edge{
-		EdgePoint{planes[i1].v0, HashPair(hashId, HashValue(i1))},
-		EdgePoint{planes[i2].v0, HashPair(hashId, HashValue(i2))},
+		EdgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
+		EdgePoint{planes[i2].V0, HashPair(hashId, HashValue(i2))},
 		poly.Radius,
-		planes[i2].n,
+		planes[i2].N,
 	}
 }
 
@@ -536,8 +536,8 @@ func ShapesCollideInfo(a, b *Shape) ContactPointSet {
 	}
 
 	for i := 0; i < info.count; i++ {
-		p1 := contacts[i].r1
-		p2 := contacts[i].r2
+		p1 := contacts[i].R1
+		p2 := contacts[i].R2
 
 		if swapped {
 			set.Points[i].PointA = p2

@@ -121,7 +121,7 @@ func NewPolyShapeRaw(
 	poly := &PolyShape{
 		Radius: roundingRadius,
 		count:  count,
-		planes: []SplittingPlane{},
+		Planes: []SplittingPlane{},
 	}
 	poly.Shape = NewShape(poly, body, PolyShapeMassInfo(0, count, verts, roundingRadius))
 	poly.SetVerts(count, verts)
