@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 // BB is Chipmunk's axis-aligned 2D bounding box type. (left, bottom, right, top)
@@ -27,7 +27,7 @@ func (bb BB) String() string {
 }
 
 // NewBBForExtents constructs a BB centered on a point with the given extents (half sizes).
-func NewBBForExtents(c vec.Vec2, hw, hh float64) BB {
+func NewBBForExtents(c v.Vec, hw, hh float64) BB {
 	return BB{
 		L: c.X - hw,
 		B: c.Y - hh,
@@ -37,7 +37,7 @@ func NewBBForExtents(c vec.Vec2, hw, hh float64) BB {
 }
 
 // NewBBForCircle constructs a BB for a circle with the given position and radius.
-func NewBBForCircle(p vec.Vec2, r float64) BB {
+func NewBBForCircle(p v.Vec, r float64) BB {
 	return NewBBForExtents(p, r, r)
 }
 
@@ -52,7 +52,7 @@ func (bb BB) Contains(other BB) bool {
 }
 
 // ContainsVect returns true if bb contains v.
-func (bb BB) ContainsVect(v vec.Vec2) bool {
+func (bb BB) ContainsVect(v v.Vec) bool {
 	return bb.L <= v.X && bb.R >= v.X && bb.B <= v.Y && bb.T >= v.Y
 }
 
@@ -67,7 +67,7 @@ func (a BB) Merge(b BB) BB {
 }
 
 // Expand returns a bounding box that holds both bb and v.
-func (bb BB) Expand(v vec.Vec2) BB {
+func (bb BB) Expand(v v.Vec) BB {
 	return BB{
 		math.Min(bb.L, v.X),
 		math.Min(bb.B, v.Y),
@@ -77,8 +77,8 @@ func (bb BB) Expand(v vec.Vec2) BB {
 }
 
 // Center returns the center of a bounding box.
-func (bb BB) Center() vec.Vec2 {
-	return vec.Vec2{bb.L, bb.B}.Lerp(vec.Vec2{bb.R, bb.T}, 0.5)
+func (bb BB) Center() v.Vec {
+	return v.Vec{bb.L, bb.B}.Lerp(v.Vec{bb.R, bb.T}, 0.5)
 }
 
 // Area returns the area of the bounding box.
@@ -93,7 +93,7 @@ func (a BB) MergedArea(b BB) float64 {
 
 // SegmentQuery returns the fraction along the segment query the BB is hit.
 // Returns cm.INFINITY if it doesn't hit.
-func (bb BB) SegmentQuery(a, b vec.Vec2) float64 {
+func (bb BB) SegmentQuery(a, b v.Vec) float64 {
 	delta := b.Sub(a)
 	tmin := -infinity
 	tmax := infinity
@@ -128,19 +128,19 @@ func (bb BB) SegmentQuery(a, b vec.Vec2) float64 {
 }
 
 // IntersectsSegment returns true if the bounding box intersects the line segment with ends a and b.
-func (bb BB) IntersectsSegment(a, b vec.Vec2) bool {
+func (bb BB) IntersectsSegment(a, b v.Vec) bool {
 	return bb.SegmentQuery(a, b) != infinity
 }
 
 // ClampVect clamps a vector to bounding box.
-func (bb BB) ClampVect(v *vec.Vec2) vec.Vec2 {
-	return vec.Vec2{clamp(v.X, bb.L, bb.R), clamp(v.Y, bb.B, bb.T)}
+func (bb BB) ClampVect(vect v.Vec) v.Vec {
+	return v.Vec{clamp(vect.X, bb.L, bb.R), clamp(vect.Y, bb.B, bb.T)}
 }
 
 // WrapVect wraps a vector to bounding box.
-func (bb BB) WrapVect(v vec.Vec2) vec.Vec2 {
+func (bb BB) WrapVect(vect v.Vec) v.Vec {
 	dx := math.Abs(bb.R - bb.L)
-	modx := math.Mod(v.X-bb.L, dx)
+	modx := math.Mod(vect.X-bb.L, dx)
 	var x float64
 	if modx > 0 {
 		x = modx
@@ -149,7 +149,7 @@ func (bb BB) WrapVect(v vec.Vec2) vec.Vec2 {
 	}
 
 	dy := math.Abs(bb.T - bb.B)
-	mody := math.Mod(v.Y-bb.B, dy)
+	mody := math.Mod(vect.Y-bb.B, dy)
 	var y float64
 	if mody > 0 {
 		y = mody
@@ -157,16 +157,16 @@ func (bb BB) WrapVect(v vec.Vec2) vec.Vec2 {
 		y = mody + dy
 	}
 
-	return vec.Vec2{x + bb.L, y + bb.B}
+	return v.Vec{x + bb.L, y + bb.B}
 }
 
 // Offset returns a bounding box offseted by v.
-func (bb BB) Offset(v vec.Vec2) BB {
+func (bb BB) Offset(vect v.Vec) BB {
 	return BB{
-		bb.L + v.X,
-		bb.B + v.Y,
-		bb.R + v.X,
-		bb.T + v.Y,
+		bb.L + vect.X,
+		bb.B + vect.Y,
+		bb.R + vect.X,
+		bb.T + vect.Y,
 	}
 }
 

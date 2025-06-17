@@ -2,20 +2,20 @@ package march
 
 import (
 	"github.com/setanarut/cm"
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 // This is a user defined function that gets passed in to the Marching process
 // the user establishes a PolyLineSet, passes a pointer to their function, and they
 // populate it. In most cases you want to use PolyLineCollectSegment instead of defining your own
-type MarchSegFunc func(v0 vec.Vec2, v1 vec.Vec2, segmentData *cm.PolyLineSet)
+type MarchSegFunc func(v0 v.Vec, v1 v.Vec, segmentData *cm.PolyLineSet)
 
 // This is a user defined function that gets passed every single point from thebounding
 // box the user passes into the March process - you can use this to sample an image and
 // check for alpha values or really any 2d matrix you define like a tile map.
 // NOTE: I could not determine a use case for the sampleData pointer from the original code
 // so I removed it here - open to adding it back in if there is a reason.
-type MarchSampleFunc func(point vec.Vec2) float64
+type MarchSampleFunc func(point v.Vec) float64
 
 type MarchCellFunc func(
 	t, a, b, c, d, x0, x1, y0, y1 float64,
@@ -55,7 +55,7 @@ func MarchCells(
 	buffer := make([]float64, xSamples)
 	var i, j int64
 	for i = 0; i < xSamples; i++ {
-		buffer[i] = marchSample(vec.Vec2{lerp(bb.L, bb.R, float64(i)*xDenom), bb.B})
+		buffer[i] = marchSample(v.Vec{lerp(bb.L, bb.R, float64(i)*xDenom), bb.B})
 	}
 	segmentData := &cm.PolyLineSet{}
 
@@ -65,7 +65,7 @@ func MarchCells(
 
 		// a := buffer[0] // unused variable ?
 		b := buffer[0]
-		c := marchSample(vec.Vec2{bb.L, y1})
+		c := marchSample(v.Vec{bb.L, y1})
 		d := c
 		buffer[0] = d
 
@@ -76,7 +76,7 @@ func MarchCells(
 			a := b // = -> :=
 			b = buffer[i+1]
 			c = d
-			d = marchSample(vec.Vec2{x1, y1})
+			d = marchSample(v.Vec{x1, y1})
 			buffer[i+1] = d
 
 			marchCell(t, a, b, c, d, x0, x1, y0, y1, marchSegment, segmentData)
@@ -86,8 +86,8 @@ func MarchCells(
 	return segmentData
 }
 
-func Seg(v0, v1 vec.Vec2, marchSeg MarchSegFunc, segmentData *cm.PolyLineSet) {
-	if !v0.Equal(v1) {
+func Seg(v0, v1 v.Vec, marchSeg MarchSegFunc, segmentData *cm.PolyLineSet) {
+	if !v0.Equals(v1) {
 		marchSeg(v1, v0, segmentData)
 	}
 }
@@ -121,111 +121,111 @@ func MarchCellSoft(
 	switch (at)<<0 | (bt)<<1 | (ct)<<2 | (dt)<<3 {
 	case 0x1:
 		Seg(
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
 			marchSeg,
 			segData,
 		)
 	case 0x2:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
 			marchSeg,
 			segData,
 		)
 	case 0x3:
 		Seg(
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
 			marchSeg,
 			segData,
 		)
 	case 0x4:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
 			marchSeg,
 			segData,
 		)
 	case 0x5:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
 			marchSeg,
 			segData,
 		)
 	case 0x6:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
 			marchSeg,
 			segData,
 		)
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
 			marchSeg,
 			segData,
 		)
 	case 0x7:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
 			marchSeg,
 			segData,
 		)
 	case 0x8:
 		Seg(
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
 			marchSeg,
 			segData,
 		)
 	case 0x9:
 		Seg(
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
 			marchSeg,
 			segData,
 		)
 		Seg(
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
 			marchSeg,
 			segData,
 		)
 	case 0xA:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
 			marchSeg,
 			segData,
 		)
 	case 0xB:
 		Seg(
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
-			vec.Vec2{Midlerp(x0, x1, c, d, t), y1},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, c, d, t), y1},
 			marchSeg,
 			segData,
 		)
 	case 0xC:
 		Seg(
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
 			marchSeg,
 			segData,
 		)
 	case 0xD:
 		Seg(
-			vec.Vec2{x1, Midlerp(y0, y1, b, d, t)},
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x1, Midlerp(y0, y1, b, d, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
 			marchSeg,
 			segData,
 		)
 	case 0xE:
 		Seg(
-			vec.Vec2{Midlerp(x0, x1, a, b, t), y0},
-			vec.Vec2{x0, Midlerp(y0, y1, a, c, t)},
+			v.Vec{Midlerp(x0, x1, a, b, t), y0},
+			v.Vec{x0, Midlerp(y0, y1, a, c, t)},
 			marchSeg,
 			segData,
 		)
@@ -246,7 +246,7 @@ func MarchSoft(
 	return MarchCells(bb, xSamples, ySamples, t, marchSeg, marchSample, MarchCellSoft)
 }
 
-func Segs(a, b, c vec.Vec2, marchSegment MarchSegFunc, segmentData *cm.PolyLineSet) {
+func Segs(a, b, c v.Vec, marchSegment MarchSegFunc, segmentData *cm.PolyLineSet) {
 	Seg(b, c, marchSegment, segmentData)
 	Seg(a, b, marchSegment, segmentData)
 }
@@ -278,35 +278,35 @@ func MarchCellHard(
 
 	switch (at)<<0 | (bt)<<1 | (ct)<<2 | (dt)<<3 {
 	case 0x1:
-		Segs(vec.Vec2{x0, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y0}, marchSeg, segData)
+		Segs(v.Vec{x0, ym}, v.Vec{xm, ym}, v.Vec{xm, y0}, marchSeg, segData)
 	case 0x2:
-		Segs(vec.Vec2{xm, y0}, vec.Vec2{xm, ym}, vec.Vec2{x1, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y0}, v.Vec{xm, ym}, v.Vec{x1, ym}, marchSeg, segData)
 	case 0x3:
-		Seg(vec.Vec2{x0, ym}, vec.Vec2{x1, ym}, marchSeg, segData)
+		Seg(v.Vec{x0, ym}, v.Vec{x1, ym}, marchSeg, segData)
 	case 0x4:
-		Segs(vec.Vec2{xm, y1}, vec.Vec2{xm, ym}, vec.Vec2{x0, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y1}, v.Vec{xm, ym}, v.Vec{x0, ym}, marchSeg, segData)
 	case 0x5:
-		Seg(vec.Vec2{xm, y1}, vec.Vec2{xm, y0}, marchSeg, segData)
+		Seg(v.Vec{xm, y1}, v.Vec{xm, y0}, marchSeg, segData)
 	case 0x6:
-		Segs(vec.Vec2{xm, y0}, vec.Vec2{xm, ym}, vec.Vec2{x0, ym}, marchSeg, segData)
-		Segs(vec.Vec2{xm, y1}, vec.Vec2{xm, ym}, vec.Vec2{x1, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y0}, v.Vec{xm, ym}, v.Vec{x0, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y1}, v.Vec{xm, ym}, v.Vec{x1, ym}, marchSeg, segData)
 	case 0x7:
-		Segs(vec.Vec2{xm, y1}, vec.Vec2{xm, ym}, vec.Vec2{x1, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y1}, v.Vec{xm, ym}, v.Vec{x1, ym}, marchSeg, segData)
 	case 0x8:
-		Segs(vec.Vec2{x1, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y1}, marchSeg, segData)
+		Segs(v.Vec{x1, ym}, v.Vec{xm, ym}, v.Vec{xm, y1}, marchSeg, segData)
 	case 0x9:
-		Segs(vec.Vec2{x1, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y0}, marchSeg, segData)
-		Segs(vec.Vec2{x0, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y1}, marchSeg, segData)
+		Segs(v.Vec{x1, ym}, v.Vec{xm, ym}, v.Vec{xm, y0}, marchSeg, segData)
+		Segs(v.Vec{x0, ym}, v.Vec{xm, ym}, v.Vec{xm, y1}, marchSeg, segData)
 	case 0xA:
-		Seg(vec.Vec2{xm, y0}, vec.Vec2{xm, y1}, marchSeg, segData)
+		Seg(v.Vec{xm, y0}, v.Vec{xm, y1}, marchSeg, segData)
 	case 0xB:
-		Segs(vec.Vec2{x0, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y1}, marchSeg, segData)
+		Segs(v.Vec{x0, ym}, v.Vec{xm, ym}, v.Vec{xm, y1}, marchSeg, segData)
 	case 0xC:
-		Seg(vec.Vec2{x1, ym}, vec.Vec2{x0, ym}, marchSeg, segData)
+		Seg(v.Vec{x1, ym}, v.Vec{x0, ym}, marchSeg, segData)
 	case 0xD:
-		Segs(vec.Vec2{x1, ym}, vec.Vec2{xm, ym}, vec.Vec2{xm, y0}, marchSeg, segData)
+		Segs(v.Vec{x1, ym}, v.Vec{xm, ym}, v.Vec{xm, y0}, marchSeg, segData)
 	case 0xE:
-		Segs(vec.Vec2{xm, y0}, vec.Vec2{xm, ym}, vec.Vec2{x0, ym}, marchSeg, segData)
+		Segs(v.Vec{xm, y0}, v.Vec{xm, ym}, v.Vec{x0, ym}, marchSeg, segData)
 	}
 }
 

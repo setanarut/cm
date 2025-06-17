@@ -3,10 +3,11 @@ package cm
 import (
 	"log"
 	"math"
+	"slices"
 	"sync"
 	"unsafe"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 const (
@@ -35,7 +36,7 @@ type Space struct {
 	StaticBody *Body
 
 	// Gravity to pass to rigid bodies when integrating velocity.
-	Gravity vec.Vec2
+	Gravity v.Vec
 
 	// Damping rate expressed as the fraction of velocity bodies retain each second.
 	//
@@ -91,7 +92,7 @@ func NewSpace() *Space {
 		IdleSpeedThreshold:   0.0,
 		SleepTimeThreshold:   math.MaxFloat64,
 		StaticBody:           NewBody(0, 0),
-		Gravity:              vec.Vec2{},
+		Gravity:              v.Vec{},
 		Damping:              1.0,
 		CollisionSlop:        0.1,
 		CollisionBias:        math.Pow(0.9, 60),
@@ -105,10 +106,10 @@ func NewSpace() *Space {
 		staticShapes:         NewBBTree(ShapeGetBB, nil),
 		sleepingComponents:   []*Body{},
 		rousedBodies:         []*Body{},
-		cachedArbiters:       NewHashSet[ShapePair, *Arbiter](arbiterSetEql),
+		cachedArbiters:       NewHashSet(arbiterSetEql),
 		pooledArbiters:       sync.Pool{New: func() any { return &Arbiter{} }},
 		constraints:          []*Constraint{},
-		collisionHandlers: NewHashSet[*CollisionHandler, *CollisionHandler](func(a, b *CollisionHandler) bool {
+		collisionHandlers: NewHashSet(func(a, b *CollisionHandler) bool {
 			if a.TypeA == b.TypeA && a.TypeB == b.TypeB {
 				return true
 			}
@@ -120,7 +121,7 @@ func NewSpace() *Space {
 		PostStepCallbacks: []*PostStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
 	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
@@ -140,7 +141,7 @@ func (s *Space) StaticBodyCount() int {
 }
 
 // SetGravity sets gravity and wake up all of the sleeping bodies since the gravity changed.
-func (s *Space) SetGravity(gravity vec.Vec2) {
+func (s *Space) SetGravity(gravity v.Vec) {
 	s.Gravity = gravity
 
 	// Wake up all of the bodies since the gravity changed.
@@ -455,7 +456,7 @@ func (s *Space) ProcessComponents(dt float64) {
 		if dv != 0 {
 			dvsq = dv * dv
 		} else {
-			dvsq = s.Gravity.LengthSq() * dt * dt
+			dvsq = s.Gravity.MagSq() * dt * dt
 		}
 
 		// update idling and reset component nodes
@@ -665,7 +666,7 @@ func (s *Space) Unlock(runPostStep bool) {
 		return
 	}
 
-	for i := 0; i < len(s.rousedBodies); i++ {
+	for i := range s.rousedBodies {
 		s.Activate(s.rousedBodies[i])
 		s.rousedBodies[i] = nil
 	}
@@ -922,7 +923,7 @@ func (s *Space) EachShape(f func(*Shape)) {
 func (s *Space) EachConstraint(f func(*Constraint)) {
 	s.Lock()
 
-	for i := 0; i < len(s.constraints); i++ {
+	for i := range s.constraints {
 		f(s.constraints[i])
 	}
 
@@ -930,8 +931,8 @@ func (s *Space) EachConstraint(f func(*Constraint)) {
 }
 
 // Query the space at a point and return the nearest shape found. Returns nil if no shapes were found.
-func (s *Space) PointQueryNearest(point vec.Vec2, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
-	info := &PointQueryInfo{nil, vec.Vec2{}, maxDistance, vec.Vec2{}}
+func (s *Space) PointQueryNearest(point v.Vec, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
+	info := &PointQueryInfo{nil, v.Vec{}, maxDistance, v.Vec{}}
 	context := &PointQueryContext{point, maxDistance, filter, nil}
 
 	bb := NewBBForCircle(point, math.Max(maxDistance, 0))
@@ -965,7 +966,7 @@ func (s *Space) SliceForBodyType(t BodyType) *[]*Body {
 	return &s.DynamicBodies
 }
 
-func (s *Space) SegmentQuery(start, end vec.Vec2, radius float64, filter ShapeFilter, f SpaceSegmentQueryFunc, data any) {
+func (s *Space) SegmentQuery(start, end v.Vec, radius float64, filter ShapeFilter, f SpaceSegmentQueryFunc, data any) {
 	context := SegmentQueryContext{start, end, radius, filter, f}
 	s.Lock()
 
@@ -975,8 +976,8 @@ func (s *Space) SegmentQuery(start, end vec.Vec2, radius float64, filter ShapeFi
 	s.Unlock(true)
 }
 
-func (s *Space) SegmentQueryFirst(start, end vec.Vec2, radius float64, filter ShapeFilter) SegmentQueryInfo {
-	info := SegmentQueryInfo{nil, end, vec.Vec2{}, 1}
+func (s *Space) SegmentQueryFirst(start, end v.Vec, radius float64, filter ShapeFilter) SegmentQueryInfo {
+	info := SegmentQueryInfo{nil, end, v.Vec{}, 1}
 	context := &SegmentQueryContext{start, end, radius, filter, nil}
 	s.staticShapes.class.SegmentQuery(context, start, end, 1, queryFirst, &info)
 	s.dynamicShapes.class.SegmentQuery(context, start, end, info.Alpha, queryFirst, &info)
@@ -988,7 +989,7 @@ func (s *Space) TimeStep() float64 {
 }
 
 func (s *Space) PostStepCallback(key any) *PostStepCallback {
-	for i := 0; i < len(s.PostStepCallbacks); i++ {
+	for i := range s.PostStepCallbacks {
 		callback := s.PostStepCallbacks[i]
 		if callback != nil && callback.key == key {
 			return callback
@@ -1208,12 +1209,7 @@ func ArbiterNext(arb *Arbiter, body *Body) *Arbiter {
 }
 
 func Contains(bodies []*Body, body *Body) bool {
-	for i := 0; i < len(bodies); i++ {
-		if bodies[i] == body {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(bodies, body)
 }
 
 func NearestPointQueryNearest(obj any, shape *Shape, collisionId uint32, out any) uint32 {
@@ -1262,7 +1258,7 @@ func arbiterSetEql(shapes ShapePair, arb *Arbiter) bool {
 	return (a == arb.shapeA && b == arb.shapeB) || (b == arb.shapeA && a == arb.shapeB)
 }
 
-var ShapeVelocityFunc = func(obj any) vec.Vec2 {
+var ShapeVelocityFunc = func(obj any) v.Vec {
 	return obj.(*Shape).Body.velocity
 }
 
@@ -1277,7 +1273,7 @@ type PostStepCallback struct {
 }
 
 type PointQueryContext struct {
-	point       vec.Vec2
+	point       v.Vec
 	maxDistance float64
 	filter      ShapeFilter
 	f           SpacePointQueryFunc
@@ -1294,13 +1290,13 @@ type BBQueryContext struct {
 }
 
 type SegmentQueryContext struct {
-	start, end vec.Vec2
+	start, end v.Vec
 	radius     float64
 	filter     ShapeFilter
 	f          SpaceSegmentQueryFunc
 }
 
-type SpacePointQueryFunc func(*Shape, vec.Vec2, float64, vec.Vec2, any)
+type SpacePointQueryFunc func(*Shape, v.Vec, float64, v.Vec, any)
 type SpaceBBQueryFunc func(shape *Shape, data any)
-type SpaceSegmentQueryFunc func(shape *Shape, point, normal vec.Vec2, alpha float64, data any)
+type SpaceSegmentQueryFunc func(shape *Shape, point, normal v.Vec, alpha float64, data any)
 type PostStepCallbackFunc func(space *Space, key any, data any)

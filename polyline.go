@@ -3,33 +3,33 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type PolyLine struct {
-	Verts []vec.Vec2
+	Verts []v.Vec
 }
 
 type PolyLineSet struct {
 	Lines []*PolyLine
 }
 
-func Sharpness(a, b, c vec.Vec2) float64 {
+func Sharpness(a, b, c v.Vec) float64 {
 	return a.Sub(b).Unit().Dot(c.Sub(b).Unit())
 }
 
-func (pl *PolyLine) Push(v vec.Vec2) *PolyLine {
+func (pl *PolyLine) Push(v v.Vec) *PolyLine {
 	pl.Verts = append(pl.Verts, v)
 	return pl
 }
 
-func (pl *PolyLine) Enqueue(v vec.Vec2) *PolyLine {
-	pl.Verts = append([]vec.Vec2{v}, pl.Verts...)
+func (pl *PolyLine) Enqueue(vect v.Vec) *PolyLine {
+	pl.Verts = append([]v.Vec{vect}, pl.Verts...)
 	return pl
 }
 
 func (pl *PolyLine) IsClosed() bool {
-	return len(pl.Verts) > 1 && pl.Verts[0].Equal(pl.Verts[len(pl.Verts)-1])
+	return len(pl.Verts) > 1 && pl.Verts[0].Equals(pl.Verts[len(pl.Verts)-1])
 }
 
 // IsShort checks if the total length of a polyline segment is less than 'min'.
@@ -44,7 +44,7 @@ func (pl *PolyLine) IsClosed() bool {
 func (pl *PolyLine) IsShort(count, start, end int, min float64) bool {
 	var length float64
 	for i := start; i != end; i = next(i, count) {
-		length += pl.Verts[i].Distance(pl.Verts[next(i, count)])
+		length += pl.Verts[i].Dist(pl.Verts[next(i, count)])
 		if length > min {
 			return false
 		}
@@ -55,7 +55,7 @@ func (pl *PolyLine) IsShort(count, start, end int, min float64) bool {
 // Join similar adjacent line segments together. Works well for hard edged shapes.
 // 'tol' is the minimum anglular difference in radians of a vertex.
 func (pl *PolyLine) SimplifyVertexes(tol float64) *PolyLine {
-	reduced := PolyLine{Verts: []vec.Vec2{pl.Verts[0], pl.Verts[1]}}
+	reduced := PolyLine{Verts: []v.Vec{pl.Verts[0], pl.Verts[1]}}
 	minSharp := -math.Cos(tol)
 
 	for i := 2; i < len(pl.Verts); i++ {
@@ -76,7 +76,7 @@ func (pl *PolyLine) SimplifyVertexes(tol float64) *PolyLine {
 
 // Recursive function used by PolylineSimplifyCurves().
 func DouglasPeucker(
-	verts []vec.Vec2,
+	verts []v.Vec,
 	reduced *PolyLine,
 	length, start, end int,
 	min, tol float64,
@@ -90,7 +90,7 @@ func DouglasPeucker(
 	b := verts[end]
 
 	// Check if the length is below the threshold
-	if a.IsNear(b, min) && reduced.IsShort(length, start, end, min) {
+	if isNear(a, b, min) && reduced.IsShort(length, start, end, min) {
 		return reduced
 	}
 
@@ -98,7 +98,7 @@ func DouglasPeucker(
 	var max float64
 	maxi := start
 
-	n := b.Sub(a).Perp().Unit()
+	n := perp(b.Sub(a)).Unit()
 	d := n.Dot(a)
 
 	for i := next(start, length); i != end; i = next(i, length) {
@@ -145,9 +145,9 @@ func (pl *PolyLine) SimplifyCurves(tol float64) *PolyLine {
 }
 
 // Find the polyline that ends with v.
-func (pls *PolyLineSet) FindEnds(v vec.Vec2) int {
+func (pls *PolyLineSet) FindEnds(v v.Vec) int {
 	for i, line := range pls.Lines {
-		if line.Verts != nil && line.Verts[len(line.Verts)-1].Equal(v) {
+		if line.Verts != nil && line.Verts[len(line.Verts)-1].Equals(v) {
 			return i
 		}
 	}
@@ -155,9 +155,9 @@ func (pls *PolyLineSet) FindEnds(v vec.Vec2) int {
 }
 
 // Find the polyline that starts with v.
-func (pls *PolyLineSet) FindStarts(v vec.Vec2) int {
+func (pls *PolyLineSet) FindStarts(v v.Vec) int {
 	for i, line := range pls.Lines {
-		if line.Verts != nil && line.Verts[0].Equal(v) {
+		if line.Verts != nil && line.Verts[0].Equals(v) {
 			return i
 		}
 	}
@@ -180,7 +180,7 @@ func (pls *PolyLineSet) Join(before, after int) {
 
 // Add a segment to a polyline set.
 // A segment will either start a new polyline, join two others, or add to or loop an existing polyline.
-func PolyLineCollectSegment(v0, v1 vec.Vec2, pls *PolyLineSet) {
+func PolyLineCollectSegment(v0, v1 v.Vec, pls *PolyLineSet) {
 
 	before := pls.FindEnds(v0)
 	after := pls.FindStarts(v1)
@@ -196,7 +196,7 @@ func PolyLineCollectSegment(v0, v1 vec.Vec2, pls *PolyLineSet) {
 	} else if after >= 0 {
 		pls.Lines[after].Enqueue(v0)
 	} else {
-		pls.Push(&PolyLine{Verts: []vec.Vec2{v0, v1}})
+		pls.Push(&PolyLine{Verts: []v.Vec{v0, v1}})
 	}
 }
 

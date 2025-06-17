@@ -3,22 +3,22 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type SlideJoint struct {
 	*Constraint
 
-	AnchorA, AnchorB vec.Vec2
+	AnchorA, AnchorB v.Vec
 	Min, Max         float64
 
-	r1, r2, n vec.Vec2
+	r1, r2, n v.Vec
 	nMass     float64
 
 	jnAcc, bias float64
 }
 
-func NewSlideJoint(a, b *Body, anchorA, anchorB vec.Vec2, min, max float64) *Constraint {
+func NewSlideJoint(a, b *Body, anchorA, anchorB v.Vec, min, max float64) *Constraint {
 	joint := &SlideJoint{
 		AnchorA: anchorA,
 		AnchorB: anchorB,
@@ -47,7 +47,7 @@ func (joint *SlideJoint) PreStep(dt float64) {
 		pdist = joint.Min - dist
 		joint.n = delta.Unit().Neg()
 	} else {
-		joint.n = vec.Vec2{}
+		joint.n = v.Vec{}
 		joint.jnAcc = 0
 	}
 
@@ -68,7 +68,7 @@ func (joint *SlideJoint) ApplyCachedImpulse(dtCoef float64) {
 }
 
 func (joint *SlideJoint) ApplyImpulse(dt float64) {
-	if joint.n.Equal(vec.Vec2{}) {
+	if joint.n.Equals(v.Vec{}) {
 		return
 	}
 

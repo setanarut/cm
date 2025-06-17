@@ -3,7 +3,7 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type MarkContext struct {
@@ -55,7 +55,7 @@ func (thread *Thread) Unlink() {
 	}
 }
 
-type BBTreeVelocityFunc func(obj any) vec.Vec2
+type BBTreeVelocityFunc func(obj any) v.Vec
 
 // BBTree represents a bounding box tree used for
 // spatial indexing and collision detection.
@@ -175,7 +175,7 @@ func (bbt *BBTree) PairFromPool() *Pair {
 	}
 
 	// Pool is exhausted make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		tree.RecyclePair(&Pair{})
 	}
 
@@ -335,7 +335,7 @@ func (bbt *BBTree) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
 	}
 }
 
-func (bbt *BBTree) SegmentQuery(obj any, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (bbt *BBTree) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
 	root := bbt.root
 	if root != nil {
 		root.SubtreeSegmentQuery(obj, a, b, tExit, f, data)
@@ -392,7 +392,7 @@ func (tree *BBTree) NodeFromPool() *Node {
 	}
 
 	// Pool is exhausted make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		tree.RecycleNode(&Node{})
 	}
 
@@ -509,7 +509,7 @@ func (subtree *Node) MarkSubtree(context *MarkContext) {
 	}
 }
 
-func (subtree *Node) SubtreeSegmentQuery(obj any, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data any) float64 {
+func (subtree *Node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) float64 {
 	if subtree.IsLeaf() {
 		return f(obj, subtree.obj, data)
 	}

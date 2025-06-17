@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/setanarut/cm"
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 func TestBodyMassFromShapes(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 5, vec.Vec2{0, 0})
-	cm.NewCircleShape(body, 5, vec.Vec2{0, 0})
+	cm.NewCircleShape(body, 5, v.Vec{0, 0})
+	cm.NewCircleShape(body, 5, v.Vec{0, 0})
 
 	mass := 10.0
 	body.ShapeAtIndex(0).SetMass(mass)
@@ -27,8 +27,8 @@ func TestBodyMassFromShapes(t *testing.T) {
 
 func TestBodyCoGFromShapes(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 5, vec.Vec2{0, 0})
-	cm.NewCircleShape(body, 5, vec.Vec2{10, 0})
+	cm.NewCircleShape(body, 5, v.Vec{0, 0})
+	cm.NewCircleShape(body, 5, v.Vec{10, 0})
 
 	mass := 10.0
 

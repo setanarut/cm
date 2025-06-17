@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 const (
@@ -86,7 +86,7 @@ type CollisionHandler struct {
 }
 
 type Contact struct {
-	R1, R2 vec.Vec2
+	R1, R2 v.Vec
 
 	nMass, tMass float64
 	bounce       float64 // TODO: look for an alternate bounce solution
@@ -117,12 +117,12 @@ type CollisionInfo struct {
 	a, b        *Shape
 	collisionId uint32
 
-	n     vec.Vec2
+	n     v.Vec
 	count int
 	arr   []Contact
 }
 
-func (info *CollisionInfo) PushContact(p1, p2 vec.Vec2, hash HashValue) {
+func (info *CollisionInfo) PushContact(p1, p2 v.Vec, hash HashValue) {
 
 	con := &info.arr[info.count]
 	con.R1 = p1
@@ -136,7 +136,7 @@ func (info *CollisionInfo) PushContact(p1, p2 vec.Vec2, hash HashValue) {
 type ShapeMassInfo struct {
 	m, i, area float64
 	// Center of gravity
-	cog vec.Vec2
+	cog v.Vec
 }
 
 // PointQueryInfo is point query info struct.
@@ -144,12 +144,12 @@ type PointQueryInfo struct {
 	// The nearest shape, nil if no shape was within range.
 	Shape *Shape
 	// The closest point on the shape's surface. (in world space coordinates)
-	Point vec.Vec2
+	Point v.Vec
 	// The distance to the point. The distance is negative if the point is inside the shape.
 	Distance float64
 	// The gradient of the signed distance function.
 	// The value should be similar to info.p/info.d, but accurate even for very small values of info.d.
-	Gradient vec.Vec2
+	Gradient v.Vec
 }
 
 // SegmentQueryInfo is segment query info struct.
@@ -157,15 +157,15 @@ type SegmentQueryInfo struct {
 	// The shape that was hit, or nil if no collision occurred.
 	Shape *Shape
 	// The point of impact.
-	Point vec.Vec2
+	Point v.Vec
 	// The normal of the surface hit.
-	Normal vec.Vec2
+	Normal v.Vec
 	// The normalized distance along the query segment in the range [0, 1].
 	Alpha float64
 }
 
 type SplittingPlane struct {
-	V0, N vec.Vec2
+	V0, N v.Vec
 }
 
 // ShapeFilter is fast collision filtering type that is used to determine if two objects collide before calling collision or query callbacks.
@@ -200,9 +200,9 @@ type Mat2x2 struct {
 	a, b, c, d float64
 }
 
-// Transform transforms Vector v
-func (m *Mat2x2) Transform(v vec.Vec2) vec.Vec2 {
-	return vec.Vec2{v.X*m.a + v.Y*m.b, v.X*m.c + v.Y*m.d}
+// Transform transforms Vector a
+func (m *Mat2x2) Transform(a v.Vec) v.Vec {
+	return v.Vec{a.X*m.a + a.Y*m.b, a.X*m.c + a.Y*m.d}
 }
 
 // DebugInfo returns info of space
@@ -211,7 +211,7 @@ func DebugInfo(space *Space) string {
 	arbiters := len(space.Arbiters)
 	points := 0
 
-	for i := 0; i < arbiters; i++ {
+	for i := range arbiters {
 		points += int(space.Arbiters[i].count)
 	}
 
@@ -241,7 +241,7 @@ KE: %e`, arbiters, maxArbiters,
 		points, maxPoints, len(space.constraints), space.Iterations, constraints, maxConstraints, ke)
 }
 
-func kScalarBody(body *Body, r, n vec.Vec2) float64 {
+func kScalarBody(body *Body, r, n v.Vec) float64 {
 	rcn := r.Cross(n)
 	return body.massInverse + body.momentOfInertiaInverse*rcn*rcn
 }
@@ -250,15 +250,15 @@ func clamp01(f float64) float64 {
 	return math.Max(0, math.Min(f, 1))
 }
 
-func kScalar(a, b *Body, r1, r2, n vec.Vec2) float64 {
+func kScalar(a, b *Body, r1, r2, n v.Vec) float64 {
 	return kScalarBody(a, r1, n) + kScalarBody(b, r2, n)
 }
 
-func normalRelativeVelocity(a, b *Body, r1, r2, n vec.Vec2) float64 {
+func normalRelativeVelocity(a, b *Body, r1, r2, n v.Vec) float64 {
 	return relativeVelocity(a, b, r1, r2).Dot(n)
 }
 
-func kTensor(a, b *Body, r1, r2 vec.Vec2) Mat2x2 {
+func kTensor(a, b *Body, r1, r2 v.Vec) Mat2x2 {
 	mSum := a.massInverse + b.massInverse
 
 	// start with Identity*mSum
@@ -313,30 +313,60 @@ func clamp(f, min, max float64) float64 {
 }
 
 // collision related
-func lerpT(a, b vec.Vec2, t float64) vec.Vec2 {
+func lerpT(a, b v.Vec, t float64) v.Vec {
 	ht := 0.5 * t
 	return a.Scale(0.5 - ht).Add(b.Scale(0.5 + ht))
 }
 
-func closestDist(v0, v1 vec.Vec2) float64 {
-	return lerpT(v0, v1, closestT(v0, v1)).LengthSq()
+func closestDist(v0, v1 v.Vec) float64 {
+	return lerpT(v0, v1, closestT(v0, v1)).MagSq()
 }
 
-func closestT(a, b vec.Vec2) float64 {
+func closestT(a, b v.Vec) float64 {
 	delta := b.Sub(a)
-	return -clamp(delta.Dot(a.Add(b))/delta.LengthSq(), -1.0, 1.0)
+	return -clamp(delta.Dot(a.Add(b))/delta.MagSq(), -1.0, 1.0)
 }
 
-func closestPointOnSegment(v, a, b vec.Vec2) vec.Vec2 {
+func closestPointOnSegment(v, a, b v.Vec) v.Vec {
 	delta := a.Sub(b)
-	t := clamp01(delta.Dot(v.Sub(b)) / delta.LengthSq())
+	t := clamp01(delta.Dot(v.Sub(b)) / delta.MagSq())
 	return b.Add(delta.Scale(t))
 }
 
-func checkAxis(v, v1, p, n vec.Vec2) bool {
+func checkAxis(v, v1, p, n v.Vec) bool {
 	return p.Dot(n) <= math.Max(v.Dot(n), v1.Dot(n))
 }
 
-func pointGreater(v, b, c vec.Vec2) bool {
+func pointGreater(v, b, c v.Vec) bool {
 	return (b.Y-v.Y)*(v.X+b.X-2*c.X) > (b.X-v.X)*(v.Y+b.Y-2*c.Y)
+}
+
+// RotateComplex uses complex number multiplication to rotate this by other.
+//
+// Scaling will occur if this is not a unit vector.
+func rotateComplex(this, other v.Vec) v.Vec {
+	return v.Vec{this.X*other.X - this.Y*other.Y, this.X*other.Y + this.Y*other.X}
+}
+
+// Perp returns a perpendicular vector. (90 degree rotation)
+func perp(a v.Vec) v.Vec {
+	return v.Vec{-a.Y, a.X}
+}
+
+// ReversePerp returns a perpendicular vector. (-90 degree rotation)
+func reversePerp(a v.Vec) v.Vec {
+	return v.Vec{a.Y, -a.X}
+}
+
+// ClampMag clamps this vector magnitude to m.
+func clampMag(vect v.Vec, m float64) v.Vec {
+	if vect.Dot(vect) > m*m {
+		return vect.Unit().Scale(m)
+	}
+	return v.Vec{vect.X, vect.Y}
+}
+
+// IsNear returns true if the distance between this and other is less than dist.
+func isNear(this, other v.Vec, dist float64) bool {
+	return this.DistSq(other) < dist*dist
 }

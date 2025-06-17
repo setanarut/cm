@@ -1,20 +1,20 @@
 package cm
 
-import "github.com/setanarut/vec"
+import "github.com/setanarut/v"
 
 type PivotJoint struct {
 	*Constraint
-	AnchorA, AnchorB vec.Vec2
+	AnchorA, AnchorB v.Vec
 
-	r1, r2 vec.Vec2
+	r1, r2 v.Vec
 	k      Mat2x2
 
-	jAcc, bias vec.Vec2
+	jAcc, bias v.Vec
 }
 
-func NewPivotJoint(a, b *Body, pivot vec.Vec2) *Constraint {
-	var anchorA vec.Vec2
-	var anchorB vec.Vec2
+func NewPivotJoint(a, b *Body, pivot v.Vec) *Constraint {
+	var anchorA v.Vec
+	var anchorB v.Vec
 
 	if a != nil {
 		anchorA = a.WorldToLocal(pivot)
@@ -31,11 +31,11 @@ func NewPivotJoint(a, b *Body, pivot vec.Vec2) *Constraint {
 	return NewPivotJoint2(a, b, anchorA, anchorB)
 }
 
-func NewPivotJoint2(a, b *Body, anchorA, anchorB vec.Vec2) *Constraint {
+func NewPivotJoint2(a, b *Body, anchorA, anchorB v.Vec) *Constraint {
 	joint := &PivotJoint{
 		AnchorA: anchorA,
 		AnchorB: anchorB,
-		jAcc:    vec.Vec2{},
+		jAcc:    v.Vec{},
 	}
 	constraint := NewConstraint(joint, a, b)
 	joint.Constraint = constraint
@@ -54,7 +54,7 @@ func (joint *PivotJoint) PreStep(dt float64) {
 
 	// calculate bias velocity
 	delta := b.position.Add(joint.r2).Sub(a.position.Add(joint.r1))
-	joint.bias = delta.Scale(-biasCoef(joint.Constraint.errorBias, dt) / dt).ClampMag(joint.Constraint.maxBias)
+	joint.bias = clampMag(delta.Scale(-biasCoef(joint.Constraint.errorBias, dt)/dt), joint.Constraint.maxBias)
 }
 
 func (joint *PivotJoint) ApplyCachedImpulse(dtCoef float64) {
@@ -74,7 +74,7 @@ func (joint *PivotJoint) ApplyImpulse(dt float64) {
 	// compute normal impulse
 	j := joint.k.Transform(joint.bias.Sub(vr))
 	jOld := joint.jAcc
-	joint.jAcc = joint.jAcc.Add(j).ClampMag(joint.Constraint.maxForce * dt)
+	joint.jAcc = clampMag(joint.jAcc.Add(j), joint.Constraint.maxForce*dt)
 	j = joint.jAcc.Sub(jOld)
 
 	applyImpulses(a, b, joint.r1, joint.r2, j)

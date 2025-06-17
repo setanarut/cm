@@ -3,7 +3,7 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
@@ -11,20 +11,20 @@ type DampedSpringForceFunc func(spring *DampedSpring, dist float64) float64
 type DampedSpring struct {
 	*Constraint
 
-	AnchorA, AnchorB               vec.Vec2
+	AnchorA, AnchorB               v.Vec
 	RestLength, Stiffness, Damping float64
 	SpringForceFunc                DampedSpringForceFunc
 
 	targetVrn, vCoef float64
 
-	r1, r2 vec.Vec2
+	r1, r2 v.Vec
 	nMass  float64
-	n      vec.Vec2
+	n      v.Vec
 
 	jAcc float64
 }
 
-func NewDampedSpring(a, b *Body, anchorA, anchorB vec.Vec2, restLength, stiffness, damping float64) *Constraint {
+func NewDampedSpring(a, b *Body, anchorA, anchorB v.Vec, restLength, stiffness, damping float64) *Constraint {
 	spring := &DampedSpring{
 		AnchorA:         anchorA,
 		AnchorB:         anchorB,

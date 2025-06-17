@@ -3,13 +3,13 @@ package cm
 import (
 	"fmt"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type IShape interface {
 	CacheData(transform Transform) BB
-	PointQuery(p vec.Vec2, info *PointQueryInfo)
-	SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo)
+	PointQuery(p v.Vec, info *PointQueryInfo)
+	SegmentQuery(a, b v.Vec, radius float64, info *SegmentQueryInfo)
 }
 
 const (
@@ -31,7 +31,7 @@ type Shape struct {
 	// The surface velocity of the object. Useful for creating conveyor belts or
 	// players that move around. This value is only used when calculating friction,
 	// not resolving the collision.
-	SurfaceVelocity      vec.Vec2
+	SurfaceVelocity      v.Vec
 	Elasticity, Friction float64
 	BB                   BB
 	massInfo             *ShapeMassInfo
@@ -43,7 +43,7 @@ func NewShape(class IShape, body *Body, massInfo *ShapeMassInfo) *Shape {
 		Class:           class,
 		Body:            body,
 		massInfo:        massInfo,
-		SurfaceVelocity: vec.Vec2{},
+		SurfaceVelocity: v.Vec{},
 		Filter: ShapeFilter{
 			Group:      NoGroup,
 			Categories: AllCategories,
@@ -116,7 +116,7 @@ func (sh *Shape) Area() float64 {
 	return sh.massInfo.area
 }
 
-func (sh *Shape) CenterOfGravity() vec.Vec2 {
+func (sh *Shape) CenterOfGravity() v.Vec {
 	return sh.massInfo.cog
 }
 
@@ -180,7 +180,7 @@ func (sh *Shape) Point(i uint32) SupportPoint {
 		}
 		return NewSupportPoint(poly.Planes[index].V0, uint32(index))
 	default:
-		return NewSupportPoint(vec.Vec2{}, 0)
+		return NewSupportPoint(v.Vec{}, 0)
 	}
 }
 
@@ -189,8 +189,8 @@ func (sh *Shape) Point(i uint32) SupportPoint {
 // It finds the closest point on the surface of shape to a specific point.
 // The value returned is the distance between the points.
 // A negative distance means the point is inside the shape.
-func (sh *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
-	info := PointQueryInfo{nil, vec.Vec2{}, infinity, vec.Vec2{}}
+func (sh *Shape) PointQuery(p v.Vec) PointQueryInfo {
+	info := PointQueryInfo{nil, v.Vec{}, infinity, v.Vec{}}
 	sh.Class.PointQuery(p, &info)
 	return info
 }
@@ -198,8 +198,8 @@ func (sh *Shape) PointQuery(p vec.Vec2) PointQueryInfo {
 // Perform a segment query against a shape.
 //
 // info must be a pointer to a valid SegmentQueryInfo structure.
-func (sh *Shape) SegmentQuery(a, b vec.Vec2, radius float64, info *SegmentQueryInfo) bool {
-	blank := SegmentQueryInfo{nil, b, vec.Vec2{}, 1}
+func (sh *Shape) SegmentQuery(a, b v.Vec, radius float64, info *SegmentQueryInfo) bool {
+	blank := SegmentQueryInfo{nil, b, v.Vec{}, 1}
 	if info != nil {
 		*info = blank
 	} else {

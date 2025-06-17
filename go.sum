@@ -1,6 +1,2 @@
-github.com/jakecoffman/cp/v2 v2.1.0 h1:s0almZ7zDZs9JY35ciUgCoVKTMmdPkokF1dxHg226Wo=
-github.com/jakecoffman/cp/v2 v2.1.0/go.mod h1:Q0hFU7Kk6PMw4dwgFtvBC6O4KTm7ewiLuHrXtHMicyU=
-github.com/setanarut/vec v1.1.0 h1:Tmei65+2EsQzNB+0xkpNgcXGTZTT0gEUdZRjVb2CuuQ=
-github.com/setanarut/vec v1.1.0/go.mod h1:ZDoKd7F60rWLgCK58novWOCe5ePiXfSkwtmuOSSC9TU=
-github.com/setanarut/vec v1.1.1 h1:2nH1gbDMCa/IHTdG41nmI+2OYyKhbiputK+Bg/mMK+s=
-github.com/setanarut/vec v1.1.1/go.mod h1:ZDoKd7F60rWLgCK58novWOCe5ePiXfSkwtmuOSSC9TU=
+github.com/setanarut/v v1.1.1 h1:Y5hlOHbHQxT21PDSQFLBHd+OQHClmfG+CSnq1LytxZA=
+github.com/setanarut/v v1.1.1/go.mod h1:g4nFgNBw7ulbO6VYnHeAdWqATCBWHjI6IX6uh/fRJEw=

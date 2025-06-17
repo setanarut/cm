@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type SpaceHash struct {
@@ -27,13 +27,13 @@ func NewSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *
 		celldim:  celldim,
 		numCells: num,
 		table:    make([]*SpaceHashBin, num),
-		handleSet: NewHashSet[*Shape, *Handle](func(obj *Shape, elt *Handle) bool {
+		handleSet: NewHashSet(func(obj *Shape, elt *Handle) bool {
 			return obj == elt.obj
 		}),
 		stamp:         1,
 		pooledHandles: sync.Pool{New: func() any { return &Handle{} }},
 	}
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		spaceHash.pooledHandles.Put(&Handle{})
 	}
 	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
@@ -245,7 +245,7 @@ restart:
 }
 
 // modified from http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
-func (hash *SpaceHash) SegmentQuery(obj any, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (hash *SpaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
 	a = a.Scale(1.0 / hash.celldim)
 	b = b.Scale(1.0 / hash.celldim)
 
@@ -394,7 +394,7 @@ func (hash *SpaceHash) getEmptyBin() *SpaceHashBin {
 	}
 
 	// pool is exhausted, make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		hash.recycleBin(&SpaceHashBin{})
 	}
 	return &SpaceHashBin{}

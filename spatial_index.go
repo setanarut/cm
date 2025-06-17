@@ -1,6 +1,6 @@
 package cm
 
-import "github.com/setanarut/vec"
+import "github.com/setanarut/v"
 
 type SpatialIndexBB func(obj *Shape) BB
 type SpatialIndexIterator func(obj *Shape)
@@ -51,7 +51,7 @@ type SpatialIndexer interface {
 	// defined by points `a` and `b`. It allows querying objects affected
 	// by the segment based on the `tExit` parameter, applying the
 	// provided segment query function `f` and additional `data`.
-	SegmentQuery(obj any, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data any)
+	SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any)
 }
 
 func ShapeGetBB(obj *Shape) BB {

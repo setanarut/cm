@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/setanarut/cm"
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 func TestSpaceShapeQuery(t *testing.T) {
 	space := cm.NewSpace()
 	sbody := cm.NewStaticBody()
-	cm.NewCircleShape(sbody, 1, vec.Vec2{})
+	cm.NewCircleShape(sbody, 1, v.Vec{})
 	circle := sbody.Shapes[0]
 	space.AddShape(circle)
 
@@ -30,7 +30,7 @@ func TestSpaceShapeQuery(t *testing.T) {
 		t.Error("Expected box to collide with circle")
 	}
 
-	b.SetPosition(vec.Vec2{3, 0})
+	b.SetPosition(v.Vec{3, 0})
 
 	space.ShapeQuery(b.Shapes[0], func(shape *cm.Shape, points *cm.ContactPointSet) {
 		t.Error("Box should be just out of range")
@@ -48,7 +48,7 @@ func TestSpaceAddBody(t *testing.T) {
 func TestSpace_ReindexShape(t *testing.T) {
 	space := cm.NewSpace()
 	sb := cm.NewStaticBody()
-	cm.NewCircleShape(sb, 1, vec.Vec2{})
+	cm.NewCircleShape(sb, 1, v.Vec{})
 	circle := sb.ShapeAtIndex(0)
 	space.AddBodyWithShapes(sb)
 	bb1 := circle.BB
@@ -58,7 +58,7 @@ func TestSpace_ReindexShape(t *testing.T) {
 	if got, want := bb1.String(), bb2.String(); got != want {
 		t.Errorf("got [%[1]v:%[1]T] want [%[2]v:%[2]T]", got, want)
 	}
-	circle.Body.SetPosition(vec.Vec2{X: 12.0, Y: 34.0})
+	circle.Body.SetPosition(v.Vec{X: 12.0, Y: 34.0})
 	space.ReindexShape(circle)
 	bb3 := circle.BB
 	// check changed
