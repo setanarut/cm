@@ -151,7 +151,7 @@ func (ps *PolyShape) SetVerts(count int, verts []v.Vec) {
 	ps.count = count
 	ps.Planes = make([]SplittingPlane, count*2)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		a := verts[(i-1+count)%count]
 		b := verts[i]
 		n := reversePerp(b.Sub(a)).Unit()
@@ -164,7 +164,7 @@ func (ps *PolyShape) SetVerts(count int, verts []v.Vec) {
 func (ps *PolyShape) SetVertsUnsafe(count int, verts []v.Vec, transform Transform) {
 	hullVerts := make([]v.Vec, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		hullVerts[i] = transform.Apply(verts[i])
 	}
 
