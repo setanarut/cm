@@ -148,7 +148,7 @@ func DrawConstraint(constraint *Constraint, drawer IDrawer) {
 			verts = append(verts, v.Vec{vt.Dot(r1) + a.X, vt.Dot(r2) + a.Y})
 		}
 
-		for i := 0; i < len(springVerts)-1; i++ {
+		for i := range len(springVerts) - 1 {
 			drawer.DrawSegment(verts[i], verts[i+1], color, data)
 		}
 	// these aren't drawn in Chipmunk, so they aren't drawn here

@@ -391,7 +391,7 @@ func (body *Body) Activate() {
 			bodyToo = next
 		}
 
-		for i := range len(space.sleepingComponents) {
+		for i := range space.sleepingComponents {
 			if space.sleepingComponents[i] == root {
 				space.sleepingComponents = append(space.sleepingComponents[:i], space.sleepingComponents[i+1:]...)
 				break

@@ -666,7 +666,7 @@ func (s *Space) Unlock(runPostStep bool) {
 		return
 	}
 
-	for i := 0; i < len(s.rousedBodies); i++ {
+	for i := range s.rousedBodies {
 		s.Activate(s.rousedBodies[i])
 		s.rousedBodies[i] = nil
 	}
@@ -923,7 +923,7 @@ func (s *Space) EachShape(f func(*Shape)) {
 func (s *Space) EachConstraint(f func(*Constraint)) {
 	s.Lock()
 
-	for i := 0; i < len(s.constraints); i++ {
+	for i := range s.constraints {
 		f(s.constraints[i])
 	}
 
@@ -989,7 +989,7 @@ func (s *Space) TimeStep() float64 {
 }
 
 func (s *Space) PostStepCallback(key any) *PostStepCallback {
-	for i := 0; i < len(s.PostStepCallbacks); i++ {
+	for i := range s.PostStepCallbacks {
 		callback := s.PostStepCallbacks[i]
 		if callback != nil && callback.key == key {
 			return callback
