@@ -180,7 +180,7 @@ func MomentForPoly(mass float64, count int, verts []v.Vec, offset v.Vec, r float
 
 	var sum1 float64
 	var sum2 float64
-	for i := 0; i < count; i++ {
+	for i := range count {
 		v1 := verts[i].Add(offset)
 		v2 := verts[(i+1)%count].Add(offset)
 
@@ -212,7 +212,7 @@ func AreaForSegment(a, b v.Vec, r float64) float64 {
 func AreaForPoly(count int, verts []v.Vec, r float64) float64 {
 	var area float64
 	var perimeter float64
-	for i := 0; i < count; i++ {
+	for i := range count {
 		v1 := verts[i]
 		v2 := verts[(i+1)%count]
 
@@ -228,7 +228,7 @@ func CentroidForPoly(count int, verts []v.Vec) v.Vec {
 	var sum float64
 	vsum := v.Vec{}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		v1 := verts[i]
 		v2 := verts[(i+1)%count]
 		cross := v1.Cross(v2)

@@ -391,7 +391,7 @@ func (body *Body) Activate() {
 			bodyToo = next
 		}
 
-		for i := 0; i < len(space.sleepingComponents); i++ {
+		for i := range len(space.sleepingComponents) {
 			if space.sleepingComponents[i] == root {
 				space.sleepingComponents = append(space.sleepingComponents[:i], space.sleepingComponents[i+1:]...)
 				break
@@ -591,7 +591,7 @@ func (body *Body) EachArbiter(f func(*Arbiter)) {
 
 // EachShape calls f once for each shape attached to this body
 func (body *Body) EachShape(f func(*Shape)) {
-	for i := 0; i < len(body.Shapes); i++ {
+	for i := range body.Shapes {
 		f(body.Shapes[i])
 	}
 }

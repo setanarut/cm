@@ -175,7 +175,7 @@ func (bbt *BBTree) PairFromPool() *Pair {
 	}
 
 	// Pool is exhausted make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		tree.RecyclePair(&Pair{})
 	}
 
@@ -392,7 +392,7 @@ func (tree *BBTree) NodeFromPool() *Node {
 	}
 
 	// Pool is exhausted make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		tree.RecycleNode(&Node{})
 	}
 

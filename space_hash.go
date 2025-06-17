@@ -27,13 +27,13 @@ func NewSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *
 		celldim:  celldim,
 		numCells: num,
 		table:    make([]*SpaceHashBin, num),
-		handleSet: NewHashSet[*Shape, *Handle](func(obj *Shape, elt *Handle) bool {
+		handleSet: NewHashSet(func(obj *Shape, elt *Handle) bool {
 			return obj == elt.obj
 		}),
 		stamp:         1,
 		pooledHandles: sync.Pool{New: func() any { return &Handle{} }},
 	}
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		spaceHash.pooledHandles.Put(&Handle{})
 	}
 	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
@@ -394,7 +394,7 @@ func (hash *SpaceHash) getEmptyBin() *SpaceHashBin {
 	}
 
 	// pool is exhausted, make more
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		hash.recycleBin(&SpaceHashBin{})
 	}
 	return &SpaceHashBin{}

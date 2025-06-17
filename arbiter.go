@@ -107,7 +107,7 @@ func (arbiter *Arbiter) ApplyCachedImpulse(dtCoef float64) {
 		return
 	}
 
-	for i := 0; i < arbiter.count; i++ {
+	for i := range arbiter.count {
 		contact := arbiter.Contacts[i]
 		j := rotateComplex(arbiter.normal, v.Vec{contact.jnAcc, contact.jtAcc})
 		applyImpulses(arbiter.bodyA, arbiter.bodyB, contact.R1, contact.R2, j.Scale(dtCoef))
@@ -121,7 +121,7 @@ func (arbiter *Arbiter) ApplyImpulse() {
 	surfaceVR := arbiter.surfaceVr
 	friction := arbiter.u
 
-	for i := 0; i < arbiter.count; i++ {
+	for i := range arbiter.count {
 		con := &arbiter.Contacts[i]
 		nMass := con.nMass
 		r1 := con.R1
@@ -166,7 +166,7 @@ func (arb *Arbiter) PreStep(dt, slop, bias float64) {
 	n := arb.normal
 	bodyDelta := b.position.Sub(a.position)
 
-	for i := 0; i < arb.count; i++ {
+	for i := range arb.count {
 		con := &arb.Contacts[i]
 
 		// Calculate the mass normal and mass tangent.
@@ -195,7 +195,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	arb.bodyB = b.Body
 
 	// Iterate over the possible pairs to look for hash value matches.
-	for i := 0; i < info.count; i++ {
+	for i := range info.count {
 		con := &info.arr[i]
 
 		// r1 and r2 store absolute offsets at init time.
@@ -207,7 +207,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 		con.jnAcc = 0
 		con.jtAcc = 0
 
-		for j := 0; j < arb.count; j++ {
+		for j := range arb.count {
 			old := arb.Contacts[j]
 
 			// This could trigger false positives, but is fairly unlikely nor serious if it does.
@@ -406,7 +406,7 @@ func (arb *Arbiter) TotalImpulse() v.Vec {
 	var sum v.Vec
 
 	count := arb.Count()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		con := arb.Contacts[i]
 		sum = sum.Add(rotateComplex(arb.normal, v.Vec{con.jnAcc, con.jtAcc}))
 	}
@@ -479,7 +479,7 @@ func (arb *Arbiter) ContactPointSet() ContactPointSet {
 		set.Normal = n
 	}
 
-	for i := 0; i < set.Count; i++ {
+	for i := range set.Count {
 		// Contact points are relative to body CoGs;
 		p1 := arb.bodyA.position.Add(arb.Contacts[i].R1)
 		p2 := arb.bodyB.position.Add(arb.Contacts[i].R2)
@@ -513,7 +513,7 @@ func (arb *Arbiter) SetContactPointSet(set *ContactPointSet) {
 		arb.normal = set.Normal
 	}
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		p1 := set.Points[i].PointA
 		p2 := set.Points[i].PointB
 

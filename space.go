@@ -3,6 +3,7 @@ package cm
 import (
 	"log"
 	"math"
+	"slices"
 	"sync"
 	"unsafe"
 
@@ -105,10 +106,10 @@ func NewSpace() *Space {
 		staticShapes:         NewBBTree(ShapeGetBB, nil),
 		sleepingComponents:   []*Body{},
 		rousedBodies:         []*Body{},
-		cachedArbiters:       NewHashSet[ShapePair, *Arbiter](arbiterSetEql),
+		cachedArbiters:       NewHashSet(arbiterSetEql),
 		pooledArbiters:       sync.Pool{New: func() any { return &Arbiter{} }},
 		constraints:          []*Constraint{},
-		collisionHandlers: NewHashSet[*CollisionHandler, *CollisionHandler](func(a, b *CollisionHandler) bool {
+		collisionHandlers: NewHashSet(func(a, b *CollisionHandler) bool {
 			if a.TypeA == b.TypeA && a.TypeB == b.TypeB {
 				return true
 			}
@@ -120,7 +121,7 @@ func NewSpace() *Space {
 		PostStepCallbacks: []*PostStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
-	for i := 0; i < pooledBufferSize; i++ {
+	for range pooledBufferSize {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
 	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
@@ -1208,12 +1209,7 @@ func ArbiterNext(arb *Arbiter, body *Body) *Arbiter {
 }
 
 func Contains(bodies []*Body, body *Body) bool {
-	for i := 0; i < len(bodies); i++ {
-		if bodies[i] == body {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(bodies, body)
 }
 
 func NearestPointQueryNearest(obj any, shape *Shape, collisionId uint32, out any) uint32 {

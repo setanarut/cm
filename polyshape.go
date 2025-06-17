@@ -24,7 +24,7 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 	b := infinity
 	t := -infinity
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		v := transform.Apply(src[i].V0)
 		n := transform.ApplyVector(src[i].N)
 
@@ -53,7 +53,7 @@ func (ps *PolyShape) PointQuery(p v.Vec, info *PointQueryInfo) {
 	closestNormal := v.Vec{}
 	outside := false
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		v1 := planes[i].V0
 		if !outside {
 			outside = planes[i].N.Dot(p.Sub(v1)) > 0
@@ -96,7 +96,7 @@ func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo
 	r := ps.Radius
 	rsum := r + r2
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		n := planes[i].N
 		an := a.Dot(n)
 		d := an - planes[i].V0.Dot(n) - rsum
@@ -125,7 +125,7 @@ func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo
 
 	// Also check against the beveled vertexes
 	if rsum > 0 {
-		for i := 0; i < count; i++ {
+		for i := range count {
 			circleInfo := SegmentQueryInfo{nil, b, v.Vec{}, 1}
 			CircleSegmentQuery(ps.Shape, planes[i].V0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {

@@ -211,7 +211,7 @@ func DebugInfo(space *Space) string {
 	arbiters := len(space.Arbiters)
 	points := 0
 
-	for i := 0; i < arbiters; i++ {
+	for i := range arbiters {
 		points += int(space.Arbiters[i].count)
 	}
 
