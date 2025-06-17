@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/setanarut/cm"
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 func TestShapeMass(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 5, vec.Vec2{0, 0})
+	cm.NewCircleShape(body, 5, v.Vec{0, 0})
 
 	mass := 10.0
 	body.ShapeAtIndex(0).SetMass(mass)
@@ -22,7 +22,7 @@ func TestShapeMass(t *testing.T) {
 
 func TestShapeCircleArea(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 2, vec.Vec2{0, 0})
+	cm.NewCircleShape(body, 2, v.Vec{0, 0})
 
 	if body.ShapeAtIndex(0).Area() != 4*math.Pi {
 		t.Fail()
@@ -31,7 +31,7 @@ func TestShapeCircleArea(t *testing.T) {
 
 func TestShapeCircleDensity(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 1, vec.Vec2{0, 0})
+	cm.NewCircleShape(body, 1, v.Vec{0, 0})
 	circle := body.ShapeAtIndex(0)
 	circle.SetMass(math.Pi)
 
@@ -44,7 +44,7 @@ func TestShapeCircleDensity(t *testing.T) {
 func TestIsShort(t *testing.T) {
 
 	pl := &cm.PolyLine{
-		Verts: []vec.Vec2{
+		Verts: []v.Vec{
 			{X: 0, Y: 0},
 			{X: 3, Y: 4}, // Distance = 5 (Pythagoras: 3^2 + 4^2 = 5^2)
 			{X: 6, Y: 8}, // Another 5 units from the previous point

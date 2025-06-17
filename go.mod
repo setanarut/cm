@@ -1,7 +1,7 @@
 module github.com/setanarut/cm
 
-go 1.23.2
+go 1.24.4
 
 retract [v1.0.0, v1.12.0]
 
-require github.com/setanarut/vec v1.1.1
+require github.com/setanarut/v v1.1.1

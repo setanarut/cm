@@ -3,7 +3,7 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 // NewSegmentShape returns a new Segment shape using two points 'a' and 'b'
@@ -14,15 +14,15 @@ import (
 //   - a: The first point of the segment.
 //   - b: The second point of the segment.
 //   - r: The radius of the segment shape.
-func NewSegmentShape(body *Body, a, b vec.Vec2, r float64) *Shape {
+func NewSegmentShape(body *Body, a, b v.Vec, r float64) *Shape {
 	segment := &Segment{
 		a: a,
 		b: b,
-		n: b.Sub(a).Unit().ReversePerp(),
+		n: reversePerp(b.Sub(a).Unit()),
 
 		radius:   r,
-		aTangent: vec.Vec2{},
-		bTangent: vec.Vec2{},
+		aTangent: v.Vec{},
+		bTangent: v.Vec{},
 	}
 	segment.Shape = NewShape(segment, body, NewSegmentMassInfo(0, a, b, r))
 	body.AttachShape(segment.Shape)
@@ -41,7 +41,7 @@ func NewBoxShape(body *Body, w, h, r float64) *Shape {
 	hw := w / 2.0
 	hh := h / 2.0
 	bb := &BB{-hw, -hh, hw, hh}
-	verts := []vec.Vec2{
+	verts := []v.Vec{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
@@ -60,7 +60,7 @@ func NewBoxShape(body *Body, w, h, r float64) *Shape {
 //   - bb: The bounding box defining the shape dimensions.
 //   - r: The rounding radius of the box corners.
 func NewBoxShape2(body *Body, bb BB, r float64) *Shape {
-	verts := []vec.Vec2{
+	verts := []v.Vec{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
@@ -79,7 +79,7 @@ func NewBoxShape2(body *Body, bb BB, r float64) *Shape {
 //   - b: The body to which the shape will be attached.
 //   - r: The radius of the circle.
 //   - offset: The position of the circle's center.
-func NewCircleShape(b *Body, r float64, offset vec.Vec2) *Shape {
+func NewCircleShape(b *Body, r float64, offset v.Vec) *Shape {
 	circle := &Circle{
 		c:      offset,
 		radius: r,
@@ -96,9 +96,9 @@ func NewCircleShape(b *Body, r float64, offset vec.Vec2) *Shape {
 //   - vertices: The list of vertex positions.
 //   - t: The transformation applied to the vertex positions.
 //   - r: The rounding radius of the polygon corners.
-func NewPolyShape(b *Body, vertices []vec.Vec2, t Transform, r float64) *Shape {
+func NewPolyShape(b *Body, vertices []v.Vec, t Transform, r float64) *Shape {
 
-	hullVerts := []vec.Vec2{}
+	hullVerts := []v.Vec{}
 	// Transform the verts before building the hull in case of a negative scale.
 	for _, v := range vertices {
 		hullVerts = append(hullVerts, t.Apply(v))
@@ -115,7 +115,7 @@ func NewPolyShape(b *Body, vertices []vec.Vec2, t Transform, r float64) *Shape {
 func NewPolyShapeRaw(
 	body *Body,
 	count int,
-	verts []vec.Vec2,
+	verts []v.Vec,
 	roundingRadius float64,
 ) *Shape {
 	poly := &PolyShape{
@@ -137,21 +137,21 @@ func MomentForBox(mass, width, height float64) float64 {
 func MomentForBox2(mass float64, box BB) float64 {
 	width := box.R - box.L
 	height := box.T - box.B
-	offset := vec.Vec2{box.L + box.R, box.B + box.T}.Scale(0.5)
+	offset := v.Vec{box.L + box.R, box.B + box.T}.Scale(0.5)
 
 	// TODO: NaN when offset is 0 and m is INFINITY
-	return MomentForBox(mass, width, height) + mass*offset.LengthSq()
+	return MomentForBox(mass, width, height) + mass*offset.MagSq()
 }
 
 // MomentForCircle calculates the moment of inertia for a circle.
 //
 // d1 and d2 are the inner and outer diameters. A solid circle has an inner
 // diameter (d1) of 0.
-// offset is a Vec2 representing the displacement of the circle's center of
+// offset is a v.Vec representing the displacement of the circle's center of
 // mass from the axis of rotation. If the center is not aligned with the axis,
 // the offset increases the moment of inertia.
-func MomentForCircle(mass, d1, d2 float64, offset vec.Vec2) float64 {
-	return mass * (0.5*(d1*d1+d2*d2) + offset.LengthSq())
+func MomentForCircle(mass, d1, d2 float64, offset v.Vec) float64 {
+	return mass * (0.5*(d1*d1+d2*d2) + offset.MagSq())
 }
 
 // MomentForCircle calculates the moment of inertia for a solid circle with
@@ -163,17 +163,17 @@ func MomentForCircle2(mass, radius float64) float64 {
 // MomentForSegment calculates the moment of inertia for a line segment.
 //
 // Beveling radius is not supported.
-func MomentForSegment(mass float64, a, b vec.Vec2, radius float64) float64 {
+func MomentForSegment(mass float64, a, b v.Vec, radius float64) float64 {
 	offset := a.Lerp(b, 0.5)
-	length := b.Distance(a) + 2.0*radius
-	return mass * ((length*length+4.0*radius*radius)/12.0 + offset.LengthSq())
+	length := b.Dist(a) + 2.0*radius
+	return mass * ((length*length+4.0*radius*radius)/12.0 + offset.MagSq())
 }
 
 // MomentForPoly calculates the moment of inertia for a solid polygon shape
 // assuming it's center of gravity is at it's centroid.
 //
 // The offset is added to each vertex.
-func MomentForPoly(mass float64, count int, verts []vec.Vec2, offset vec.Vec2, r float64) float64 {
+func MomentForPoly(mass float64, count int, verts []v.Vec, offset v.Vec, r float64) float64 {
 	if count == 2 {
 		return MomentForSegment(mass, verts[0], verts[1], 0)
 	}
@@ -202,14 +202,14 @@ func AreaForCircle(r1, r2 float64) float64 {
 }
 
 // AreaForSegment calculates the area of a fattened (capsule shaped) line segment.
-func AreaForSegment(a, b vec.Vec2, r float64) float64 {
-	return r * (math.Pi*r + 2.0*a.Distance(b))
+func AreaForSegment(a, b v.Vec, r float64) float64 {
+	return r * (math.Pi*r + 2.0*a.Dist(b))
 }
 
 // AreaForPoly calculates the signed area of a polygon.
 //
 // A Clockwise winding gives positive area. This is probably backwards from what you expect, but matches Chipmunk's the winding for poly shapes.
-func AreaForPoly(count int, verts []vec.Vec2, r float64) float64 {
+func AreaForPoly(count int, verts []v.Vec, r float64) float64 {
 	var area float64
 	var perimeter float64
 	for i := 0; i < count; i++ {
@@ -217,16 +217,16 @@ func AreaForPoly(count int, verts []vec.Vec2, r float64) float64 {
 		v2 := verts[(i+1)%count]
 
 		area += v1.Cross(v2)
-		perimeter += v1.Distance(v2)
+		perimeter += v1.Dist(v2)
 	}
 
 	return r*(math.Pi*math.Abs(r)+perimeter) + area/2.0
 }
 
 // CentroidForPoly calculates the natural centroid of a polygon.
-func CentroidForPoly(count int, verts []vec.Vec2) vec.Vec2 {
+func CentroidForPoly(count int, verts []v.Vec) v.Vec {
 	var sum float64
-	vsum := vec.Vec2{}
+	vsum := v.Vec{}
 
 	for i := 0; i < count; i++ {
 		v1 := verts[i]

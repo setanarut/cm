@@ -4,7 +4,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type SpaceHash struct {
@@ -245,7 +245,7 @@ restart:
 }
 
 // modified from http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
-func (hash *SpaceHash) SegmentQuery(obj any, a, b vec.Vec2, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (hash *SpaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
 	a = a.Scale(1.0 / hash.celldim)
 	b = b.Scale(1.0 / hash.celldim)
 

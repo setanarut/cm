@@ -3,26 +3,26 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type PinJoint struct {
 	*Constraint
-	AnchorA, AnchorB vec.Vec2
+	AnchorA, AnchorB v.Vec
 	Dist             float64
 
-	r1, r2, n          vec.Vec2
+	r1, r2, n          v.Vec
 	nMass, jnAcc, bias float64
 }
 
-func NewPinJoint(a, b *Body, anchorA, anchorB vec.Vec2) *Constraint {
+func NewPinJoint(a, b *Body, anchorA, anchorB v.Vec) *Constraint {
 	joint := &PinJoint{
 		AnchorA: anchorA,
 		AnchorB: anchorB,
 	}
 
 	// static body check
-	var p1, p2 vec.Vec2
+	var p1, p2 v.Vec
 	if a != nil {
 		p1 = a.transform.Apply(anchorA)
 	} else {

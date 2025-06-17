@@ -3,7 +3,7 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 type PolyShape struct {
@@ -42,15 +42,15 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 	return ps.Shape.BB
 }
 
-func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
+func (ps *PolyShape) PointQuery(p v.Vec, info *PointQueryInfo) {
 	count := ps.count
 	planes := ps.Planes
 	r := ps.Radius
 
 	v0 := planes[count-1].V0
 	minDist := infinity
-	closestPoint := vec.Vec2{}
-	closestNormal := vec.Vec2{}
+	closestPoint := v.Vec{}
+	closestNormal := v.Vec{}
 	outside := false
 
 	for i := 0; i < count; i++ {
@@ -61,7 +61,7 @@ func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 
 		closest := closestPointOnSegment(p, v0, v1)
 
-		dist := p.Distance(closest)
+		dist := p.Dist(closest)
 		if dist < minDist {
 			minDist = dist
 			closestPoint = closest
@@ -90,7 +90,7 @@ func (ps *PolyShape) PointQuery(p vec.Vec2, info *PointQueryInfo) {
 	}
 }
 
-func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryInfo) {
+func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo) {
 	planes := ps.Planes
 	count := ps.count
 	r := ps.Radius
@@ -126,7 +126,7 @@ func (ps *PolyShape) SegmentQuery(a, b vec.Vec2, r2 float64, info *SegmentQueryI
 	// Also check against the beveled vertexes
 	if rsum > 0 {
 		for i := 0; i < count; i++ {
-			circleInfo := SegmentQueryInfo{nil, b, vec.Vec2{}, 1}
+			circleInfo := SegmentQueryInfo{nil, b, v.Vec{}, 1}
 			CircleSegmentQuery(ps.Shape, planes[i].V0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {
 				*info = circleInfo
@@ -139,30 +139,30 @@ func (ps *PolyShape) Count() int {
 	return ps.count
 }
 
-func (ps *PolyShape) Vert(vertIndex int) vec.Vec2 {
+func (ps *PolyShape) Vert(vertIndex int) v.Vec {
 	return ps.Planes[vertIndex+ps.count].V0
 }
 
-func (ps *PolyShape) TransformVert(i int) vec.Vec2 {
+func (ps *PolyShape) TransformVert(i int) v.Vec {
 	return ps.Planes[i].V0
 }
 
-func (ps *PolyShape) SetVerts(count int, verts []vec.Vec2) {
+func (ps *PolyShape) SetVerts(count int, verts []v.Vec) {
 	ps.count = count
 	ps.Planes = make([]SplittingPlane, count*2)
 
 	for i := 0; i < count; i++ {
 		a := verts[(i-1+count)%count]
 		b := verts[i]
-		n := b.Sub(a).ReversePerp().Unit()
+		n := reversePerp(b.Sub(a)).Unit()
 
 		ps.Planes[i+count].V0 = b
 		ps.Planes[i+count].N = n
 	}
 }
 
-func (ps *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Transform) {
-	hullVerts := make([]vec.Vec2, count)
+func (ps *PolyShape) SetVertsUnsafe(count int, verts []v.Vec, transform Transform) {
+	hullVerts := make([]v.Vec, count)
 
 	for i := 0; i < count; i++ {
 		hullVerts[i] = transform.Apply(verts[i])
@@ -172,7 +172,7 @@ func (ps *PolyShape) SetVertsUnsafe(count int, verts []vec.Vec2, transform Trans
 	ps.SetVertsRaw(hullCount, hullVerts)
 }
 
-func (p *PolyShape) SetVertsRaw(count int, verts []vec.Vec2) {
+func (p *PolyShape) SetVertsRaw(count int, verts []v.Vec) {
 	p.SetVerts(count, verts)
 	mass := p.massInfo.m
 	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.Radius)
@@ -183,7 +183,7 @@ func (p *PolyShape) SetVertsRaw(count int, verts []vec.Vec2) {
 
 // QuickHull seemed like a neat algorithm, and efficient-ish for large input sets.
 // My implementation performs an in place reduction using the result array as scratch space.
-func convexHull(count int, verts []vec.Vec2, first *int, tol float64) int {
+func convexHull(count int, verts []v.Vec, first *int, tol float64) int {
 	start, end := loopIndexes(verts, count)
 	if start == end {
 		if first != nil {
@@ -209,7 +209,7 @@ func convexHull(count int, verts []vec.Vec2, first *int, tol float64) int {
 	return QHullReduce(tol, verts[2:], count-2, a, b, a, verts[1:]) + 1
 }
 
-func loopIndexes(verts []vec.Vec2, count int) (int, int) {
+func loopIndexes(verts []v.Vec, count int) (int, int) {
 	start := 0
 	end := 0
 
@@ -231,7 +231,7 @@ func loopIndexes(verts []vec.Vec2, count int) (int, int) {
 	return start, end
 }
 
-func QHullReduce(tol float64, verts []vec.Vec2, count int, a, pivot, b vec.Vec2, result []vec.Vec2) int {
+func QHullReduce(tol float64, verts []v.Vec, count int, a, pivot, b v.Vec, result []v.Vec) int {
 	if count == 0 {
 		result[0] = pivot
 		return 1
@@ -253,7 +253,7 @@ func QHullReduce(tol float64, verts []vec.Vec2, count int, a, pivot, b vec.Vec2,
 	return index + QHullReduce(tol, verts[leftCount+1:], rightCount-1, pivot, verts[leftCount], b, result[index:])
 }
 
-func QHullPartition(verts []vec.Vec2, count int, a, b vec.Vec2, tol float64) int {
+func QHullPartition(verts []v.Vec, count int, a, b v.Vec, tol float64) int {
 	if count == 0 {
 		return 0
 	}
@@ -287,7 +287,7 @@ func QHullPartition(verts []vec.Vec2, count int, a, b vec.Vec2, tol float64) int
 	return head
 }
 
-func PolyShapeMassInfo(mass float64, count int, verts []vec.Vec2, r float64) *ShapeMassInfo {
+func PolyShapeMassInfo(mass float64, count int, verts []v.Vec, r float64) *ShapeMassInfo {
 	centroid := CentroidForPoly(count, verts)
 	return &ShapeMassInfo{
 		m:    mass,

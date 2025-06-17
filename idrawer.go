@@ -3,7 +3,7 @@ package cm
 import (
 	"fmt"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 // Draw flags
@@ -19,11 +19,11 @@ type FColor struct {
 }
 
 type IDrawer interface {
-	DrawCircle(pos vec.Vec2, angle, radius float64, outline, fill FColor, data any)
-	DrawSegment(a, b vec.Vec2, fill FColor, data any)
-	DrawFatSegment(a, b vec.Vec2, radius float64, outline, fill FColor, data any)
-	DrawPolygon(count int, verts []vec.Vec2, radius float64, outline, fill FColor, data any)
-	DrawDot(size float64, pos vec.Vec2, fill FColor, data any)
+	DrawCircle(pos v.Vec, angle, radius float64, outline, fill FColor, data any)
+	DrawSegment(a, b v.Vec, fill FColor, data any)
+	DrawFatSegment(a, b v.Vec, radius float64, outline, fill FColor, data any)
+	DrawPolygon(count int, verts []v.Vec, radius float64, outline, fill FColor, data any)
+	DrawDot(size float64, pos v.Vec, fill FColor, data any)
 
 	Flags() uint
 	OutlineColor() FColor
@@ -53,7 +53,7 @@ func DrawShape(shape *Shape, drawer IDrawer) {
 
 		count := poly.count
 		planes := poly.Planes
-		verts := make([]vec.Vec2, count)
+		verts := make([]v.Vec, count)
 
 		for i := 0; i < count; i++ {
 			verts[i] = planes[i].V0
@@ -64,7 +64,7 @@ func DrawShape(shape *Shape, drawer IDrawer) {
 	}
 }
 
-var springVerts = []vec.Vec2{
+var springVerts = []v.Vec{
 	{0.00, 0.0},
 	{0.20, 0.0},
 	{0.25, 3.0},
@@ -139,13 +139,13 @@ func DrawConstraint(constraint *Constraint, drawer IDrawer) {
 		sin := delta.Y
 		s := 1.0 / delta.Mag()
 
-		r1 := vec.Vec2{cos, -sin * s}
-		r2 := vec.Vec2{sin, cos * s}
+		r1 := v.Vec{cos, -sin * s}
+		r2 := v.Vec{sin, cos * s}
 
-		verts := []vec.Vec2{}
+		verts := []v.Vec{}
 		for i := 0; i < len(springVerts); i++ {
-			v := springVerts[i]
-			verts = append(verts, vec.Vec2{v.Dot(r1) + a.X, v.Dot(r2) + a.Y})
+			vt := springVerts[i]
+			verts = append(verts, v.Vec{vt.Dot(r1) + a.X, vt.Dot(r2) + a.Y})
 		}
 
 		for i := 0; i < len(springVerts)-1; i++ {

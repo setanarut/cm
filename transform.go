@@ -3,7 +3,7 @@ package cm
 import (
 	"math"
 
-	"github.com/setanarut/vec"
+	"github.com/setanarut/v"
 )
 
 // Transform represents a 2D affine transformation using a 2x3 matrix.
@@ -86,7 +86,7 @@ func (t Transform) Mult(t2 Transform) Transform {
 }
 
 // NewTransformTranslate returns a new transformation matrix with translation
-func NewTransformTranslate(translate vec.Vec2) Transform {
+func NewTransformTranslate(translate v.Vec) Transform {
 	return NewTransformTranspose(
 		1, 0, translate.X,
 		0, 1, translate.Y,
@@ -103,7 +103,7 @@ func NewTransformScale(scaleX, scaleY float64) Transform {
 
 // NewTransformRotate returns a new rigid transformation with rotation
 func NewTransformRotate(rotation float64) Transform {
-	rot := vec.ForAngle(rotation)
+	rot := v.FromAngle(rotation)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, 0,
 		rot.Y, rot.X, 0,
@@ -124,8 +124,8 @@ func NewTransformRotate(rotation float64) Transform {
 //
 // Returns:
 //   - A Transform representing the combined translation and rotation.
-func NewTransformRigid(translate vec.Vec2, rotation float64) Transform {
-	rot := vec.ForAngle(rotation)
+func NewTransformRigid(translate v.Vec, rotation float64) Transform {
+	rot := v.FromAngle(rotation)
 	return NewTransformTranspose(
 		rot.X, -rot.Y, translate.X,
 		rot.Y, rot.X, translate.Y,
@@ -153,8 +153,8 @@ func NewTransformRigidInverse(t Transform) Transform {
 
 // Apply applies the transformation to a given abs point `p` and returns the transformed point.
 // This transformation involves scaling, rotation, and translation based on the matrix values.
-func (t Transform) Apply(p vec.Vec2) vec.Vec2 {
-	return vec.Vec2{
+func (t Transform) Apply(p v.Vec) v.Vec {
+	return v.Vec{
 		X: t.a*p.X + t.c*p.Y + t.tx,
 		Y: t.b*p.X + t.d*p.Y + t.ty,
 	}
@@ -165,14 +165,14 @@ func (t Transform) Apply(p vec.Vec2) vec.Vec2 {
 // current transformation without affecting its position.
 //
 // Parameters:
-//   - v: the vector (Vec2) to be transformed, represented by X and Y coordinates.
+//   - vect: the vector (v.Vec) to be transformed, represented by X and Y coordinates.
 //
 // Returns:
-//   - Vec2: the transformed vector after applying the matrix transformation.
-func (t Transform) ApplyVector(v vec.Vec2) vec.Vec2 {
-	return vec.Vec2{
-		t.a*v.X + t.c*v.Y,
-		t.b*v.X + t.d*v.Y,
+//   - v.Vec: the transformed vector after applying the matrix transformation.
+func (t Transform) ApplyVector(vect v.Vec) v.Vec {
+	return v.Vec{
+		t.a*vect.X + t.c*vect.Y,
+		t.b*vect.X + t.d*vect.Y,
 	}
 }
 
@@ -238,7 +238,7 @@ func (t Transform) Ortho(bb BB) Transform {
 //
 // Returns:
 // - A Transform that represents the scaling and rotation transformation matrix.
-func (t Transform) BoneScale(v0, v1 vec.Vec2) Transform {
+func (t Transform) BoneScale(v0, v1 v.Vec) Transform {
 	d := v1.Sub(v0)
 	return NewTransformTranspose(
 		d.X, -d.Y, v0.X,
@@ -259,7 +259,7 @@ func (t Transform) BoneScale(v0, v1 vec.Vec2) Transform {
 //
 // Returns:
 //   - Transform: Axial scale transformation matrix.
-func (t Transform) AxialScale(axis, pivot vec.Vec2, scale float64) Transform {
+func (t Transform) AxialScale(axis, pivot v.Vec, scale float64) Transform {
 	A := axis.X * axis.Y * (scale - 1.0)
 	B := axis.Dot(pivot) * (1.0 - scale)
 
