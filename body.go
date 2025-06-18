@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 
 	"github.com/setanarut/v"
 )
@@ -544,16 +545,9 @@ func (body *Body) RemoveConstraint(constraint *Constraint) {
 
 // RemoveShape removes collision shape from the body.
 func (body *Body) RemoveShape(shape *Shape) {
-	for i, s := range body.Shapes {
-		if s == shape {
-			// leak-free delete from slice
-			last := len(body.Shapes) - 1
-			body.Shapes[i] = body.Shapes[last]
-			body.Shapes[last] = nil
-			body.Shapes = body.Shapes[:last]
-			break
-		}
-	}
+	body.Shapes = slices.DeleteFunc(body.Shapes, func(s *Shape) bool {
+		return s == shape
+	})
 	if body.Type() == Dynamic && shape.massInfo.m > 0 {
 		body.AccumulateMassFromShapes()
 	}

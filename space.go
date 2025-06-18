@@ -335,23 +335,18 @@ func (s *Space) ReindexShape(shape *Shape) {
 
 // RemoveBody removes a body from the simulation
 func (s *Space) RemoveBody(body *Body) {
-
 	body.Activate()
+
 	if body.Type() == Static {
-		for i, b := range s.StaticBodies {
-			if b == body {
-				s.StaticBodies = append(s.StaticBodies[:i], s.StaticBodies[i+1:]...)
-				break
-			}
-		}
+		s.StaticBodies = slices.DeleteFunc(s.StaticBodies, func(b *Body) bool {
+			return b == body
+		})
 	} else {
-		for i, b := range s.DynamicBodies {
-			if b == body {
-				s.DynamicBodies = append(s.DynamicBodies[:i], s.DynamicBodies[i+1:]...)
-				break
-			}
-		}
+		s.DynamicBodies = slices.DeleteFunc(s.DynamicBodies, func(b *Body) bool {
+			return b == body
+		})
 	}
+
 	body.Space = nil
 }
 
