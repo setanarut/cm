@@ -77,7 +77,7 @@ type Space struct {
 	contactBuffersHead *ContactBuffer
 	cachedArbiters     *HashSet[ShapePair, *Arbiter]
 	pooledArbiters     sync.Pool
-	locked             int
+	locked             bool
 	usesWildcards      bool
 	collisionHandlers  *HashSet[*CollisionHandler, *CollisionHandler]
 	defaultHandler     *CollisionHandler
@@ -100,7 +100,7 @@ func NewSpace() *Space {
 		DynamicBodies:        []*Body{},
 		StaticBodies:         []*Body{},
 		Arbiters:             []*Arbiter{},
-		locked:               0,
+		locked:               false,
 		stamp:                0,
 		shapeIDCounter:       1,
 		staticShapes:         NewBBTree(ShapeGetBB, nil),
@@ -162,7 +162,7 @@ func (s *Space) SetStaticBody(body *Body) {
 
 func (s *Space) Activate(body *Body) {
 
-	if s.locked != 0 {
+	if s.locked {
 		if !Contains(s.rousedBodies, body) {
 			s.rousedBodies = append(s.rousedBodies, body)
 		}
@@ -634,25 +634,16 @@ func (s *Space) Step(dt float64) {
 }
 
 func (s *Space) Lock() {
-	s.locked++
+	s.locked = true
 }
 
 // IsLocked returns true from inside a callback when objects cannot be added/removed.
 func (s *Space) IsLocked() bool {
-	return s.locked > 0
+	return s.locked
 }
 
 func (s *Space) Unlock(runPostStep bool) {
-	s.locked--
-
-	// if s.locked < 0 {
-	// 	log.Fatalln("Space lock underflow")
-	// }
-
-	if s.locked != 0 {
-		return
-	}
-
+	s.locked = false
 	for i := range s.rousedBodies {
 		s.Activate(s.rousedBodies[i])
 		s.rousedBodies[i] = nil

@@ -169,7 +169,7 @@ func (body *Body) SetType(bt BodyType) {
 	if body.Space == nil {
 		return
 	}
-	if body.Space.locked != 0 {
+	if body.Space.locked {
 		log.Fatalln("Space is locked")
 	}
 
