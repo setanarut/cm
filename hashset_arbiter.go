@@ -1,5 +1,7 @@
 package cm
 
+import "slices"
+
 // SpaceArbiterSetFilter throws away old arbiters.
 func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 	// TODO: should make an arbiter state for this so it doesn't require filtering arbiters for dangling body pointers on body removal.
@@ -45,12 +47,11 @@ func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) 
 		}
 
 		arb.Unthread()
-		for i, arbiter := range space.Arbiters {
-			if arb == arbiter {
-				space.Arbiters = append(space.Arbiters[:i], space.Arbiters[i+1:]...)
-				break
-			}
-		}
+
+		space.Arbiters = slices.DeleteFunc(space.Arbiters, func(arbiter *Arbiter) bool {
+			return arb == arbiter
+		})
+
 		space.pooledArbiters.Put(arb)
 		return false
 	}

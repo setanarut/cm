@@ -215,12 +215,9 @@ func (s *Space) Activate(body *Body) {
 }
 
 func (s *Space) Deactivate(body *Body) {
-	for i, v := range s.DynamicBodies {
-		if v == body {
-			s.DynamicBodies = append(s.DynamicBodies[:i], s.DynamicBodies[i+1:]...)
-			break
-		}
-	}
+	s.DynamicBodies = slices.DeleteFunc(s.DynamicBodies, func(b *Body) bool {
+		return b == body
+	})
 
 	for _, shape := range body.Shapes {
 		s.dynamicShapes.class.Remove(shape, shape.hashid)
@@ -242,11 +239,9 @@ func (s *Space) Deactivate(body *Body) {
 	for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
 		bodyA := constraint.bodyA
 		if body == bodyA || bodyA.Type() == Static {
-			for i, c := range s.constraints {
-				if c == constraint {
-					s.constraints = append(s.constraints[0:i], s.constraints[i+1:]...)
-				}
-			}
+			s.constraints = slices.DeleteFunc(s.constraints, func(c *Constraint) bool {
+				return c == constraint
+			})
 		}
 	}
 }
@@ -381,12 +376,9 @@ func (s *Space) RemoveConstraint(constraint *Constraint) {
 
 	constraint.bodyA.Activate()
 	constraint.bodyB.Activate()
-	for i, c := range s.constraints {
-		if c == constraint {
-			s.constraints = append(s.constraints[:i], s.constraints[i+1:]...)
-			break
-		}
-	}
+	s.constraints = slices.DeleteFunc(s.constraints, func(c *Constraint) bool {
+		return c == constraint
+	})
 
 	constraint.bodyA.RemoveConstraint(constraint)
 	constraint.bodyB.RemoveConstraint(constraint)

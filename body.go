@@ -178,20 +178,14 @@ func (body *Body) SetType(bt BodyType) {
 	}
 
 	if oldType == Static {
-		for i, b := range body.Space.StaticBodies {
-			if b == body {
-				body.Space.StaticBodies = append(body.Space.StaticBodies[:i], body.Space.StaticBodies[i+1:]...)
-				break
-			}
-		}
+		body.Space.StaticBodies = slices.DeleteFunc(body.Space.StaticBodies, func(b *Body) bool {
+			return b == body
+		})
 		body.Space.DynamicBodies = append(body.Space.DynamicBodies, body)
 	} else if bt == Static {
-		for i, b := range body.Space.DynamicBodies {
-			if b == body {
-				body.Space.DynamicBodies = append(body.Space.DynamicBodies[:i], body.Space.DynamicBodies[i+1:]...)
-				break
-			}
-		}
+		body.Space.DynamicBodies = slices.DeleteFunc(body.Space.DynamicBodies, func(b *Body) bool {
+			return b == body
+		})
 		body.Space.StaticBodies = append(body.Space.StaticBodies, body)
 	}
 
@@ -392,12 +386,9 @@ func (body *Body) Activate() {
 			bodyToo = next
 		}
 
-		for i := range space.sleepingComponents {
-			if space.sleepingComponents[i] == root {
-				space.sleepingComponents = append(space.sleepingComponents[:i], space.sleepingComponents[i+1:]...)
-				break
-			}
-		}
+		space.sleepingComponents = slices.DeleteFunc(space.sleepingComponents, func(b *Body) bool {
+			return b == root
+		})
 	}
 
 	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.Next(body) {

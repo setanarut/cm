@@ -45,6 +45,19 @@ func TestSpaceAddBody(t *testing.T) {
 	}
 }
 
+func TestSpaceRemoveBody(t *testing.T) {
+	s := cm.NewSpace()
+	b := cm.NewBody(1, 12)
+	s.AddBody(b)
+	if s.DynamicBodyCount() != 1 {
+		t.Error("should have one body")
+	}
+	s.RemoveBody(b)
+	if s.DynamicBodyCount() != 0 {
+		t.Error("should not have any bodies")
+	}
+}
+
 func TestSpace_ReindexShape(t *testing.T) {
 	space := cm.NewSpace()
 	sb := cm.NewStaticBody()
