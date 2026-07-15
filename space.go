@@ -627,7 +627,7 @@ func (s *Space) Step(dt float64) {
 
 		// run the post-solve callbacks
 		for _, arb := range s.Arbiters {
-			arb.handler.PostSolveFunc(arb, s, arb.handler)
+			arb.handler.PostSolveFunc(arb, s, arb.handler.UserData)
 		}
 	}
 	s.Unlock(true)
