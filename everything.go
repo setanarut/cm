@@ -9,7 +9,6 @@ import (
 
 const (
 	pooledBufferSize int     = 1024
-	infinity         float64 = math.MaxFloat64
 	magicEpsilon     float64 = 1e-5
 )
 
@@ -35,6 +34,8 @@ const (
 	// Value for Shape layers signifying that a shape is in every layer.
 	AllCategories uint = ^uint(0)
 )
+
+var infinity = math.Inf(1)
 
 // ShapeFilterAll is s collision filter value for a shape that will collide with
 // anything except ShapeFilterNone.
