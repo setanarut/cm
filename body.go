@@ -235,7 +235,7 @@ func (body *Body) AccumulateMassFromShapes() {
 	pos := body.Position()
 
 	for _, shape := range body.Shapes {
-		info := shape.MassInfo()
+		info := shape.massInfo
 		m := info.m
 
 		if info.m > 0 {
@@ -427,7 +427,7 @@ func (body *Body) IsSleeping() bool {
 // AttachShape adds shape to the body
 func (body *Body) AttachShape(shape *Shape) {
 	body.Shapes = append(body.Shapes, shape)
-	if shape.MassInfo().m > 0 {
+	if shape.massInfo.m > 0 {
 		body.AccumulateMassFromShapes()
 	}
 }

@@ -82,36 +82,38 @@ func (sh *Shape) SetSensor(sensor bool) {
 	sh.Sensor = sensor
 }
 
-func (sh *Shape) MassInfo() *ShapeMassInfo {
-	return sh.massInfo
-}
-
+// Get the mass of this shape.
 func (sh *Shape) Mass() float64 {
 	return sh.massInfo.m
 }
 
-// SetMass wakes up sleeping or idle body then sets mass
+// Set the mass of this shape to have Chipmunk calculate mass properties for you.
 func (sh *Shape) SetMass(mass float64) {
 	sh.Body.Activate()
 	sh.massInfo.m = mass
 	sh.Body.AccumulateMassFromShapes()
 }
 
+// Get the density of the shape if you are having Chipmunk calculate mass properties for you.
 func (sh *Shape) Density() float64 {
 	return sh.massInfo.m / sh.massInfo.area
 }
 
+// Set the density  of this shape to have Chipmunk calculate mass properties for you.
 func (sh *Shape) SetDensity(density float64) {
 	sh.SetMass(density * sh.massInfo.area)
 }
+
 func (sh *Shape) SetBody(b *Body) {
 	sh.Body = b
 }
 
+// Get the calculated moment of inertia for this shape.
 func (sh *Shape) Moment() float64 {
 	return sh.massInfo.m * sh.massInfo.i
 }
 
+// Get the calculated area of this shape.
 func (sh *Shape) Area() float64 {
 	return sh.massInfo.area
 }
@@ -129,6 +131,7 @@ func (sh *Shape) SetHashId(hashid HashValue) {
 }
 
 // SetCollisionType sets collision type.
+//
 // You can assign types to shapes that trigger callbacks (CollisionHandler) when
 // objects of certain types touch
 func (sh *Shape) SetCollisionType(collisionType CollisionType) {
@@ -147,6 +150,7 @@ func (sh *Shape) SetElasticity(e float64) {
 	sh.Elasticity = e
 }
 
+// Set the collision filtering parameters of this shape.
 func (sh *Shape) SetShapeFilter(filter ShapeFilter) {
 	sh.Body.Activate()
 	sh.Filter = filter
