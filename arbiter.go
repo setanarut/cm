@@ -31,26 +31,11 @@ type Arbiter struct {
 
 // Init initializes and returns Arbiter
 func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
-	arbiter.handler = nil
-	arbiter.swapped = false
-	arbiter.handlerA = nil
-	arbiter.handlerB = nil
-	arbiter.e = 0
-	arbiter.u = 0
-	arbiter.surfaceVr = v.Vec{}
-	arbiter.count = 0
-	arbiter.Contacts = nil
 	arbiter.shapeA = a
 	arbiter.bodyA = a.Body
 	arbiter.shapeB = b
 	arbiter.bodyB = b.Body
-	arbiter.threadA.next = nil
-	arbiter.threadB.next = nil
-	arbiter.threadA.prev = nil
-	arbiter.threadB.prev = nil
-	arbiter.stamp = 0
 	arbiter.state = ArbiterStateFirstCollision
-	arbiter.UserData = nil
 	return arbiter
 }
 
