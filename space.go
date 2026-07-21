@@ -913,7 +913,7 @@ func (s *Space) PointQueryNearest(point v.Vec, maxDistance float64, filter Shape
 	info := &PointQueryInfo{nil, v.Vec{}, maxDistance, v.Vec{}}
 	context := &PointQueryContext{point, maxDistance, filter, nil}
 
-	bb := NewBBForCircle(point, math.Max(maxDistance, 0))
+	bb := NewBBForCircle(point, max(maxDistance, 0))
 	s.dynamicShapes.class.Query(context, bb, NearestPointQueryNearest, info)
 	s.staticShapes.class.Query(context, bb, NearestPointQueryNearest, info)
 

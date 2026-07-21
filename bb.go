@@ -59,20 +59,20 @@ func (bb BB) ContainsVect(v v.Vec) bool {
 // Merge returns a bounding box that holds both bounding boxes.
 func (a BB) Merge(b BB) BB {
 	return BB{
-		math.Min(a.L, b.L),
-		math.Min(a.B, b.B),
-		math.Max(a.R, b.R),
-		math.Max(a.T, b.T),
+		min(a.L, b.L),
+		min(a.B, b.B),
+		max(a.R, b.R),
+		max(a.T, b.T),
 	}
 }
 
 // Expand returns a bounding box that holds both bb and v.
 func (bb BB) Expand(v v.Vec) BB {
 	return BB{
-		math.Min(bb.L, v.X),
-		math.Min(bb.B, v.Y),
-		math.Max(bb.R, v.X),
-		math.Max(bb.T, v.Y),
+		min(bb.L, v.X),
+		min(bb.B, v.Y),
+		max(bb.R, v.X),
+		max(bb.T, v.Y),
 	}
 }
 
@@ -88,7 +88,7 @@ func (bb BB) Area() float64 {
 
 // MergedArea merges a and b and returns the area of the merged bounding box.
 func (a BB) MergedArea(b BB) float64 {
-	return (math.Max(a.R, b.R) - math.Min(a.L, b.L)) * (math.Max(a.T, b.T) - math.Min(a.B, b.B))
+	return (max(a.R, b.R) - min(a.L, b.L)) * (max(a.T, b.T) - min(a.B, b.B))
 }
 
 // SegmentQuery returns the fraction along the segment query the BB is hit.
@@ -105,8 +105,8 @@ func (bb BB) SegmentQuery(a, b v.Vec) float64 {
 	} else {
 		t1 := (bb.L - a.X) / delta.X
 		t2 := (bb.R - a.X) / delta.X
-		tmin = math.Max(tmin, math.Min(t1, t2))
-		tmax = math.Min(tmax, math.Max(t1, t2))
+		tmin = max(tmin, min(t1, t2))
+		tmax = min(tmax, max(t1, t2))
 	}
 
 	if delta.Y == 0 {
@@ -116,12 +116,12 @@ func (bb BB) SegmentQuery(a, b v.Vec) float64 {
 	} else {
 		t1 := (bb.B - a.Y) / delta.Y
 		t2 := (bb.T - a.Y) / delta.Y
-		tmin = math.Max(tmin, math.Min(t1, t2))
-		tmax = math.Min(tmax, math.Max(t1, t2))
+		tmin = max(tmin, min(t1, t2))
+		tmax = min(tmax, max(t1, t2))
 	}
 
 	if tmin <= tmax && 0 <= tmax && tmin <= 1.0 {
-		return math.Max(tmin, 0.0)
+		return max(tmin, 0.0)
 	} else {
 		return infinity
 	}

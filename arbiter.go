@@ -2,7 +2,6 @@ package cm
 
 import (
 	"log"
-	"math"
 
 	"github.com/setanarut/v"
 )
@@ -137,11 +136,11 @@ func (arbiter *Arbiter) ApplyImpulse() {
 
 		jbn := (con.bias - vbn) * nMass
 		jbnOld := con.jBias
-		con.jBias = math.Max(jbnOld+jbn, 0)
+		con.jBias = max(jbnOld+jbn, 0)
 
 		jn := -(con.bounce + vrn) * nMass
 		jnOld := con.jnAcc
-		con.jnAcc = math.Max(jnOld+jn, 0)
+		con.jnAcc = max(jnOld+jn, 0)
 
 		jtMax := friction * con.jnAcc
 		jt := -vrt * con.tMass
@@ -175,7 +174,7 @@ func (arb *Arbiter) PreStep(dt, slop, bias float64) {
 
 		// Calculate the target bias velocity.
 		dist := con.R2.Sub(con.R1).Add(bodyDelta).Dot(n)
-		con.bias = -bias * math.Min(0, dist+slop) / dt
+		con.bias = -bias * min(0, dist+slop) / dt
 		con.jBias = 0.0
 
 		// Calculate the target bounce velocity.

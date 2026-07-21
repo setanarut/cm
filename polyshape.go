@@ -1,8 +1,6 @@
 package cm
 
 import (
-	"math"
-
 	"github.com/setanarut/v"
 )
 
@@ -31,10 +29,10 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 		dst[i].V0 = v
 		dst[i].N = n
 
-		l = math.Min(l, v.X)
-		r = math.Max(r, v.X)
-		b = math.Min(b, v.Y)
-		t = math.Max(t, v.Y)
+		l = min(l, v.X)
+		r = max(r, v.X)
+		b = min(b, v.Y)
+		t = max(t, v.Y)
 	}
 
 	radius := ps.Radius

@@ -1,8 +1,6 @@
 package cm
 
 import (
-	"math"
-
 	"github.com/setanarut/v"
 )
 
@@ -351,10 +349,10 @@ func (bbt *BBTree) GetBB(obj *Shape) BB {
 
 		v := bbt.velocityFunc(obj).Scale(0.1)
 		return BB{
-			bb.L + math.Min(-x, v.X),
-			bb.B + math.Min(-y, v.Y),
-			bb.R + math.Max(x, v.X),
-			bb.T + math.Max(y, v.Y),
+			bb.L + min(-x, v.X),
+			bb.B + min(-y, v.Y),
+			bb.R + max(x, v.X),
+			bb.T + max(y, v.Y),
 		}
 	}
 
@@ -519,17 +517,17 @@ func (subtree *Node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f S
 
 	if tA < tB {
 		if tA < tExit {
-			tExit = math.Min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 		if tB < tExit {
-			tExit = math.Min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	} else {
 		if tB < tExit {
-			tExit = math.Min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 		if tA < tExit {
-			tExit = math.Min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	}
 

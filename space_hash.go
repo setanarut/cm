@@ -233,7 +233,7 @@ restart:
 		if hand.stamp == hash.stamp {
 			continue
 		} else if other != nil {
-			t = math.Min(t, f(obj, other, data))
+			t = min(t, f(obj, other, data))
 			hand.stamp = hash.stamp
 		} else {
 			hash.removeOrphanedHandles(binPtr)
@@ -302,7 +302,7 @@ func (hash *SpaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f Spatia
 
 	for t < tExit {
 		idx := hashFunc(HashValue(cellX), HashValue(cellY), HashValue(hash.numCells))
-		tExit = math.Min(tExit, hash.segmentQueryHelper(&hash.table[idx], obj, f, data))
+		tExit = min(tExit, hash.segmentQueryHelper(&hash.table[idx], obj, f, data))
 
 		if nextV < nextH {
 			cellY += yInc

@@ -195,8 +195,8 @@ func (t Transform) BB(bb BB) BB {
 	b := t.c * hh
 	d := t.b * hw
 	e := t.d * hh
-	hwMax := math.Max(math.Abs(a+b), math.Abs(a-b))
-	hhMax := math.Max(math.Abs(d+e), math.Abs(d-e))
+	hwMax := max(math.Abs(a+b), math.Abs(a-b))
+	hhMax := max(math.Abs(d+e), math.Abs(d-e))
 	return NewBBForExtents(t.Apply(bb.Center()), hwMax, hhMax)
 }
 

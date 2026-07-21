@@ -9,7 +9,7 @@ import (
 
 const (
 	pooledBufferSize int     = 1024
-	magicEpsilon     float64 = 1e-5
+	magicEpsilon     float64 = 1e-8
 )
 
 // Arbiter states
@@ -248,7 +248,7 @@ func kScalarBody(body *Body, r, n v.Vec) float64 {
 }
 
 func clamp01(f float64) float64 {
-	return math.Max(0, math.Min(f, 1))
+	return max(0, min(f, 1))
 }
 
 func kScalar(a, b *Body, r1, r2, n v.Vec) float64 {
@@ -305,11 +305,11 @@ func biasCoef(errorBias, dt float64) float64 {
 	return 1.0 - math.Pow(errorBias, dt)
 }
 
-func clamp(f, min, max float64) float64 {
-	if f > min {
-		return math.Min(f, max)
+func clamp(f, low, high float64) float64 {
+	if f > low {
+		return min(f, high)
 	} else {
-		return math.Min(min, max)
+		return min(low, high)
 	}
 }
 
@@ -335,7 +335,7 @@ func closestPointOnSegment(v, a, b v.Vec) v.Vec {
 }
 
 func checkAxis(v, v1, p, n v.Vec) bool {
-	return p.Dot(n) <= math.Max(v.Dot(n), v1.Dot(n))
+	return p.Dot(n) <= max(v.Dot(n), v1.Dot(n))
 }
 
 func pointGreater(v, b, c v.Vec) bool {
