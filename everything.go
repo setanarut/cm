@@ -359,14 +359,6 @@ func reversePerp(a v.Vec) v.Vec {
 	return v.Vec{a.Y, -a.X}
 }
 
-// ClampMag clamps this vector magnitude to m.
-func clampMag(vect v.Vec, m float64) v.Vec {
-	if vect.Dot(vect) > m*m {
-		return vect.Unit().Scale(m)
-	}
-	return v.Vec{vect.X, vect.Y}
-}
-
 // IsNear returns true if the distance between this and other is less than dist.
 func isNear(this, other v.Vec, dist float64) bool {
 	return this.DistSq(other) < dist*dist
