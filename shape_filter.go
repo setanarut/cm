@@ -41,3 +41,13 @@ func (sf ShapeFilter) Reject(other ShapeFilter) bool {
 		(sf.Categories&other.Mask) == 0 ||
 		(other.Categories&sf.Mask) == 0
 }
+
+// CollideWith enables collision with the specified category mask.
+func (sf *ShapeFilter) CollideWith(mask uint) {
+	sf.Mask |= mask
+}
+
+// DontCollideWith disables collision with the specified category mask.
+func (sf *ShapeFilter) DontCollideWith(mask uint) {
+	sf.Mask &= ^mask
+}
