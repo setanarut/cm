@@ -103,7 +103,7 @@ func NewSpace() *Space {
 		locked:               false,
 		stamp:                0,
 		shapeIDCounter:       1,
-		staticShapes:         newBBTree(ShapeGetBB, nil),
+		staticShapes:         newBBTree(shapeGetBB, nil),
 		sleepingComponents:   []*Body{},
 		rousedBodies:         []*Body{},
 		cachedArbiters:       newHashSet(arbiterSetEql),
@@ -124,7 +124,7 @@ func NewSpace() *Space {
 	for range pooledBufferSize {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
-	space.dynamicShapes = newBBTree(ShapeGetBB, space.staticShapes)
+	space.dynamicShapes = newBBTree(shapeGetBB, space.staticShapes)
 	space.dynamicShapes.class.(*bBTree).velocityFunc = bBTreeVelocityFunc(ShapeVelocityFunc)
 	space.StaticBody.SetType(Static)
 	return space
@@ -176,7 +176,7 @@ func (s *Space) Activate(body *Body) {
 		s.dynamicShapes.class.Insert(shape, shape.hashid)
 	}
 
-	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.Next(body) {
+	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.next(body) {
 		bodyA := arbiter.bodyA
 
 		// Arbiters are shared between two bodies that are always woken up together.
@@ -541,7 +541,7 @@ func (s *Space) Step(dt float64) {
 
 		// If both bodies are awake, unthread the arbiter from the contact graph.
 		if !arb.bodyA.IsSleeping() && !arb.bodyB.IsSleeping() {
-			arb.Unthread()
+			arb.unthread()
 		}
 	}
 	s.Arbiters = s.Arbiters[:0]
@@ -574,7 +574,7 @@ func (s *Space) Step(dt float64) {
 		slop := s.CollisionSlop
 		biasCoef := 1 - math.Pow(s.CollisionBias, dt)
 		for _, arbiter := range s.Arbiters {
-			arbiter.PreStep(dt, slop, biasCoef)
+			arbiter.preStep(dt, slop, biasCoef)
 		}
 
 		for _, constraint := range s.constraints {
@@ -599,7 +599,7 @@ func (s *Space) Step(dt float64) {
 		}
 
 		for _, arbiter := range s.Arbiters {
-			arbiter.ApplyCachedImpulse(dtCoef)
+			arbiter.applyCachedImpulse(dtCoef)
 		}
 
 		for _, constraint := range s.constraints {
@@ -610,7 +610,7 @@ func (s *Space) Step(dt float64) {
 		var i uint
 		for i = 0; i < s.Iterations; i++ {
 			for _, arbiter := range s.Arbiters {
-				arbiter.ApplyImpulse()
+				arbiter.applyImpulse()
 			}
 
 			for _, constraint := range s.constraints {
@@ -720,10 +720,10 @@ func (s *Space) AddCollisionHandler(a, b CollisionType) *CollisionHandler {
 	handler := &CollisionHandler{
 		a,
 		b,
-		DefaultBegin,
-		DefaultPreSolve,
-		DefaultPostSolve,
-		DefaultSeparate,
+		DefaultBeginFunc,
+		DefaultPreSolveFunc,
+		DefaultPostSolveFunc,
+		DefaultSeparateFunc,
 		nil,
 	}
 	return s.collisionHandlers.Insert(
@@ -756,14 +756,14 @@ func (s *Space) AddCollisionHandler2(handler *CollisionHandler) {
 func (s *Space) AddWildcardCollisionHandler(typeA CollisionType) *CollisionHandler {
 	s.UseWildcardDefaultHandler()
 
-	hash := HashPair(HashValue(typeA), HashValue(WildcardCollisionType))
+	hash := HashPair(HashValue(typeA), HashValue(Wildcard))
 	handler := &CollisionHandler{
 		typeA,
-		WildcardCollisionType,
-		AlwaysCollide,
-		AlwaysCollide,
-		DoNothing,
-		DoNothing,
+		Wildcard,
+		AlwaysCollideFunc,
+		AlwaysCollideFunc,
+		DoNothingFunc,
+		DoNothingFunc,
 		nil,
 	}
 	return s.collisionHandlers.Insert(
@@ -781,8 +781,8 @@ func (s *Space) UseWildcardDefaultHandler() {
 }
 
 func (s *Space) UseSpatialHash(dim float64, count int) {
-	staticShapes := newSpaceHash(dim, count, ShapeGetBB, nil)
-	dynamicShapes := newSpaceHash(dim, count, ShapeGetBB, staticShapes)
+	staticShapes := newSpaceHash(dim, count, shapeGetBB, nil)
+	dynamicShapes := newSpaceHash(dim, count, shapeGetBB, staticShapes)
 
 	s.staticShapes.class.Each(func(shape *Shape) {
 		staticShapes.class.Insert(shape, shape.hashid)
@@ -1074,7 +1074,7 @@ func spaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 		arb.Init(shapes.a, shapes.b)
 		return arb
 	})
-	arb.Update(&info, space)
+	arb.update(&info, space)
 
 	if arb.state == arbiterStateFirstCollision && !arb.handler.BeginFunc(arb, space, arb.handler.UserData) {
 		arb.Ignore()

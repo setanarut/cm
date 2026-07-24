@@ -1,22 +1,22 @@
 package cm
 
 var CollisionHandlerDoNothing = CollisionHandler{
-	WildcardCollisionType,
-	WildcardCollisionType,
-	AlwaysCollide,
-	AlwaysCollide,
-	DoNothing,
-	DoNothing,
+	Wildcard,
+	Wildcard,
+	AlwaysCollideFunc,
+	AlwaysCollideFunc,
+	DoNothingFunc,
+	DoNothingFunc,
 	nil,
 }
 
 var CollisionHandlerDefault = CollisionHandler{
-	WildcardCollisionType,
-	WildcardCollisionType,
-	DefaultBegin,
-	DefaultPreSolve,
-	DefaultPostSolve,
-	DefaultSeparate,
+	Wildcard,
+	Wildcard,
+	DefaultBeginFunc,
+	DefaultPreSolveFunc,
+	DefaultPostSolveFunc,
+	DefaultSeparateFunc,
 	nil,
 }
 

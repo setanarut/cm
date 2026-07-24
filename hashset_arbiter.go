@@ -46,7 +46,7 @@ func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) 
 			handler.SeparateFunc(arb, space, handler.UserData)
 		}
 
-		arb.Unthread()
+		arb.unthread()
 
 		space.Arbiters = slices.DeleteFunc(space.Arbiters, func(arbiter *Arbiter) bool {
 			return arb == arbiter

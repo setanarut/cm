@@ -2,21 +2,21 @@ package cm
 
 import "github.com/setanarut/v"
 
-type SpatialIndexBB func(obj *Shape) BB
-type SpatialIndexIterator func(obj *Shape)
-type SpatialIndexQuery func(obj1 any, obj2 *Shape, collisionId uint32, data any) uint32
-type SpatialIndexSegmentQuery func(obj1 any, obj2 *Shape, data any) float64
+type spatialIndexBB func(obj *Shape) BB
+type spatialIndexIterator func(obj *Shape)
+type spatialIndexQuery func(obj1 any, obj2 *Shape, collisionId uint32, data any) uint32
+type spatialIndexSegmentQuery func(obj1 any, obj2 *Shape, data any) float64
 
-// SpatialIndexer is an interface for spatial indexing that provides
+// spatialIndexer is an interface for spatial indexing that provides
 // methods to manage spatial objects efficiently. It is implemented by
 // a BBTree structure, which organizes objects in a bounding volume tree.
-type SpatialIndexer interface {
+type spatialIndexer interface {
 	// Count returns the number of objects currently stored in the index.
 	Count() int
 
 	// Each iterates over all objects in the spatial index, applying
 	// the provided iterator function `f` to each object.
-	Each(f SpatialIndexIterator)
+	Each(f spatialIndexIterator)
 
 	// Contains checks if a given object `obj` with the specified
 	// `hashId` exists in the spatial index.
@@ -40,31 +40,31 @@ type SpatialIndexer interface {
 
 	// ReindexQuery performs a reindexing query using the given
 	// spatial query function `f` and additional `data`.
-	ReindexQuery(f SpatialIndexQuery, data any)
+	ReindexQuery(f spatialIndexQuery, data any)
 
 	// Query allows querying the spatial index for objects that intersect
 	// or are contained within the bounding box `bb` using the provided
 	// query function `f` and additional `data`.
-	Query(obj any, bb BB, f SpatialIndexQuery, data any)
+	Query(obj any, bb BB, f spatialIndexQuery, data any)
 
 	// SegmentQuery performs a segment-based query using the line segment
 	// defined by points `a` and `b`. It allows querying objects affected
 	// by the segment based on the `tExit` parameter, applying the
 	// provided segment query function `f` and additional `data`.
-	SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any)
+	SegmentQuery(obj any, a, b v.Vec, tExit float64, f spatialIndexSegmentQuery, data any)
 }
 
-func ShapeGetBB(obj *Shape) BB {
+func shapeGetBB(obj *Shape) BB {
 	return obj.BB
 }
 
 type spatialIndex struct {
-	class                     SpatialIndexer
-	bbfunc                    SpatialIndexBB
+	class                     spatialIndexer
+	bbfunc                    spatialIndexBB
 	staticIndex, dynamicIndex *spatialIndex
 }
 
-func NewSpatialIndex(klass SpatialIndexer, bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
+func newSpatialIndex(klass spatialIndexer, bbfunc spatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
 	index := &spatialIndex{
 		class:       klass,
 		bbfunc:      bbfunc,
@@ -92,7 +92,7 @@ func (index *spatialIndex) GetRootIfTree() *node {
 	return index.class.(*bBTree).root
 }
 
-func (dynamicIndex *spatialIndex) CollideStatic(staticIndex *spatialIndex, f SpatialIndexQuery, data any) {
+func (dynamicIndex *spatialIndex) CollideStatic(staticIndex *spatialIndex, f spatialIndexQuery, data any) {
 	if staticIndex != nil && staticIndex.class.Count() > 0 {
 		dynamicIndex.class.Each(func(obj *Shape) {
 			staticIndex.class.Query(obj, dynamicIndex.bbfunc(obj), f, data)

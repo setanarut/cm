@@ -22,7 +22,7 @@ type spaceHash struct {
 	stamp uint
 }
 
-func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
+func newSpaceHash(celldim float64, num int, bbfunc spatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
 	spaceHash := &spaceHash{
 		celldim:  celldim,
 		numCells: num,
@@ -36,7 +36,7 @@ func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *
 	for range pooledBufferSize {
 		spaceHash.pooledHandles.Put(&handle{})
 	}
-	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
+	spatialIndex := newSpatialIndex(spaceHash, bbfunc, staticIndex)
 	spaceHash.spatialIndex = spatialIndex
 	return spatialIndex
 }
@@ -73,7 +73,7 @@ func (hash *spaceHash) Count() int {
 	return int(hash.handleSet.Count())
 }
 
-func (hash *spaceHash) Each(f SpatialIndexIterator) {
+func (hash *spaceHash) Each(f spatialIndexIterator) {
 	hash.handleSet.Each(func(elt *handle) {
 		f(elt.obj)
 	})
@@ -140,7 +140,7 @@ func (hash *spaceHash) removeOrphanedHandles(binPtr **spaceHashBin) {
 	}
 }
 
-func (hash *spaceHash) queryHelper(binPtr **spaceHashBin, obj any, f SpatialIndexQuery, data any) {
+func (hash *spaceHash) queryHelper(binPtr **spaceHashBin, obj any, f spatialIndexQuery, data any) {
 restart:
 	for bin := *binPtr; bin != nil; bin = bin.next {
 		hand := bin.handle
@@ -166,7 +166,7 @@ func floor(f float64) int {
 	return i
 }
 
-func (hash *spaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
+func (hash *spaceHash) ReindexQuery(f spatialIndexQuery, data any) {
 	hash.clearTable()
 
 	hash.handleSet.Each(func(hand *handle) {
@@ -204,7 +204,7 @@ func (hash *spaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
 	hash.CollideStatic(hash.staticIndex, f, data)
 }
 
-func (hash *spaceHash) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
+func (hash *spaceHash) Query(obj any, bb BB, f spatialIndexQuery, data any) {
 	dim := hash.celldim
 	l := floor(bb.L / dim)
 	r := floor(bb.R / dim)
@@ -222,7 +222,7 @@ func (hash *spaceHash) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
 	hash.stamp++
 }
 
-func (hash *spaceHash) segmentQueryHelper(binPtr **spaceHashBin, obj any, f SpatialIndexSegmentQuery, data any) float64 {
+func (hash *spaceHash) segmentQueryHelper(binPtr **spaceHashBin, obj any, f spatialIndexSegmentQuery, data any) float64 {
 	t := 1.0
 
 restart:
@@ -245,7 +245,7 @@ restart:
 }
 
 // modified from http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
-func (hash *spaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (hash *spaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f spatialIndexSegmentQuery, data any) {
 	a = a.Scale(1.0 / hash.celldim)
 	b = b.Scale(1.0 / hash.celldim)
 

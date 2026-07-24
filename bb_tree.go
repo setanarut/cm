@@ -7,7 +7,7 @@ import (
 type markContext struct {
 	tree       *bBTree
 	staticRoot *node
-	f          SpatialIndexQuery
+	f          spatialIndexQuery
 	data       any
 }
 
@@ -74,11 +74,11 @@ type bBTree struct {
 	stamp uint
 }
 
-func newBBTree(bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
+func newBBTree(bbfunc spatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
 	bbtree := &bBTree{
 		leaves: newHashSet(leafSetEql),
 	}
-	bbtree.spatialIndex = NewSpatialIndex(bbtree, bbfunc, staticIndex)
+	bbtree.spatialIndex = newSpatialIndex(bbtree, bbfunc, staticIndex)
 	return bbtree.spatialIndex
 }
 
@@ -86,7 +86,7 @@ func (btr *bBTree) Count() int {
 	return int(btr.leaves.Count())
 }
 
-func (btr *bBTree) Each(f SpatialIndexIterator) {
+func (btr *bBTree) Each(f spatialIndexIterator) {
 	btr.leaves.Each(func(n *node) {
 		f(n.obj)
 	})
@@ -265,7 +265,7 @@ func (btr *bBTree) ReindexObject(obj *Shape, hashId HashValue) {
 	}
 }
 
-func (btr *bBTree) ReindexQuery(f SpatialIndexQuery, data any) {
+func (btr *bBTree) ReindexQuery(f spatialIndexQuery, data any) {
 	if btr.root == nil {
 		return
 	}
@@ -327,13 +327,13 @@ func (btr *bBTree) PairsClear(leaf *node) {
 	}
 }
 
-func (btr *bBTree) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
+func (btr *bBTree) Query(obj any, bb BB, f spatialIndexQuery, data any) {
 	if btr.root != nil {
 		btr.root.SubtreeQuery(obj, bb, f, data)
 	}
 }
 
-func (btr *bBTree) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (btr *bBTree) SegmentQuery(obj any, a, b v.Vec, tExit float64, f spatialIndexSegmentQuery, data any) {
 	root := btr.root
 	if root != nil {
 		root.SubtreeSegmentQuery(obj, a, b, tExit, f, data)
@@ -488,7 +488,7 @@ func (n *node) IsLeaf() bool {
 	return n.obj != nil
 }
 
-func (n *node) SubtreeQuery(obj any, bb BB, query SpatialIndexQuery, data any) {
+func (n *node) SubtreeQuery(obj any, bb BB, query spatialIndexQuery, data any) {
 	if n.bb.Intersects(bb) {
 		if n.IsLeaf() {
 			query(obj, n.obj, 0, data)
@@ -507,7 +507,7 @@ func (n *node) MarkSubtree(context *markContext) {
 	}
 }
 
-func (n *node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) float64 {
+func (n *node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f spatialIndexSegmentQuery, data any) float64 {
 	if n.IsLeaf() {
 		return f(obj, n.obj, data)
 	}

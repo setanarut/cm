@@ -391,7 +391,7 @@ func (body *Body) Activate() {
 		})
 	}
 
-	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.Next(body) {
+	for arbiter := body.arbiterList; arbiter != nil; arbiter = arbiter.next(body) {
 		// Reset the idle timer of things the body is touching as well.
 		// That way things don't get left hanging in the air.
 		var other *Body
@@ -408,7 +408,7 @@ func (body *Body) Activate() {
 
 // ActivateStatic wakes up any sleeping or idle bodies touching this static body.
 func (body *Body) ActivateStatic(filter *Shape) {
-	for arb := body.arbiterList; arb != nil; arb = arb.Next(body) {
+	for arb := body.arbiterList; arb != nil; arb = arb.next(body) {
 		if filter == nil || filter == arb.shapeA || filter == arb.shapeB {
 			if arb.bodyA == body {
 				arb.bodyB.Activate()
@@ -449,9 +449,9 @@ func (body *Body) KineticEnergy() float64 {
 
 func (body *Body) PushArbiter(arb *Arbiter) {
 	next := body.arbiterList
-	arb.ThreadForBody(body).next = next
+	arb.threadForBody(body).next = next
 	if next != nil {
-		next.ThreadForBody(body).prev = arb
+		next.threadForBody(body).prev = arb
 	}
 	body.arbiterList = arb
 }
@@ -563,7 +563,7 @@ func (body *Body) SetPositionUpdateFunc(f BodyPositionFunc) {
 func (body *Body) EachArbiter(f func(*Arbiter)) {
 	arb := body.arbiterList
 	for arb != nil {
-		next := arb.Next(body)
+		next := arb.next(body)
 		swapped := arb.swapped
 
 		arb.swapped = body == arb.bodyB
