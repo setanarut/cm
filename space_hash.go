@@ -7,41 +7,41 @@ import (
 	"github.com/setanarut/v"
 )
 
-type SpaceHash struct {
+type spaceHash struct {
 	*SpatialIndex
 
 	numCells int
 	celldim  float64
 
-	table     []*SpaceHashBin
-	handleSet *HashSet[*Shape, *Handle]
+	table     []*spaceHashBin
+	handleSet *hashSet[*Shape, *handle]
 
-	pooledBins    *SpaceHashBin
+	pooledBins    *spaceHashBin
 	pooledHandles sync.Pool
 
 	stamp uint
 }
 
-func NewSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *SpatialIndex) *SpatialIndex {
-	spaceHash := &SpaceHash{
+func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *SpatialIndex) *SpatialIndex {
+	spaceHash := &spaceHash{
 		celldim:  celldim,
 		numCells: num,
-		table:    make([]*SpaceHashBin, num),
-		handleSet: NewHashSet(func(obj *Shape, elt *Handle) bool {
+		table:    make([]*spaceHashBin, num),
+		handleSet: NewHashSet(func(obj *Shape, elt *handle) bool {
 			return obj == elt.obj
 		}),
 		stamp:         1,
-		pooledHandles: sync.Pool{New: func() any { return &Handle{} }},
+		pooledHandles: sync.Pool{New: func() any { return &handle{} }},
 	}
 	for range pooledBufferSize {
-		spaceHash.pooledHandles.Put(&Handle{})
+		spaceHash.pooledHandles.Put(&handle{})
 	}
 	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
 	spaceHash.SpatialIndex = spatialIndex
 	return spatialIndex
 }
 
-func (hash *SpaceHash) hashHandle(hand *Handle, bb BB) {
+func (hash *spaceHash) hashHandle(hand *handle, bb BB) {
 	dim := hash.celldim
 
 	// TODO: chipmunk said floor is slow, use custom floor
@@ -69,31 +69,31 @@ func (hash *SpaceHash) hashHandle(hand *Handle, bb BB) {
 	}
 }
 
-func (hash *SpaceHash) Count() int {
+func (hash *spaceHash) Count() int {
 	return int(hash.handleSet.Count())
 }
 
-func (hash *SpaceHash) Each(f SpatialIndexIterator) {
-	hash.handleSet.Each(func(elt *Handle) {
+func (hash *spaceHash) Each(f SpatialIndexIterator) {
+	hash.handleSet.Each(func(elt *handle) {
 		f(elt.obj)
 	})
 }
 
-func (hash *SpaceHash) Contains(obj *Shape, hashId HashValue) bool {
+func (hash *spaceHash) Contains(obj *Shape, hashId HashValue) bool {
 	return hash.handleSet.Find(hashId, obj) != nil
 }
 
-func (hash *SpaceHash) Insert(obj *Shape, hashId HashValue) {
-	hand := hash.handleSet.Insert(hashId, obj, func(obj *Shape) *Handle {
-		hand := hash.pooledHandles.Get().(*Handle)
-		hand.Init(obj)
+func (hash *spaceHash) Insert(obj *Shape, hashId HashValue) {
+	hand := hash.handleSet.Insert(hashId, obj, func(obj *Shape) *handle {
+		hand := hash.pooledHandles.Get().(*handle)
+		hand.init(obj)
 		hand.retain()
 		return hand
 	})
 	hash.hashHandle(hand, hash.bbfunc(obj))
 }
 
-func (hash *SpaceHash) Remove(obj *Shape, hashId HashValue) {
+func (hash *spaceHash) Remove(obj *Shape, hashId HashValue) {
 	hand := hash.handleSet.Remove(hashId, obj)
 
 	if hand != nil {
@@ -102,14 +102,14 @@ func (hash *SpaceHash) Remove(obj *Shape, hashId HashValue) {
 	}
 }
 
-func (hash *SpaceHash) Reindex() {
+func (hash *spaceHash) Reindex() {
 	hash.clearTable()
-	hash.handleSet.Each(func(hand *Handle) {
+	hash.handleSet.Each(func(hand *handle) {
 		hash.bbfunc(hand.obj)
 	})
 }
 
-func (hash *SpaceHash) ReindexObject(obj *Shape, hashId HashValue) {
+func (hash *spaceHash) ReindexObject(obj *Shape, hashId HashValue) {
 	hand := hash.handleSet.Remove(hashId, obj)
 
 	if hand != nil {
@@ -120,7 +120,7 @@ func (hash *SpaceHash) ReindexObject(obj *Shape, hashId HashValue) {
 	}
 }
 
-func (hash *SpaceHash) removeOrphanedHandles(binPtr **SpaceHashBin) {
+func (hash *spaceHash) removeOrphanedHandles(binPtr **spaceHashBin) {
 	bin := *binPtr
 	for bin != nil {
 		hand := bin.handle
@@ -140,7 +140,7 @@ func (hash *SpaceHash) removeOrphanedHandles(binPtr **SpaceHashBin) {
 	}
 }
 
-func (hash *SpaceHash) queryHelper(binPtr **SpaceHashBin, obj any, f SpatialIndexQuery, data any) {
+func (hash *spaceHash) queryHelper(binPtr **spaceHashBin, obj any, f SpatialIndexQuery, data any) {
 restart:
 	for bin := *binPtr; bin != nil; bin = bin.next {
 		hand := bin.handle
@@ -166,10 +166,10 @@ func floor(f float64) int {
 	return i
 }
 
-func (hash *SpaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
+func (hash *spaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
 	hash.clearTable()
 
-	hash.handleSet.Each(func(hand *Handle) {
+	hash.handleSet.Each(func(hand *handle) {
 		// queryRehashHelper
 
 		bb := hash.SpatialIndex.bbfunc(hand.obj)
@@ -204,7 +204,7 @@ func (hash *SpaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
 	hash.CollideStatic(hash.staticIndex, f, data)
 }
 
-func (hash *SpaceHash) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
+func (hash *spaceHash) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
 	dim := hash.celldim
 	l := floor(bb.L / dim)
 	r := floor(bb.R / dim)
@@ -222,7 +222,7 @@ func (hash *SpaceHash) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
 	hash.stamp++
 }
 
-func (hash *SpaceHash) segmentQueryHelper(binPtr **SpaceHashBin, obj any, f SpatialIndexSegmentQuery, data any) float64 {
+func (hash *spaceHash) segmentQueryHelper(binPtr **spaceHashBin, obj any, f SpatialIndexSegmentQuery, data any) float64 {
 	t := 1.0
 
 restart:
@@ -245,7 +245,7 @@ restart:
 }
 
 // modified from http://playtechs.blogspot.com/2007/03/raytracing-on-grid.html
-func (hash *SpaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
+func (hash *spaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
 	a = a.Scale(1.0 / hash.celldim)
 	b = b.Scale(1.0 / hash.celldim)
 
@@ -318,12 +318,12 @@ func (hash *SpaceHash) SegmentQuery(obj any, a, b v.Vec, tExit float64, f Spatia
 	hash.stamp++
 }
 
-type SpaceHashBin struct {
-	handle *Handle
-	next   *SpaceHashBin
+type spaceHashBin struct {
+	handle *handle
+	next   *spaceHashBin
 }
 
-func (bin *SpaceHashBin) containsHandle(hand *Handle) bool {
+func (bin *spaceHashBin) containsHandle(hand *handle) bool {
 	for item := bin; item != nil; item = item.next {
 		if item.handle == hand {
 			return true
@@ -337,35 +337,35 @@ func hashFunc(x, y, n HashValue) HashValue {
 	return (x*1640531513 ^ y*2654435789) % n
 }
 
-type Handle struct {
+type handle struct {
 	obj     *Shape
 	retains int
 	stamp   uint
 }
 
-func (hand *Handle) Init(obj *Shape) {
+func (hand *handle) init(obj *Shape) {
 	hand.obj = obj
 	hand.retains = 0
 	hand.stamp = 0
 }
 
-func (hand *Handle) retain() {
+func (hand *handle) retain() {
 	hand.retains++
 }
 
-func (hand *Handle) release(pooledHandles *sync.Pool) {
+func (hand *handle) release(pooledHandles *sync.Pool) {
 	hand.retains--
 	if hand.retains == 0 {
 		pooledHandles.Put(hand)
 	}
 }
 
-func (hash *SpaceHash) recycleBin(bin *SpaceHashBin) {
+func (hash *spaceHash) recycleBin(bin *spaceHashBin) {
 	bin.next = hash.pooledBins
 	hash.pooledBins = bin
 }
 
-func (hash *SpaceHash) clearTableCell(idx int) {
+func (hash *spaceHash) clearTableCell(idx int) {
 	bin := hash.table[idx]
 	for bin != nil {
 		next := bin.next
@@ -379,13 +379,13 @@ func (hash *SpaceHash) clearTableCell(idx int) {
 	hash.table[idx] = nil
 }
 
-func (hash *SpaceHash) clearTable() {
+func (hash *spaceHash) clearTable() {
 	for i := 0; i < hash.numCells; i++ {
 		hash.clearTableCell(i)
 	}
 }
 
-func (hash *SpaceHash) getEmptyBin() *SpaceHashBin {
+func (hash *spaceHash) getEmptyBin() *spaceHashBin {
 	bin := hash.pooledBins
 
 	if bin != nil {
@@ -395,7 +395,7 @@ func (hash *SpaceHash) getEmptyBin() *SpaceHashBin {
 
 	// pool is exhausted, make more
 	for range pooledBufferSize {
-		hash.recycleBin(&SpaceHashBin{})
+		hash.recycleBin(&spaceHashBin{})
 	}
-	return &SpaceHashBin{}
+	return &spaceHashBin{}
 }

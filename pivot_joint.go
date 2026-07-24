@@ -7,7 +7,7 @@ type PivotJoint struct {
 	AnchorA, AnchorB v.Vec
 
 	r1, r2 v.Vec
-	k      Mat2x2
+	k      mat2x2
 
 	jAcc, bias v.Vec
 }
@@ -73,7 +73,7 @@ func (joint *PivotJoint) ApplyImpulse(dt float64) {
 	vr := relativeVelocity(a, b, r1, r2)
 
 	// compute normal impulse
-	j := joint.k.Transform(joint.bias.Sub(vr))
+	j := joint.k.transform(joint.bias.Sub(vr))
 	jOld := joint.jAcc
 	joint.jAcc = joint.jAcc.Add(j).Limit(joint.Constraint.maxForce * dt)
 	j = joint.jAcc.Sub(jOld)

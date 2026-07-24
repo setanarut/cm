@@ -19,33 +19,33 @@ type SupportPoint struct {
 	index uint32
 }
 
-func NewSupportPoint(p v.Vec, index uint32) SupportPoint {
+func newSupportPoint(p v.Vec, index uint32) SupportPoint {
 	return SupportPoint{p, index}
 }
 
-type SupportPointFunc func(shape *Shape, n v.Vec) SupportPoint
+type supportPointFunc func(shape *Shape, n v.Vec) SupportPoint
 
-func PolySupportPoint(shape *Shape, n v.Vec) SupportPoint {
+func polySupportPoint(shape *Shape, n v.Vec) SupportPoint {
 	poly := shape.Class.(*PolyShape)
 	planes := poly.Planes
-	i := PolySupportPointIndex(poly.count, planes, n)
-	return NewSupportPoint(planes[i].V0, uint32(i))
+	i := polySupportPointIndex(poly.count, planes, n)
+	return newSupportPoint(planes[i].V0, uint32(i))
 }
 
-func SegmentSupportPoint(shape *Shape, n v.Vec) SupportPoint {
+func segmentSupportPoint(shape *Shape, n v.Vec) SupportPoint {
 	seg := shape.Class.(*Segment)
 	if seg.transformA.Dot(n) > seg.transformB.Dot(n) {
-		return NewSupportPoint(seg.transformA, 0)
+		return newSupportPoint(seg.transformA, 0)
 	} else {
-		return NewSupportPoint(seg.transformB, 1)
+		return newSupportPoint(seg.transformB, 1)
 	}
 }
 
-func CircleSupportPoint(shape *Shape, _ v.Vec) SupportPoint {
-	return NewSupportPoint(shape.Class.(*Circle).transformC, 0)
+func circleSupportPoint(shape *Shape, _ v.Vec) SupportPoint {
+	return newSupportPoint(shape.Class.(*Circle).transformC, 0)
 }
 
-func PolySupportPointIndex(count int, planes []SplittingPlane, n v.Vec) int {
+func polySupportPointIndex(count int, planes []SplittingPlane, n v.Vec) int {
 	max := -infinity
 	var index int
 	for i := range count {
@@ -60,19 +60,19 @@ func PolySupportPointIndex(count int, planes []SplittingPlane, n v.Vec) int {
 	return index
 }
 
-type SupportContext struct {
+type supportContext struct {
 	shape1, shape2 *Shape
-	func1, func2   SupportPointFunc
+	func1, func2   supportPointFunc
 }
 
 // Support calculates the maximal point on the minkowski difference of two shapes along a particular axis.
-func (ctx *SupportContext) Support(n v.Vec) MinkowskiPoint {
+func (ctx *supportContext) Support(n v.Vec) minkowskiPoint {
 	a := ctx.func1(ctx.shape1, n.Neg())
 	b := ctx.func2(ctx.shape2, n)
-	return NewMinkowskiPoint(a, b)
+	return newMinkowskiPoint(a, b)
 }
 
-type ClosestPoints struct {
+type closestPoints struct {
 	// Surface points in absolute coordinates.
 	a, b v.Vec
 	// Minimum separating axis of the two shapes.
@@ -83,9 +83,9 @@ type ClosestPoints struct {
 	collisionId uint32
 }
 
-type CollisionFunc func(info *CollisionInfo)
+type collisionFunc func(info *CollisionInfo)
 
-func CircleToCircle(info *CollisionInfo) {
+func circleToCircle(info *CollisionInfo) {
 	c1 := info.a.Class.(*Circle)
 	c2 := info.b.Class.(*Circle)
 
@@ -104,11 +104,11 @@ func CircleToCircle(info *CollisionInfo) {
 	}
 }
 
-func CollisionError(_ *CollisionInfo) {
+func collisionError(_ *CollisionInfo) {
 	panic("Shape types are not sorted")
 }
 
-func CircleToSegment(info *CollisionInfo) {
+func circleToSegment(info *CollisionInfo) {
 	circle := info.a.Class.(*Circle)
 	segment := info.b.Class.(*Segment)
 
@@ -140,12 +140,12 @@ func CircleToSegment(info *CollisionInfo) {
 	}
 }
 
-func SegmentToSegment(info *CollisionInfo) {
+func segmentToSegment(info *CollisionInfo) {
 	seg1 := info.a.Class.(*Segment)
 	seg2 := info.b.Class.(*Segment)
 
-	context := SupportContext{info.a, info.b, SegmentSupportPoint, SegmentSupportPoint}
-	points := GJK(context, &info.collisionId)
+	context := supportContext{info.a, info.b, segmentSupportPoint, segmentSupportPoint}
+	points := gJK(context, &info.collisionId)
 
 	n := points.n
 	rot1 := seg1.Body.Rotation()
@@ -159,13 +159,13 @@ func SegmentToSegment(info *CollisionInfo) {
 		(!points.a.Equals(seg1.transformB) || n.Dot(rotateComplex(seg1.bTangent, rot1)) <= 0) &&
 		(!points.b.Equals(seg2.transformA) || n.Dot(rotateComplex(seg2.aTangent, rot2)) >= 0) &&
 		(!points.b.Equals(seg2.transformB) || n.Dot(rotateComplex(seg2.bTangent, rot2)) >= 0) {
-		ContactPoints(SupportEdgeForSegment(seg1, n), SupportEdgeForSegment(seg2, n.Neg()), points, info)
+		contactPoints(supportEdgeForSegment(seg1, n), supportEdgeForSegment(seg2, n.Neg()), points, info)
 	}
 }
 
-func CircleToPoly(info *CollisionInfo) {
-	context := SupportContext{info.a, info.b, CircleSupportPoint, PolySupportPoint}
-	points := GJK(context, &info.collisionId)
+func circleToPoly(info *CollisionInfo) {
+	context := supportContext{info.a, info.b, circleSupportPoint, polySupportPoint}
+	points := gJK(context, &info.collisionId)
 
 	circle := info.a.Class.(*Circle)
 	poly := info.b.Class.(*PolyShape)
@@ -176,9 +176,9 @@ func CircleToPoly(info *CollisionInfo) {
 	}
 }
 
-func SegmentToPoly(info *CollisionInfo) {
-	context := SupportContext{info.a, info.b, SegmentSupportPoint, PolySupportPoint}
-	points := GJK(context, &info.collisionId)
+func segmentToPoly(info *CollisionInfo) {
+	context := supportContext{info.a, info.b, segmentSupportPoint, polySupportPoint}
+	points := gJK(context, &info.collisionId)
 
 	n := points.n
 	rot := info.a.Body.Rotation()
@@ -191,25 +191,25 @@ func SegmentToPoly(info *CollisionInfo) {
 	// Reject endcap collisions if tangents are provided.
 	(!points.a.Equals(segment.transformA) || n.Dot(rotateComplex(segment.aTangent, rot)) <= 0) &&
 		(!points.a.Equals(segment.transformB) || n.Dot(rotateComplex(segment.bTangent, rot)) <= 0)) {
-		ContactPoints(SupportEdgeForSegment(segment, n), SupportEdgeForPoly(polyshape, n.Neg()), points, info)
+		contactPoints(supportEdgeForSegment(segment, n), supportEdgeForPoly(polyshape, n.Neg()), points, info)
 	}
 }
 
 func PolyToPoly(info *CollisionInfo) {
-	context := SupportContext{info.a, info.b, PolySupportPoint, PolySupportPoint}
-	points := GJK(context, &info.collisionId)
+	context := supportContext{info.a, info.b, polySupportPoint, polySupportPoint}
+	points := gJK(context, &info.collisionId)
 
 	// TODO: add debug drawing logic like chipmunk does
 
 	poly1 := info.a.Class.(*PolyShape)
 	poly2 := info.b.Class.(*PolyShape)
 	if points.d-poly1.Radius-poly2.Radius <= 0 {
-		ContactPoints(SupportEdgeForPoly(poly1, points.n), SupportEdgeForPoly(poly2, points.n.Neg()), points, info)
+		contactPoints(supportEdgeForPoly(poly1, points.n), supportEdgeForPoly(poly2, points.n.Neg()), points, info)
 	}
 }
 
-// MinkowskiPoint is a point on the surface of two shapes' minkowski difference.
-type MinkowskiPoint struct {
+// minkowskiPoint is a point on the surface of two shapes' minkowski difference.
+type minkowskiPoint struct {
 	// Cache the two original support points.
 	a, b v.Vec
 	// b - a
@@ -218,12 +218,12 @@ type MinkowskiPoint struct {
 	collisionId uint32
 }
 
-func NewMinkowskiPoint(a, b SupportPoint) MinkowskiPoint {
-	return MinkowskiPoint{a.p, b.p, b.p.Sub(a.p), (a.index&0xFF)<<8 | (b.index & 0xFF)}
+func newMinkowskiPoint(a, b SupportPoint) minkowskiPoint {
+	return minkowskiPoint{a.p, b.p, b.p.Sub(a.p), (a.index&0xFF)<<8 | (b.index & 0xFF)}
 }
 
 // ClosestPoints calculates the closest points on two shapes given the closest edge on their minkowski difference to (0, 0)
-func (v0 MinkowskiPoint) ClosestPoints(v1 MinkowskiPoint) ClosestPoints {
+func (v0 minkowskiPoint) ClosestPoints(v1 minkowskiPoint) closestPoints {
 	// Find the closest p(t) on the minkowski difference to (0, 0)
 	t := closestT(v0.ab, v1.ab)
 	p := lerpT(v0.ab, v1.ab, t)
@@ -242,50 +242,50 @@ func (v0 MinkowskiPoint) ClosestPoints(v1 MinkowskiPoint) ClosestPoints {
 
 	if d <= 0 || (-1 < t && t < 1) {
 		// If the shapes are overlapping, or we have a regular vertex/edge collision, we are done.
-		return ClosestPoints{pa, pb, n, d, id}
+		return closestPoints{pa, pb, n, d, id}
 	}
 
 	// Vertex/vertex collisions need special treatment since the MSA won't be shared with an axis of the minkowski difference.
 	d2 := p.Mag()
 	n2 := p.Scale(1 / (d2 + math.SmallestNonzeroFloat64))
 
-	return ClosestPoints{pa, pb, n2, d2, id}
+	return closestPoints{pa, pb, n2, d2, id}
 }
 
-type EdgePoint struct {
+type edgePoint struct {
 	p v.Vec
 	// Keep a hash value for Chipmunk's collision hashing mechanism.
 	hash HashValue
 }
 
-type Edge struct {
-	a, b EdgePoint
+type edge struct {
+	a, b edgePoint
 	r    float64
 	n    v.Vec
 }
 
-func SupportEdgeForSegment(seg *Segment, n v.Vec) Edge {
+func supportEdgeForSegment(seg *Segment, n v.Vec) edge {
 	hashid := seg.Shape.hashid
 	if seg.transformN.Dot(n) > 0 {
-		return Edge{
-			a: EdgePoint{seg.transformA, HashPair(hashid, 0)},
-			b: EdgePoint{seg.transformB, HashPair(hashid, 1)},
+		return edge{
+			a: edgePoint{seg.transformA, HashPair(hashid, 0)},
+			b: edgePoint{seg.transformB, HashPair(hashid, 1)},
 			r: seg.radius,
 			n: seg.transformN,
 		}
 	}
 
-	return Edge{
-		a: EdgePoint{seg.transformB, HashPair(hashid, 1)},
-		b: EdgePoint{seg.transformA, HashPair(hashid, 0)},
+	return edge{
+		a: edgePoint{seg.transformB, HashPair(hashid, 1)},
+		b: edgePoint{seg.transformA, HashPair(hashid, 0)},
 		r: seg.radius,
 		n: seg.transformN.Neg(),
 	}
 }
 
-func SupportEdgeForPoly(poly *PolyShape, n v.Vec) Edge {
+func supportEdgeForPoly(poly *PolyShape, n v.Vec) edge {
 	count := poly.count
-	i1 := PolySupportPointIndex(poly.count, poly.Planes, n)
+	i1 := polySupportPointIndex(poly.count, poly.Planes, n)
 
 	i0 := (i1 - 1 + count) % count
 	i2 := (i1 + 1) % count
@@ -294,24 +294,24 @@ func SupportEdgeForPoly(poly *PolyShape, n v.Vec) Edge {
 	hashId := poly.hashid
 
 	if n.Dot(planes[i1].N) > n.Dot(planes[i2].N) {
-		return Edge{
-			EdgePoint{planes[i0].V0, HashPair(hashId, HashValue(i0))},
-			EdgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
+		return edge{
+			edgePoint{planes[i0].V0, HashPair(hashId, HashValue(i0))},
+			edgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
 			poly.Radius,
 			planes[i1].N,
 		}
 	}
 
-	return Edge{
-		EdgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
-		EdgePoint{planes[i2].V0, HashPair(hashId, HashValue(i2))},
+	return edge{
+		edgePoint{planes[i1].V0, HashPair(hashId, HashValue(i1))},
+		edgePoint{planes[i2].V0, HashPair(hashId, HashValue(i2))},
 		poly.Radius,
 		planes[i2].N,
 	}
 }
 
-// ContactPoints finds contact point pairs on two support edges' surfaces
-func ContactPoints(e1, e2 Edge, points ClosestPoints, info *CollisionInfo) {
+// contactPoints finds contact point pairs on two support edges' surfaces
+func contactPoints(e1, e2 edge, points closestPoints, info *CollisionInfo) {
 	mindist := e1.r + e2.r
 
 	if points.d > mindist {
@@ -358,14 +358,14 @@ func HashPair(a, b HashValue) HashValue {
 	return a*hashCoef ^ b*hashCoef
 }
 
-// GJK finds the closest points between two shapes using the GJK algorithm.
-func GJK(ctx SupportContext, collisionId *uint32) ClosestPoints {
-	var v0, v1 MinkowskiPoint
+// gJK finds the closest points between two shapes using the gJK algorithm.
+func gJK(ctx supportContext, collisionId *uint32) closestPoints {
+	var v0, v1 minkowskiPoint
 
 	if *collisionId != 0 {
 		// Use the minkowski points from the last frame as a starting point using the cached indexes.
-		v0 = NewMinkowskiPoint(ctx.shape1.Point((*collisionId>>24)&0xFF), ctx.shape2.Point((*collisionId>>16)&0xFF))
-		v1 = NewMinkowskiPoint(ctx.shape1.Point((*collisionId>>8)&0xFF), ctx.shape2.Point((*collisionId)&0xFF))
+		v0 = newMinkowskiPoint(ctx.shape1.point((*collisionId>>24)&0xFF), ctx.shape2.point((*collisionId>>16)&0xFF))
+		v1 = newMinkowskiPoint(ctx.shape1.point((*collisionId>>8)&0xFF), ctx.shape2.point((*collisionId)&0xFF))
 	} else {
 		// No cached indexes, use the shapes' bounding box centers as a guess for a starting axis.
 		axis := perp(ctx.shape1.BB.Center().Sub(ctx.shape2.BB.Center()))
@@ -373,20 +373,20 @@ func GJK(ctx SupportContext, collisionId *uint32) ClosestPoints {
 		v1 = ctx.Support(axis.Neg())
 	}
 
-	points := GJKRecurse(ctx, v0, v1, 1)
+	points := gJKRecurse(ctx, v0, v1, 1)
 	*collisionId = points.collisionId
 	return points
 }
 
-// GJKRecurse implementation of the GJK loop.
-func GJKRecurse(ctx SupportContext, v0, v1 MinkowskiPoint, iteration int) ClosestPoints {
+// gJKRecurse implementation of the GJK loop.
+func gJKRecurse(ctx supportContext, v0, v1 minkowskiPoint, iteration int) closestPoints {
 	if iteration > maxGjkIterations {
 		return v0.ClosestPoints(v1)
 	}
 
 	if pointGreater(v1.ab, v0.ab, v.Vec{}) {
 		// Origin is behind axis. Flip and try again.
-		return GJKRecurse(ctx, v1, v0, iteration)
+		return gJKRecurse(ctx, v1, v0, iteration)
 	}
 	t := closestT(v0.ab, v1.ab)
 	var n v.Vec
@@ -400,7 +400,7 @@ func GJKRecurse(ctx SupportContext, v0, v1 MinkowskiPoint, iteration int) Closes
 	// Draw debug
 
 	if pointGreater(p.ab, v0.ab, v.Vec{}) && pointGreater(v1.ab, p.ab, v.Vec{}) {
-		return EPA(ctx, v0, p, v1)
+		return ePA(ctx, v0, p, v1)
 	}
 
 	if checkAxis(v0.ab, v1.ab, p.ab, n) {
@@ -408,24 +408,24 @@ func GJKRecurse(ctx SupportContext, v0, v1 MinkowskiPoint, iteration int) Closes
 	}
 
 	if closestDist(v0.ab, p.ab) < closestDist(p.ab, v1.ab) {
-		return GJKRecurse(ctx, v0, p, iteration+1)
+		return gJKRecurse(ctx, v0, p, iteration+1)
 	}
 
-	return GJKRecurse(ctx, p, v1, iteration+1)
+	return gJKRecurse(ctx, p, v1, iteration+1)
 }
 
-// EPA is called from GJK when two shapes overlap.
-// Finds the closest points on the surface of two overlapping shapes using the EPA algorithm.
+// ePA is called from GJK when two shapes overlap.
+// Finds the closest points on the surface of two overlapping shapes using the ePA algorithm.
 // This is a moderately expensive step! Avoid it by adding radii to your shapes so their inner polygons won't overlap.
-func EPA(ctx SupportContext, v0, v1, v2 MinkowskiPoint) ClosestPoints {
+func ePA(ctx supportContext, v0, v1, v2 minkowskiPoint) closestPoints {
 	// TODO: allocate a NxM array here and do an in place convex hull reduction in EPARecurse?
-	hull := []MinkowskiPoint{v0, v1, v2}
-	return EPARecurse(ctx, 3, hull, 1)
+	hull := []minkowskiPoint{v0, v1, v2}
+	return ePARecurse(ctx, 3, hull, 1)
 }
 
-// EPARecurse implementation of the EPA loop.
+// ePARecurse implementation of the EPA loop.
 // Each recursion adds a point to the convex hull until it's known that we have the closest point on the surface.
-func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration int) ClosestPoints {
+func ePARecurse(ctx supportContext, count int, hull []minkowskiPoint, iteration int) closestPoints {
 	mini := 0
 	minDist := infinity
 
@@ -452,7 +452,7 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 
 	if !duplicate && pointGreater(v0.ab, v1.ab, p.ab) && iteration < maxEpaIterations {
 		// Rebuild the convex hull by inserting p.
-		hull2 := make([]MinkowskiPoint, count+1)
+		hull2 := make([]minkowskiPoint, count+1)
 		count2 := 1
 		hull2[0] = p
 
@@ -474,7 +474,7 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 			}
 		}
 
-		return EPARecurse(ctx, count2, hull2, iteration+1)
+		return ePARecurse(ctx, count2, hull2, iteration+1)
 	}
 
 	if iteration > warnEpaIterations {
@@ -485,20 +485,20 @@ func EPARecurse(ctx SupportContext, count int, hull []MinkowskiPoint, iteration 
 	return v0.ClosestPoints(v1)
 }
 
-var BuiltinCollisionFuncs = [9]CollisionFunc{
-	CircleToCircle,
-	CollisionError,
-	CollisionError,
-	CircleToSegment,
-	SegmentToSegment,
-	CollisionError,
-	CircleToPoly,
-	SegmentToPoly,
+var builtinCollisionFuncs = [9]collisionFunc{
+	circleToCircle,
+	collisionError,
+	collisionError,
+	circleToSegment,
+	segmentToSegment,
+	collisionError,
+	circleToPoly,
+	segmentToPoly,
 	PolyToPoly,
 }
 
-// Collide performs a collision between two shapes
-func Collide(a, b *Shape, collisionID uint32, contacts []Contact) CollisionInfo {
+// collide performs a collision between two shapes
+func collide(a, b *Shape, collisionID uint32, contacts []Contact) CollisionInfo {
 	info := CollisionInfo{
 		a:           a,
 		b:           b,
@@ -515,14 +515,14 @@ func Collide(a, b *Shape, collisionID uint32, contacts []Contact) CollisionInfo 
 		info.b = b
 	}
 
-	BuiltinCollisionFuncs[info.a.Order()+info.b.Order()*ShapeTypeNum](&info)
+	builtinCollisionFuncs[info.a.Order()+info.b.Order()*ShapeTypeNum](&info)
 	return info
 }
 
 // Return contact information about two shapes.
-func ShapesCollideInfo(a, b *Shape) ContactPointSet {
+func shapesCollideInfo(a, b *Shape) ContactPointSet {
 	contacts := make([]Contact, MaxContactsPerArbiter)
-	info := Collide(a, b, 0, contacts)
+	info := collide(a, b, 0, contacts)
 
 	var set ContactPointSet
 	set.Count = info.count

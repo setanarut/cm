@@ -371,7 +371,7 @@ func (body *Body) Activate() {
 		return
 	}
 	body.sleepingIdleTime = 0
-	root := body.ComponentRoot()
+	root := body.componentRoot()
 	if root != nil && root.IsSleeping() {
 		space := root.Space
 		// in the chipmunk code they shadow body, so here I am not
@@ -465,7 +465,7 @@ func (root *Body) ComponentAdd(body *Body) {
 	}
 }
 
-func (body *Body) ComponentRoot() *Body {
+func (body *Body) componentRoot() *Body {
 	if body != nil {
 		return body.sleepingRoot
 	}

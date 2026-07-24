@@ -9,8 +9,8 @@ type HashSetBin[U comparable] struct {
 	next *HashSetBin[U]
 }
 
-// HashSet implements a hash set
-type HashSet[T, U comparable] struct {
+// hashSet implements a hash set
+type hashSet[T, U comparable] struct {
 	// number of bins in the table, not just table size
 	entries uint
 	isEqual func(ptr T, elt U) bool
@@ -21,16 +21,16 @@ type HashSet[T, U comparable] struct {
 }
 
 // NewHashSet is a HashSet constructor
-func NewHashSet[T, U comparable](isEqual func(ptr T, elt U) bool) *HashSet[T, U] {
+func NewHashSet[T, U comparable](isEqual func(ptr T, elt U) bool) *hashSet[T, U] {
 	size := nextPrime(0)
-	return &HashSet[T, U]{
+	return &hashSet[T, U]{
 		isEqual: isEqual,
 		size:    size,
 		table:   make([]*HashSetBin[U], size),
 	}
 }
 
-func (set *HashSet[T, U]) resize() {
+func (set *hashSet[T, U]) resize() {
 	newSize := nextPrime(set.size + 1)
 	newTable := make([]*HashSetBin[U], newSize)
 
@@ -53,12 +53,12 @@ func (set *HashSet[T, U]) resize() {
 }
 
 // Count returns the number of entries
-func (set *HashSet[T, U]) Count() uint {
+func (set *hashSet[T, U]) Count() uint {
 	return set.entries
 }
 
 // Insert returns the U the T is in, or inserts a new U and returns it.
-func (set *HashSet[T, U]) Insert(hash HashValue, ptr T, transform func(obj T) U) U {
+func (set *hashSet[T, U]) Insert(hash HashValue, ptr T, transform func(obj T) U) U {
 	idx := uint(hash) % set.size
 
 	// Find the bin with the matching element.
@@ -88,7 +88,7 @@ func (set *HashSet[T, U]) Insert(hash HashValue, ptr T, transform func(obj T) U)
 }
 
 // Remove removes the T from the HashSet, returning the U it was in.
-func (set *HashSet[T, U]) Remove(hash HashValue, ptr T) U {
+func (set *hashSet[T, U]) Remove(hash HashValue, ptr T) U {
 	idx := uint(hash) % set.size
 
 	bin := set.table[idx]
@@ -117,7 +117,7 @@ func (set *HashSet[T, U]) Remove(hash HashValue, ptr T) U {
 }
 
 // Find returns the U the T is in, or nil.
-func (set *HashSet[T, U]) Find(hash HashValue, ptr T) U {
+func (set *hashSet[T, U]) Find(hash HashValue, ptr T) U {
 	idx := uint(hash) % set.size
 	bin := set.table[idx]
 	for bin != nil && !set.isEqual(ptr, bin.elt) {
@@ -132,7 +132,7 @@ func (set *HashSet[T, U]) Find(hash HashValue, ptr T) U {
 }
 
 // Each calls f for every U in the HashSet.
-func (set *HashSet[T, U]) Each(f func(U)) {
+func (set *hashSet[T, U]) Each(f func(U)) {
 	for _, bin := range set.table {
 		for bin != nil {
 			next := bin.next
@@ -143,7 +143,7 @@ func (set *HashSet[T, U]) Each(f func(U)) {
 }
 
 // Filter removes elements if f returns false
-func (set *HashSet[T, U]) Filter(f func(U) bool) {
+func (set *hashSet[T, U]) Filter(f func(U) bool) {
 	var i uint
 	for i = 0; i < set.size; i++ {
 		prevPtr := &set.table[i]
@@ -165,14 +165,14 @@ func (set *HashSet[T, U]) Filter(f func(U) bool) {
 	}
 }
 
-func (set *HashSet[T, U]) recycle(bin *HashSetBin[U]) {
+func (set *hashSet[T, U]) recycle(bin *HashSetBin[U]) {
 	bin.next = set.pooledBins
 	set.pooledBins = bin
 	var zero U
 	bin.elt = zero
 }
 
-func (set *HashSet[T, U]) getUnusedBin() *HashSetBin[U] {
+func (set *hashSet[T, U]) getUnusedBin() *HashSetBin[U] {
 	bin := set.pooledBins
 
 	if bin != nil {

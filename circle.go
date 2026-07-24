@@ -34,7 +34,7 @@ func (circle *Circle) PointQuery(p v.Vec, info *PointQueryInfo) {
 }
 
 func (circle *Circle) SegmentQuery(a, b v.Vec, radius float64, info *SegmentQueryInfo) {
-	CircleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
+	circleSegmentQuery(circle.Shape, circle.transformC, circle.radius, a, b, radius, info)
 }
 
 func CircleShapeMassInfo(mass, radius float64, center v.Vec) *ShapeMassInfo {
@@ -64,7 +64,7 @@ func (circle *Circle) TransformC() v.Vec {
 	return circle.transformC
 }
 
-func CircleSegmentQuery(shape *Shape, center v.Vec, r1 float64, a, b v.Vec, r2 float64, info *SegmentQueryInfo) {
+func circleSegmentQuery(shape *Shape, center v.Vec, r1 float64, a, b v.Vec, r2 float64, info *SegmentQueryInfo) {
 	da := a.Sub(center)
 	db := b.Sub(center)
 	rsum := r1 + r2

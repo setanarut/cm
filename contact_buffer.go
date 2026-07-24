@@ -1,22 +1,22 @@
 package cm
 
-type ContactBuffer struct {
+type contactBuffer struct {
 	// header
 	stamp       uint
-	next        *ContactBuffer
+	next        *contactBuffer
 	numContacts int
 
 	// buffer itself
 	contacts [ContactsBufferSize]Contact
 }
 
-func NewContactBuffer(stamp uint, slice *ContactBuffer) *ContactBuffer {
-	buffer := &ContactBuffer{}
+func NewContactBuffer(stamp uint, slice *contactBuffer) *contactBuffer {
+	buffer := &contactBuffer{}
 	buffer.contacts = [ContactsBufferSize]Contact{}
 	return buffer.InitHeader(stamp, slice)
 }
 
-func (c *ContactBuffer) InitHeader(stamp uint, splice *ContactBuffer) *ContactBuffer {
+func (c *contactBuffer) InitHeader(stamp uint, splice *contactBuffer) *contactBuffer {
 	c.stamp = stamp
 	if splice != nil {
 		c.next = splice.next

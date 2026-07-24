@@ -11,7 +11,7 @@ type GrooveJoint struct {
 	grooveTn v.Vec
 	clamp    float64
 	r1, r2   v.Vec
-	k        Mat2x2
+	k        mat2x2
 
 	jAcc, bias v.Vec
 }
@@ -90,7 +90,7 @@ func (joint *GrooveJoint) ApplyImpulse(dt float64) {
 
 	vr := relativeVelocity(a, b, r1, r2)
 
-	j := joint.k.Transform(joint.bias.Sub(vr))
+	j := joint.k.transform(joint.bias.Sub(vr))
 	jOld := joint.jAcc
 	joint.jAcc = joint.grooveConstrain(jOld.Add(j), dt)
 	j = joint.jAcc.Sub(jOld)

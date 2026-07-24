@@ -74,14 +74,14 @@ type Space struct {
 	currDT             float64
 	shapeIDCounter     uint
 	constraints        []*Constraint
-	contactBuffersHead *ContactBuffer
-	cachedArbiters     *HashSet[ShapePair, *Arbiter]
+	contactBuffersHead *contactBuffer
+	cachedArbiters     *hashSet[ShapePair, *Arbiter]
 	pooledArbiters     sync.Pool
 	locked             bool
 	usesWildcards      bool
-	collisionHandlers  *HashSet[*CollisionHandler, *CollisionHandler]
+	collisionHandlers  *hashSet[*CollisionHandler, *CollisionHandler]
 	defaultHandler     *CollisionHandler
-	PostStepCallbacks  []*PostStepCallback
+	postStepCallbacks  []*PostStepCallback
 	skipPostStep       bool
 }
 
@@ -118,7 +118,7 @@ func NewSpace() *Space {
 			}
 			return false
 		}),
-		PostStepCallbacks: []*PostStepCallback{},
+		postStepCallbacks: []*PostStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
 	for range pooledBufferSize {
@@ -188,16 +188,16 @@ func (s *Space) Activate(body *Body) {
 			contacts := arbiter.Contacts
 
 			// Restore contact values back to the space's contact buffer memory
-			arbiter.Contacts = s.ContactBufferGetArray()[:numContacts]
+			arbiter.Contacts = s.contactBufferGetArray()[:numContacts]
 			copy(arbiter.Contacts, contacts)
-			s.PushContacts(numContacts)
+			s.pushContacts(numContacts)
 
 			// reinsert the arbiter into the arbiter cache
 			a := arbiter.shapeA
 			b := arbiter.shapeB
-			shapePair := ShapePair{a, b}
+			spair := ShapePair{a, b}
 			arbHashId := HashPair(HashValue(unsafe.Pointer(a)), HashValue(unsafe.Pointer(b)))
-			s.cachedArbiters.Insert(arbHashId, shapePair, func(_ ShapePair) *Arbiter {
+			s.cachedArbiters.Insert(arbHashId, spair, func(_ ShapePair) *Arbiter {
 				return arbiter
 			})
 
@@ -227,7 +227,7 @@ func (s *Space) Deactivate(body *Body) {
 	for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
 		bodyA := arb.bodyA
 		if body == bodyA || bodyA.Type() == Static {
-			s.UncacheArbiter(arb)
+			s.uncacheArbiter(arb)
 			// Save contact values to a new block of memory so they won't time out
 			contacts := make([]Contact, arb.count)
 			copy(contacts, arb.Contacts[:arb.count])
@@ -386,13 +386,13 @@ func (s *Space) RemoveConstraint(constraint *Constraint) {
 }
 
 func (s *Space) FilterArbiters(body *Body, filter *Shape) {
-	s.Lock()
+	s.lock()
 
 	s.cachedArbiters.Filter(func(arb *Arbiter) bool {
 		return CachedArbitersFilter(arb, s, filter, body)
 	})
 
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 func (s *Space) ContainsConstraint(constraint *Constraint) bool {
@@ -407,7 +407,7 @@ func (s *Space) ContainsBody(body *Body) bool {
 	return body.Space == s
 }
 
-func (s *Space) PushFreshContactBuffer() {
+func (s *Space) pushFreshContactBuffer() {
 	stamp := s.stamp
 	head := s.contactBuffersHead
 
@@ -424,16 +424,16 @@ func (s *Space) PushFreshContactBuffer() {
 	}
 }
 
-func (s *Space) ContactBufferGetArray() []Contact {
+func (s *Space) contactBufferGetArray() []Contact {
 	if s.contactBuffersHead.numContacts+MaxContactsPerArbiter > ContactsBufferSize {
-		s.PushFreshContactBuffer()
+		s.pushFreshContactBuffer()
 	}
 
 	head := s.contactBuffersHead
 	return head.contacts[head.numContacts : head.numContacts+MaxContactsPerArbiter]
 }
 
-func (s *Space) ProcessComponents(dt float64) {
+func (s *Space) processComponents(dt float64) {
 	sleep := s.SleepTimeThreshold != infinity
 
 	// calculate the kinetic energy of all the bodies
@@ -498,10 +498,10 @@ func (s *Space) ProcessComponents(dt float64) {
 		for i := 0; i < len(s.DynamicBodies); {
 			body := s.DynamicBodies[i]
 
-			if body.ComponentRoot() == nil {
+			if body.componentRoot() == nil {
 				// Body not in a component yet. Perform a DFS to flood fill mark
 				// the component in the contact graph using this body as the root.
-				FloodFillComponent(body, body)
+				floodFillComponent(body, body)
 
 				// Check if the component should be put to sleep.
 				if !ComponentActive(body, s.SleepTimeThreshold) {
@@ -537,7 +537,7 @@ func (s *Space) Step(dt float64) {
 
 	// reset and empty the arbiter lists
 	for _, arb := range s.Arbiters {
-		arb.state = ArbiterStateNormal
+		arb.state = arbiterStateNormal
 
 		// If both bodies are awake, unthread the arbiter from the contact graph.
 		if !arb.bodyA.IsSleeping() && !arb.bodyB.IsSleeping() {
@@ -546,7 +546,7 @@ func (s *Space) Step(dt float64) {
 	}
 	s.Arbiters = s.Arbiters[:0]
 
-	s.Lock()
+	s.lock()
 	{
 		// Integrate positions
 		for _, body := range s.DynamicBodies {
@@ -554,16 +554,16 @@ func (s *Space) Step(dt float64) {
 		}
 
 		// Find colliding pairs.
-		s.PushFreshContactBuffer()
+		s.pushFreshContactBuffer()
 		s.dynamicShapes.class.Each(ShapeUpdateFunc)
 		s.dynamicShapes.class.ReindexQuery(SpaceCollideShapesFunc, s)
 	}
-	s.Unlock(false)
+	s.unlock(false)
 
 	// Rebuild the contact graph (and detect sleeping components if sleeping is enabled)
-	s.ProcessComponents(dt)
+	s.processComponents(dt)
 
-	s.Lock()
+	s.lock()
 	{
 		// Clear out old cached arbiters and call separate callbacks
 		s.cachedArbiters.Filter(func(arb *Arbiter) bool {
@@ -630,10 +630,10 @@ func (s *Space) Step(dt float64) {
 			arb.handler.PostSolveFunc(arb, s, arb.handler.UserData)
 		}
 	}
-	s.Unlock(true)
+	s.unlock(true)
 }
 
-func (s *Space) Lock() {
+func (s *Space) lock() {
 	s.locked = true
 }
 
@@ -642,7 +642,7 @@ func (s *Space) IsLocked() bool {
 	return s.locked
 }
 
-func (s *Space) Unlock(runPostStep bool) {
+func (s *Space) unlock(runPostStep bool) {
 	s.locked = false
 	for i := range s.rousedBodies {
 		s.Activate(s.rousedBodies[i])
@@ -653,7 +653,7 @@ func (s *Space) Unlock(runPostStep bool) {
 	if runPostStep && !s.skipPostStep {
 		s.skipPostStep = true
 
-		for _, callback := range s.PostStepCallbacks {
+		for _, callback := range s.postStepCallbacks {
 			f := callback.callback
 
 			// Mark the func as nil in case calling it calls SpaceRunPostStepCallbacks() again.
@@ -665,17 +665,17 @@ func (s *Space) Unlock(runPostStep bool) {
 			}
 		}
 
-		s.PostStepCallbacks = s.PostStepCallbacks[:0]
+		s.postStepCallbacks = s.postStepCallbacks[:0]
 		s.skipPostStep = false
 	}
 }
 
-func (s *Space) UncacheArbiter(arb *Arbiter) {
+func (s *Space) uncacheArbiter(arb *Arbiter) {
 	a := arb.shapeA
 	b := arb.shapeB
-	shapePair := ShapePair{a, b}
+	spair := ShapePair{a, b}
 	arbHashId := HashPair(HashValue(unsafe.Pointer(a)), HashValue(unsafe.Pointer(b)))
-	s.cachedArbiters.Remove(arbHashId, shapePair)
+	s.cachedArbiters.Remove(arbHashId, spair)
 	for i, a := range s.Arbiters {
 		if a == arb {
 			// leak-free delete from slice
@@ -689,11 +689,11 @@ func (s *Space) UncacheArbiter(arb *Arbiter) {
 	panic("Arbiter not found")
 }
 
-func (s *Space) PushContacts(count int) {
+func (s *Space) pushContacts(count int) {
 	s.contactBuffersHead.numContacts += count
 }
 
-func (s *Space) PopContacts(count int) {
+func (s *Space) popContacts(count int) {
 	s.contactBuffersHead.numContacts -= count
 }
 
@@ -781,8 +781,8 @@ func (s *Space) UseWildcardDefaultHandler() {
 }
 
 func (s *Space) UseSpatialHash(dim float64, count int) {
-	staticShapes := NewSpaceHash(dim, count, ShapeGetBB, nil)
-	dynamicShapes := NewSpaceHash(dim, count, ShapeGetBB, staticShapes)
+	staticShapes := newSpaceHash(dim, count, ShapeGetBB, nil)
+	dynamicShapes := newSpaceHash(dim, count, ShapeGetBB, staticShapes)
 
 	s.staticShapes.class.Each(func(shape *Shape) {
 		staticShapes.class.Insert(shape, shape.hashid)
@@ -803,8 +803,8 @@ func (s *Space) UseSpatialHash(dim float64, count int) {
 //		fmt.Println(body.Position())
 //	})
 func (s *Space) EachBody(f func(b *Body)) {
-	s.Lock()
-	defer s.Unlock(true)
+	s.lock()
+	defer s.unlock(true)
 
 	for _, b := range s.DynamicBodies {
 		f(b)
@@ -827,8 +827,8 @@ func (s *Space) EachBody(f func(b *Body)) {
 
 // EachStaticBody calls func f for each static body in the space
 func (s *Space) EachStaticBody(f func(b *Body)) {
-	s.Lock()
-	defer s.Unlock(true)
+	s.lock()
+	defer s.unlock(true)
 
 	for _, b := range s.StaticBodies {
 		f(b)
@@ -838,8 +838,8 @@ func (s *Space) EachStaticBody(f func(b *Body)) {
 
 // EachDynamicBody calls func f for each dynamic body in the space
 func (s *Space) EachDynamicBody(f func(b *Body)) {
-	s.Lock()
-	defer s.Unlock(true)
+	s.lock()
+	defer s.unlock(true)
 
 	for _, b := range s.DynamicBodies {
 		f(b)
@@ -858,20 +858,20 @@ func (s *Space) EachDynamicBody(f func(b *Body)) {
 
 // EachStaticShape calls func f for each static shape in the space
 func (s *Space) EachStaticShape(f func(*Shape)) {
-	s.Lock()
+	s.lock()
 	s.staticShapes.class.Each(func(shape *Shape) {
 		f(shape)
 	})
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 // EachDynamicShape calls func f for each dynamic shape in the space
 func (s *Space) EachDynamicShape(f func(*Shape)) {
-	s.Lock()
+	s.lock()
 	s.dynamicShapes.class.Each(func(shape *Shape) {
 		f(shape)
 	})
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 func (s *Space) DynamicShapeCount() int {
@@ -886,7 +886,7 @@ func (s *Space) ShapeCount() int {
 
 // EachShape calls func f for each shape in the space
 func (s *Space) EachShape(f func(*Shape)) {
-	s.Lock()
+	s.lock()
 
 	s.dynamicShapes.class.Each(func(shape *Shape) {
 		f(shape)
@@ -895,17 +895,17 @@ func (s *Space) EachShape(f func(*Shape)) {
 		f(shape)
 	})
 
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 func (s *Space) EachConstraint(f func(*Constraint)) {
-	s.Lock()
+	s.lock()
 
 	for i := range s.constraints {
 		f(s.constraints[i])
 	}
 
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 // Query the space at a point and return the nearest shape found. Returns nil if no shapes were found.
@@ -931,9 +931,9 @@ func (s *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data any)
 	context := BBQueryContext{bb, filter, f}
 	s.staticShapes.class.Query(&context, bb, s.bbQuery, data)
 
-	s.Lock()
+	s.lock()
 	s.dynamicShapes.class.Query(&context, bb, s.bbQuery, data)
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 // SliceForBodyType returns bodies of the given type in the space.
@@ -946,12 +946,12 @@ func (s *Space) SliceForBodyType(t BodyType) *[]*Body {
 
 func (s *Space) SegmentQuery(start, end v.Vec, radius float64, filter ShapeFilter, f SpaceSegmentQueryFunc, data any) {
 	context := SegmentQueryContext{start, end, radius, filter, f}
-	s.Lock()
+	s.lock()
 
 	s.staticShapes.class.SegmentQuery(&context, start, end, 1, segmentQuery, data)
 	s.dynamicShapes.class.SegmentQuery(&context, start, end, 1, segmentQuery, data)
 
-	s.Unlock(true)
+	s.unlock(true)
 }
 
 func (s *Space) SegmentQueryFirst(start, end v.Vec, radius float64, filter ShapeFilter) SegmentQueryInfo {
@@ -967,8 +967,8 @@ func (s *Space) TimeStep() float64 {
 }
 
 func (s *Space) PostStepCallback(key any) *PostStepCallback {
-	for i := range s.PostStepCallbacks {
-		callback := s.PostStepCallbacks[i]
+	for i := range s.postStepCallbacks {
+		callback := s.postStepCallbacks[i]
 		if callback != nil && callback.key == key {
 			return callback
 		}
@@ -997,7 +997,7 @@ func (s *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data any) bool 
 		} else {
 			callback.callback = PostStepDoNothing
 		}
-		s.PostStepCallbacks = append(s.PostStepCallbacks, callback)
+		s.postStepCallbacks = append(s.postStepCallbacks, callback)
 		return true
 	}
 	return false
@@ -1021,7 +1021,7 @@ func (s *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points *Con
 			return collisionId
 		}
 
-		contactPointSet := ShapesCollideInfo(a, b)
+		contactPointSet := shapesCollideInfo(a, b)
 		if contactPointSet.Count > 0 {
 			if callback != nil {
 				callback(b, &contactPointSet)
@@ -1032,12 +1032,12 @@ func (s *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points *Con
 		return collisionId
 	}
 
-	s.Lock()
+	s.lock()
 	{
 		s.dynamicShapes.class.Query(shape, bb, shapeQuery, nil)
 		s.staticShapes.class.Query(shape, bb, shapeQuery, nil)
 	}
-	s.Unlock(true)
+	s.unlock(true)
 
 	return anyCollision
 }
@@ -1054,7 +1054,7 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 	}
 
 	// Narrow-phase collision detection.
-	info := Collide(a, b, collisionId, space.ContactBufferGetArray())
+	info := collide(a, b, collisionId, space.contactBufferGetArray())
 
 	if info.count == 0 {
 		// shapes are not colliding
@@ -1062,29 +1062,29 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 	}
 
 	//  Push contacts
-	space.PushContacts(info.count)
+	space.pushContacts(info.count)
 
 	// Get an arbiter from space->arbiterSet for the two shapes.
 	// This is where the persistent contact magic comes from.
-	shapePair := ShapePair{info.a, info.b}
+	spair := ShapePair{info.a, info.b}
 	arbHashId := HashPair(HashValue(unsafe.Pointer(info.a)), HashValue(unsafe.Pointer(info.b)))
-	arb := space.cachedArbiters.Insert(arbHashId, shapePair, func(shapes ShapePair) *Arbiter {
+	arb := space.cachedArbiters.Insert(arbHashId, spair, func(shapes ShapePair) *Arbiter {
 		arb := space.pooledArbiters.Get().(*Arbiter)
 		arb.Init(shapes.a, shapes.b)
 		return arb
 	})
 	arb.Update(&info, space)
 
-	if arb.state == ArbiterStateFirstCollision && !arb.handler.BeginFunc(arb, space, arb.handler.UserData) {
+	if arb.state == arbiterStateFirstCollision && !arb.handler.BeginFunc(arb, space, arb.handler.UserData) {
 		arb.Ignore()
 	}
 
 	// Ignore the arbiter if it has been flagged
-	if arb.state != ArbiterStateIgnore &&
+	if arb.state != arbiterStateIgnore &&
 		// Call PreSolve
 		arb.handler.PreSolveFunc(arb, space, arb.handler.UserData) &&
 		// Check (again) in case the pre-solve() callback called ArbiterIgnored().
-		arb.state != ArbiterStateIgnore &&
+		arb.state != arbiterStateIgnore &&
 		// Process, but don't add collisions for sensors.
 		!(a.Sensor || b.Sensor) &&
 		// Don't process collisions between two infinite mass bodies.
@@ -1092,14 +1092,14 @@ func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) u
 		!(a.Body.mass == infinity && b.Body.mass == infinity) {
 		space.Arbiters = append(space.Arbiters, arb)
 	} else {
-		space.PopContacts(info.count)
+		space.popContacts(info.count)
 		arb.Contacts = nil
 		arb.count = 0
 
 		// Normally arbiters are set as used after calling the post-solve callback.
 		// However, post-solve() callbacks are not called for sensors or arbiters rejected from pre-solve.
-		if arb.state != ArbiterStateIgnore {
-			arb.state = ArbiterStateNormal
+		if arb.state != arbiterStateIgnore {
+			arb.state = arbiterStateNormal
 		}
 	}
 
@@ -1145,7 +1145,7 @@ func ComponentActive(root *Body, threshold float64) bool {
 	return false
 }
 
-func FloodFillComponent(root *Body, body *Body) {
+func floodFillComponent(root *Body, body *Body) {
 	// Kinematic bodies cannot be put to sleep and prevent bodies they are touching from sleeping.
 	// Static bodies are effectively sleeping all the time.
 	if body.Type() != Dynamic {
@@ -1153,23 +1153,23 @@ func FloodFillComponent(root *Body, body *Body) {
 	}
 
 	// body.sleeping.root
-	otherRoot := body.ComponentRoot()
+	otherRoot := body.componentRoot()
 	if otherRoot == nil {
 		root.ComponentAdd(body)
 
 		for arb := body.arbiterList; arb != nil; arb = ArbiterNext(arb, body) {
 			if body == arb.bodyA {
-				FloodFillComponent(root, arb.bodyB)
+				floodFillComponent(root, arb.bodyB)
 			} else {
-				FloodFillComponent(root, arb.bodyA)
+				floodFillComponent(root, arb.bodyA)
 			}
 		}
 
 		for constraint := body.constraintList; constraint != nil; constraint = constraint.Next(body) {
 			if body == constraint.bodyA {
-				FloodFillComponent(root, constraint.bodyB)
+				floodFillComponent(root, constraint.bodyB)
 			} else {
-				FloodFillComponent(root, constraint.bodyA)
+				floodFillComponent(root, constraint.bodyA)
 			}
 		}
 	} else {

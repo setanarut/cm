@@ -125,7 +125,7 @@ func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo
 	if rsum > 0 {
 		for i := range count {
 			circleInfo := SegmentQueryInfo{nil, b, v.Vec{}, 1}
-			CircleSegmentQuery(ps.Shape, planes[i].V0, r, a, b, r2, &circleInfo)
+			circleSegmentQuery(ps.Shape, planes[i].V0, r, a, b, r2, &circleInfo)
 			if circleInfo.Alpha < info.Alpha {
 				*info = circleInfo
 			}

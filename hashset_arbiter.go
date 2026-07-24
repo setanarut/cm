@@ -17,8 +17,8 @@ func SpaceArbiterSetFilter(arb *Arbiter, space *Space) bool {
 
 	ticks := space.stamp - arb.stamp
 
-	if ticks >= 1 && arb.state != ArbiterStateCached {
-		arb.state = ArbiterStateCached
+	if ticks >= 1 && arb.state != arbiterStateCached {
+		arb.state = arbiterStateCached
 		handler := arb.handler
 		handler.SeparateFunc(arb, space, handler.UserData)
 	}
@@ -38,9 +38,9 @@ func CachedArbitersFilter(arb *Arbiter, space *Space, shape *Shape, body *Body) 
 	if (body == arb.bodyA && (shape == arb.shapeA || shape == nil)) ||
 		(body == arb.bodyB && (shape == arb.shapeB || shape == nil)) {
 		// Call separate when removing shapes.
-		if shape != nil && arb.state != ArbiterStateCached {
+		if shape != nil && arb.state != arbiterStateCached {
 			// Invalidate the arbiter since one of the shapes was removed
-			arb.state = ArbiterStateInvalidated
+			arb.state = arbiterStateInvalidated
 
 			handler := arb.handler
 			handler.SeparateFunc(arb, space, handler.UserData)

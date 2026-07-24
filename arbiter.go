@@ -6,6 +6,22 @@ import (
 	"github.com/setanarut/v"
 )
 
+// Arbiter states
+const (
+	// Arbiter is active and its the first collision.
+	arbiterStateFirstCollision = iota
+	// Arbiter is active and its not the first collision.
+	arbiterStateNormal
+	// Collision has been explicitly ignored. Either by returning false from a
+	// begin collision handler or calling ArbiterIgnore().
+	arbiterStateIgnore
+	// Collison is no longer active. A space will cache an arbiter for up to Space.
+	// CollisionPersistence more steps.
+	arbiterStateCached
+	// Collison arbiter is invalid because one of the shapes was removed.
+	arbiterStateInvalidated
+)
+
 const WildcardCollisionType CollisionType = ^CollisionType(0)
 
 // Arbiter struct tracks pairs of colliding shapes.
@@ -35,7 +51,7 @@ func (arbiter *Arbiter) Init(a, b *Shape) *Arbiter {
 	arbiter.bodyA = a.Body
 	arbiter.shapeB = b
 	arbiter.bodyB = b.Body
-	arbiter.state = ArbiterStateFirstCollision
+	arbiter.state = arbiterStateFirstCollision
 	return arbiter
 }
 
@@ -141,7 +157,7 @@ func (arbiter *Arbiter) ApplyImpulse() {
 }
 
 func (arbiter *Arbiter) IsFirstContact() bool {
-	return arbiter.state == ArbiterStateFirstCollision
+	return arbiter.state == arbiterStateFirstCollision
 }
 
 func (arb *Arbiter) PreStep(dt, slop, bias float64) {
@@ -234,8 +250,8 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 	}
 
 	// mark it as new if it's been cached
-	if arb.state == ArbiterStateCached {
-		arb.state = ArbiterStateFirstCollision
+	if arb.state == arbiterStateCached {
+		arb.state = arbiterStateFirstCollision
 	}
 }
 
@@ -243,7 +259,7 @@ func (arb *Arbiter) Update(info *CollisionInfo, space *Space) {
 //
 // Pre-solve and post-solve callbacks will not be called, but the separate callback will be called.
 func (arb *Arbiter) Ignore() bool {
-	arb.state = ArbiterStateIgnore
+	arb.state = arbiterStateIgnore
 	return false
 }
 
@@ -337,26 +353,6 @@ func relativeVelocity(a, b *Body, r1, r2 v.Vec) v.Vec {
 	return perp(r2).Scale(b.w).Add(b.velocity).Sub(perp(r1).Scale(a.w).Add(a.velocity))
 }
 
-var CollisionHandlerDoNothing = CollisionHandler{
-	WildcardCollisionType,
-	WildcardCollisionType,
-	AlwaysCollide,
-	AlwaysCollide,
-	DoNothing,
-	DoNothing,
-	nil,
-}
-
-var CollisionHandlerDefault = CollisionHandler{
-	WildcardCollisionType,
-	WildcardCollisionType,
-	DefaultBegin,
-	DefaultPreSolve,
-	DefaultPostSolve,
-	DefaultSeparate,
-	nil,
-}
-
 func AlwaysCollide(_ *Arbiter, _ *Space, _ any) bool {
 	return true
 }
@@ -402,7 +398,7 @@ func (arb *Arbiter) TotalImpulse() v.Vec {
 }
 
 func (arb *Arbiter) Count() int {
-	if arb.state < ArbiterStateCached {
+	if arb.state < arbiterStateCached {
 		return int(arb.count)
 	}
 	return 0

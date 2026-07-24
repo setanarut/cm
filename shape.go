@@ -165,16 +165,16 @@ func (sh *Shape) Update(transform Transform) BB {
 	return sh.BB
 }
 
-func (sh *Shape) Point(i uint32) SupportPoint {
+func (sh *Shape) point(i uint32) SupportPoint {
 	switch sh.Class.(type) {
 	case *Circle:
-		return NewSupportPoint(sh.Class.(*Circle).transformC, 0)
+		return newSupportPoint(sh.Class.(*Circle).transformC, 0)
 	case *Segment:
 		seg := sh.Class.(*Segment)
 		if i == 0 {
-			return NewSupportPoint(seg.transformA, i)
+			return newSupportPoint(seg.transformA, i)
 		}
-		return NewSupportPoint(seg.transformB, i)
+		return newSupportPoint(seg.transformB, i)
 	case *PolyShape:
 		poly := sh.Class.(*PolyShape)
 		// Poly shapes may change vertex count.
@@ -182,9 +182,9 @@ func (sh *Shape) Point(i uint32) SupportPoint {
 		if i < uint32(poly.count) {
 			index = int(i)
 		}
-		return NewSupportPoint(poly.Planes[index].V0, uint32(index))
+		return newSupportPoint(poly.Planes[index].V0, uint32(index))
 	default:
-		return NewSupportPoint(v.Vec{}, 0)
+		return newSupportPoint(v.Vec{}, 0)
 	}
 }
 

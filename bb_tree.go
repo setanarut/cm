@@ -63,7 +63,7 @@ type BBTree struct {
 	// velocityFunc is a function that calculates the velocity of bounding boxes for updates.
 	velocityFunc BBTreeVelocityFunc
 	// leaves is a set that contains the shapes (or nodes) that fall under this tree's spatial index.
-	leaves *HashSet[*Shape, *Node]
+	leaves *hashSet[*Shape, *Node]
 	// root is the root node of the bounding box tree.
 	root *Node
 	// pooledNodes is a reusable pool of nodes to optimize memory usage and allocation.

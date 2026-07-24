@@ -101,8 +101,8 @@ func (seg *Segment) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo)
 	} else if r != 0 {
 		info1 := SegmentQueryInfo{nil, b, v.Vec{}, 1}
 		info2 := SegmentQueryInfo{nil, b, v.Vec{}, 1}
-		CircleSegmentQuery(seg.Shape, seg.transformA, seg.radius, a, b, r2, &info1)
-		CircleSegmentQuery(seg.Shape, seg.transformB, seg.radius, a, b, r2, &info2)
+		circleSegmentQuery(seg.Shape, seg.transformA, seg.radius, a, b, r2, &info1)
+		circleSegmentQuery(seg.Shape, seg.transformB, seg.radius, a, b, r2, &info2)
 
 		if info1.Alpha < info2.Alpha {
 			*info = info1
