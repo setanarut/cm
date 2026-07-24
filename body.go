@@ -58,6 +58,11 @@ type Body struct {
 	wBias                  float64 // "pseudo-velocities" used for eliminating overlap. (Erin Catto)
 }
 
+// ID returns body id
+func (b Body) ID() int {
+	return b.id
+}
+
 // String returns body id as string
 func (b Body) String() string {
 	return fmt.Sprint("Body ", b.id, ", Shapes ", b.Shapes)
@@ -371,7 +376,7 @@ func (body *Body) Activate() {
 		return
 	}
 	body.sleepingIdleTime = 0
-	root := body.componentRoot()
+	root := body.ComponentRoot()
 	if root != nil && root.IsSleeping() {
 		space := root.Space
 		// in the chipmunk code they shadow body, so here I am not
@@ -465,7 +470,7 @@ func (root *Body) ComponentAdd(body *Body) {
 	}
 }
 
-func (body *Body) componentRoot() *Body {
+func (body *Body) ComponentRoot() *Body {
 	if body != nil {
 		return body.sleepingRoot
 	}
@@ -531,7 +536,7 @@ func (body *Body) VelocityAtWorldPoint(point v.Vec) v.Vec {
 
 // RemoveConstraint removes constraint from the body.
 func (body *Body) RemoveConstraint(constraint *Constraint) {
-	body.constraintList = filterConstraints(body.constraintList, body, constraint)
+	body.constraintList = FilterConstraints(body.constraintList, body, constraint)
 }
 
 // RemoveShape removes collision shape from the body.
@@ -591,13 +596,13 @@ func (body *Body) EachConstraint(f func(*Constraint)) {
 	}
 }
 
-func filterConstraints(node *Constraint, body *Body, filter *Constraint) *Constraint {
+func FilterConstraints(node *Constraint, body *Body, filter *Constraint) *Constraint {
 	if node == filter {
 		return node.Next(body)
 	} else if node.bodyA == body {
-		node.nextA = filterConstraints(node.nextA, body, filter)
+		node.nextA = FilterConstraints(node.nextA, body, filter)
 	} else {
-		node.nextB = filterConstraints(node.nextB, body, filter)
+		node.nextB = FilterConstraints(node.nextB, body, filter)
 	}
 	return node
 }

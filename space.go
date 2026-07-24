@@ -498,7 +498,7 @@ func (s *Space) processComponents(dt float64) {
 		for i := 0; i < len(s.DynamicBodies); {
 			body := s.DynamicBodies[i]
 
-			if body.componentRoot() == nil {
+			if body.ComponentRoot() == nil {
 				// Body not in a component yet. Perform a DFS to flood fill mark
 				// the component in the contact graph using this body as the root.
 				floodFillComponent(body, body)
@@ -1154,7 +1154,7 @@ func floodFillComponent(root *Body, body *Body) {
 	}
 
 	// body.sleeping.root
-	otherRoot := body.componentRoot()
+	otherRoot := body.ComponentRoot()
 	if otherRoot == nil {
 		root.ComponentAdd(body)
 
