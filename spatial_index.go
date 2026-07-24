@@ -58,14 +58,14 @@ func ShapeGetBB(obj *Shape) BB {
 	return obj.BB
 }
 
-type SpatialIndex struct {
+type spatialIndex struct {
 	class                     SpatialIndexer
 	bbfunc                    SpatialIndexBB
-	staticIndex, dynamicIndex *SpatialIndex
+	staticIndex, dynamicIndex *spatialIndex
 }
 
-func NewSpatialIndex(klass SpatialIndexer, bbfunc SpatialIndexBB, staticIndex *SpatialIndex) *SpatialIndex {
-	index := &SpatialIndex{
+func NewSpatialIndex(klass SpatialIndexer, bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
+	index := &spatialIndex{
 		class:       klass,
 		bbfunc:      bbfunc,
 		staticIndex: staticIndex,
@@ -78,21 +78,21 @@ func NewSpatialIndex(klass SpatialIndexer, bbfunc SpatialIndexBB, staticIndex *S
 	return index
 }
 
-func (index *SpatialIndex) GetTree() *BBTree {
+func (index *spatialIndex) GetTree() *bBTree {
 	if index == nil {
 		return nil
 	}
-	return index.class.(*BBTree)
+	return index.class.(*bBTree)
 }
 
-func (index *SpatialIndex) GetRootIfTree() *Node {
+func (index *spatialIndex) GetRootIfTree() *node {
 	if index == nil {
 		return nil
 	}
-	return index.class.(*BBTree).root
+	return index.class.(*bBTree).root
 }
 
-func (dynamicIndex *SpatialIndex) CollideStatic(staticIndex *SpatialIndex, f SpatialIndexQuery, data any) {
+func (dynamicIndex *spatialIndex) CollideStatic(staticIndex *spatialIndex, f SpatialIndexQuery, data any) {
 	if staticIndex != nil && staticIndex.class.Count() > 0 {
 		dynamicIndex.class.Each(func(obj *Shape) {
 			staticIndex.class.Query(obj, dynamicIndex.bbfunc(obj), f, data)

@@ -4,33 +4,33 @@ import (
 	"github.com/setanarut/v"
 )
 
-type MarkContext struct {
-	tree       *BBTree
-	staticRoot *Node
+type markContext struct {
+	tree       *bBTree
+	staticRoot *node
 	f          SpatialIndexQuery
 	data       any
 }
 
-type Children struct {
-	a, b *Node
+type children struct {
+	a, b *node
 }
 
-type Leaf struct {
+type leaf struct {
 	stamp uint
-	pairs *Pair
+	pairs *pair
 }
 
-type Pair struct {
-	a, b        Thread
+type pair struct {
+	a, b        thread
 	collisionId uint32
 }
 
-type Thread struct {
-	prev, next *Pair
-	leaf       *Node
+type thread struct {
+	prev, next *pair
+	leaf       *node
 }
 
-func (thread *Thread) Unlink() {
+func (thread *thread) Unlink() {
 	next := thread.next
 	prev := thread.prev
 
@@ -53,145 +53,145 @@ func (thread *Thread) Unlink() {
 	}
 }
 
-type BBTreeVelocityFunc func(obj any) v.Vec
+type bBTreeVelocityFunc func(obj any) v.Vec
 
-// BBTree represents a bounding box tree used for
+// bBTree represents a bounding box tree used for
 // spatial indexing and collision detection.
-type BBTree struct {
+type bBTree struct {
 	// spatialIndex holds a reference to the spatial index used for querying the tree.
-	spatialIndex *SpatialIndex
+	spatialIndex *spatialIndex
 	// velocityFunc is a function that calculates the velocity of bounding boxes for updates.
-	velocityFunc BBTreeVelocityFunc
+	velocityFunc bBTreeVelocityFunc
 	// leaves is a set that contains the shapes (or nodes) that fall under this tree's spatial index.
-	leaves *hashSet[*Shape, *Node]
+	leaves *hashSet[*Shape, *node]
 	// root is the root node of the bounding box tree.
-	root *Node
+	root *node
 	// pooledNodes is a reusable pool of nodes to optimize memory usage and allocation.
-	pooledNodes *Node
+	pooledNodes *node
 	// pooledPairs is a reusable pool for pairs in bounding box checks to avoid frequent allocations.
-	pooledPairs *Pair
+	pooledPairs *pair
 	// stamp is a timestamp used to manage updates to the tree for efficient processing of dynamic changes.
 	stamp uint
 }
 
-func NewBBTree(bbfunc SpatialIndexBB, staticIndex *SpatialIndex) *SpatialIndex {
-	bbtree := &BBTree{
-		leaves: NewHashSet(leafSetEql),
+func newBBTree(bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
+	bbtree := &bBTree{
+		leaves: newHashSet(leafSetEql),
 	}
 	bbtree.spatialIndex = NewSpatialIndex(bbtree, bbfunc, staticIndex)
 	return bbtree.spatialIndex
 }
 
-func (bbt *BBTree) Count() int {
-	return int(bbt.leaves.Count())
+func (btr *bBTree) Count() int {
+	return int(btr.leaves.Count())
 }
 
-func (bbt *BBTree) Each(f SpatialIndexIterator) {
-	bbt.leaves.Each(func(node *Node) {
-		f(node.obj)
+func (btr *bBTree) Each(f SpatialIndexIterator) {
+	btr.leaves.Each(func(n *node) {
+		f(n.obj)
 	})
 }
 
-func (bbt *BBTree) Contains(obj *Shape, hashId HashValue) bool {
-	return bbt.leaves.Find(hashId, obj) != nil
+func (btr *bBTree) Contains(obj *Shape, hashId HashValue) bool {
+	return btr.leaves.Find(hashId, obj) != nil
 }
 
-func (bbt *BBTree) Insert(obj *Shape, hashId HashValue) {
-	leaf := bbt.leaves.Insert(hashId, obj, func(obj *Shape) *Node {
-		return bbt.NewLeaf(obj)
+func (btr *bBTree) Insert(obj *Shape, hashId HashValue) {
+	leaf := btr.leaves.Insert(hashId, obj, func(obj *Shape) *node {
+		return btr.NewLeaf(obj)
 	})
 
-	root := bbt.root
-	bbt.root = bbt.SubtreeInsert(root, leaf)
+	root := btr.root
+	btr.root = btr.SubtreeInsert(root, leaf)
 
-	leaf.stamp = bbt.GetMasterTree().stamp
-	bbt.LeafAddPairs(leaf)
-	bbt.IncrementStamp()
+	leaf.stamp = btr.GetMasterTree().stamp
+	btr.LeafAddPairs(leaf)
+	btr.IncrementStamp()
 }
 
-func (tree *BBTree) IncrementStamp() {
-	dynamicTree := tree.spatialIndex.dynamicIndex.GetTree()
+func (btr *bBTree) IncrementStamp() {
+	dynamicTree := btr.spatialIndex.dynamicIndex.GetTree()
 	if dynamicTree != nil {
 		dynamicTree.stamp++
 	} else {
-		tree.stamp++
+		btr.stamp++
 	}
 }
 
-func (tree *BBTree) LeafAddPairs(leaf *Node) {
-	dynamicIndex := tree.spatialIndex.dynamicIndex
+func (btr *bBTree) LeafAddPairs(leaf *node) {
+	dynamicIndex := btr.spatialIndex.dynamicIndex
 	if dynamicIndex != nil {
 		dynamicRoot := dynamicIndex.GetRootIfTree()
 		if dynamicRoot != nil {
 			dynamicTree := dynamicIndex.GetTree()
-			context := &MarkContext{dynamicTree, nil, nil, nil}
+			context := &markContext{dynamicTree, nil, nil, nil}
 			dynamicRoot.MarkLeafQuery(leaf, true, context)
 		}
 	} else {
-		staticRoot := tree.spatialIndex.staticIndex.GetRootIfTree()
-		context := &MarkContext{tree, staticRoot, VoidQueryFunc, nil}
-		leaf.MarkLeaf(context)
+		staticRoot := btr.spatialIndex.staticIndex.GetRootIfTree()
+		context := &markContext{btr, staticRoot, VoidQueryFunc, nil}
+		leaf.markLeaf(context)
 	}
 }
 
-func (tree *BBTree) PairInsert(a *Node, b *Node) {
+func (btr *bBTree) PairInsert(a *node, b *node) {
 	nextA := a.pairs
 	nextB := b.pairs
-	pair := tree.PairFromPool()
-	pair.a = Thread{prev: nil, next: nextA, leaf: a}
-	pair.b = Thread{prev: nil, next: nextB, leaf: b}
-	pair.collisionId = 0
+	pr := btr.PairFromPool()
+	pr.a = thread{prev: nil, next: nextA, leaf: a}
+	pr.b = thread{prev: nil, next: nextB, leaf: b}
+	pr.collisionId = 0
 
-	a.pairs = pair
-	b.pairs = pair
+	a.pairs = pr
+	b.pairs = pr
 
 	if nextA != nil {
 		if nextA.a.leaf == a {
-			nextA.a.prev = pair
+			nextA.a.prev = pr
 		} else {
-			nextA.b.prev = pair
+			nextA.b.prev = pr
 		}
 	}
 
 	if nextB != nil {
 		if nextB.a.leaf == b {
-			nextB.a.prev = pair
+			nextB.a.prev = pr
 		} else {
-			nextB.b.prev = pair
+			nextB.b.prev = pr
 		}
 	}
 }
 
-func (bbt *BBTree) PairFromPool() *Pair {
-	tree := bbt.GetMasterTree()
+func (btr *bBTree) PairFromPool() *pair {
+	tree := btr.GetMasterTree()
 
-	pair := tree.pooledPairs
+	pr := tree.pooledPairs
 
-	if pair != nil {
-		tree.pooledPairs = pair.a.next
-		return pair
+	if pr != nil {
+		tree.pooledPairs = pr.a.next
+		return pr
 	}
 
 	// Pool is exhausted make more
 	for range pooledBufferSize {
-		tree.RecyclePair(&Pair{})
+		tree.RecyclePair(&pair{})
 	}
 
-	return &Pair{}
+	return &pair{}
 }
 
-func (bbt *BBTree) RecyclePair(pair *Pair) {
-	master := bbt.GetMasterTree()
-	pair.a.next = master.pooledPairs
-	master.pooledPairs = pair
+func (btr *bBTree) RecyclePair(p *pair) {
+	master := btr.GetMasterTree()
+	p.a.next = master.pooledPairs
+	master.pooledPairs = p
 }
 
-func (bbt *BBTree) SubtreeInsert(subtree *Node, leaf *Node) *Node {
+func (btr *bBTree) SubtreeInsert(subtree *node, leaf *node) *node {
 	if subtree == nil {
 		return leaf
 	}
 	if subtree.IsLeaf() {
-		return bbt.NewNode(leaf, subtree)
+		return btr.NewNode(leaf, subtree)
 	}
 
 	costA := subtree.b.bb.Area() + subtree.a.bb.MergedArea(leaf.bb)
@@ -203,16 +203,16 @@ func (bbt *BBTree) SubtreeInsert(subtree *Node, leaf *Node) *Node {
 	}
 
 	if costB < costA {
-		NodeSetB(subtree, bbt.SubtreeInsert(subtree.b, leaf))
+		nodeSetB(subtree, btr.SubtreeInsert(subtree.b, leaf))
 	} else {
-		NodeSetA(subtree, bbt.SubtreeInsert(subtree.a, leaf))
+		nodeSetA(subtree, btr.SubtreeInsert(subtree.a, leaf))
 	}
 
 	subtree.bb = subtree.bb.Merge(leaf.bb)
 	return subtree
 }
 
-func (tree *BBTree) SubtreeRemove(subtree *Node, leaf *Node) *Node {
+func (btr *bBTree) SubtreeRemove(subtree *node, leaf *node) *node {
 	if leaf == subtree {
 		return nil
 	}
@@ -221,133 +221,133 @@ func (tree *BBTree) SubtreeRemove(subtree *Node, leaf *Node) *Node {
 	if parent == subtree {
 		other := subtree.Other(leaf)
 		other.parent = subtree.parent
-		tree.RecycleNode(subtree)
+		btr.RecycleNode(subtree)
 		return other
 	}
 
-	tree.ReplaceChild(parent.parent, parent, parent.Other(leaf))
+	btr.ReplaceChild(parent.parent, parent, parent.Other(leaf))
 	return subtree
 }
 
-func (tree *BBTree) ReplaceChild(parent, child, value *Node) {
+func (btr *bBTree) ReplaceChild(parent, child, value *node) {
 	if parent.a == child {
-		tree.RecycleNode(parent.a)
-		NodeSetA(parent, value)
+		btr.RecycleNode(parent.a)
+		nodeSetA(parent, value)
 	} else {
-		tree.RecycleNode(parent.b)
-		NodeSetB(parent, value)
+		btr.RecycleNode(parent.b)
+		nodeSetB(parent, value)
 	}
 
-	for node := parent; node != nil; node = node.parent {
-		node.bb = node.a.bb.Merge(node.b.bb)
+	for nd := parent; nd != nil; nd = nd.parent {
+		nd.bb = nd.a.bb.Merge(nd.b.bb)
 	}
 }
 
-func (tree *BBTree) Remove(obj *Shape, hashId HashValue) {
-	leaf := tree.leaves.Remove(hashId, obj)
+func (btr *bBTree) Remove(obj *Shape, hashId HashValue) {
+	leaf := btr.leaves.Remove(hashId, obj)
 
-	tree.root = tree.SubtreeRemove(tree.root, leaf)
-	tree.PairsClear(leaf)
-	tree.RecycleNode(leaf)
+	btr.root = btr.SubtreeRemove(btr.root, leaf)
+	btr.PairsClear(leaf)
+	btr.RecycleNode(leaf)
 }
 
-func (tree *BBTree) Reindex() {
+func (btr *bBTree) Reindex() {
 	panic("implement me")
 }
 
-func (bbt *BBTree) ReindexObject(obj *Shape, hashId HashValue) {
-	leaf := bbt.leaves.Find(hashId, obj)
+func (btr *bBTree) ReindexObject(obj *Shape, hashId HashValue) {
+	leaf := btr.leaves.Find(hashId, obj)
 	if leaf != nil {
-		if bbt.LeafUpdate(leaf) {
-			bbt.LeafAddPairs(leaf)
+		if btr.LeafUpdate(leaf) {
+			btr.LeafAddPairs(leaf)
 		}
-		bbt.IncrementStamp()
+		btr.IncrementStamp()
 	}
 }
 
-func (tree *BBTree) ReindexQuery(f SpatialIndexQuery, data any) {
-	if tree.root == nil {
+func (btr *bBTree) ReindexQuery(f SpatialIndexQuery, data any) {
+	if btr.root == nil {
 		return
 	}
 
 	// LeafUpdate() may modify tree->root. Don't cache it.
-	tree.leaves.Each(func(leaf *Node) {
-		tree.LeafUpdate(leaf)
+	btr.leaves.Each(func(leaf *node) {
+		btr.LeafUpdate(leaf)
 	})
 
-	staticIndex := tree.spatialIndex.staticIndex
-	var staticRoot *Node
+	staticIndex := btr.spatialIndex.staticIndex
+	var staticRoot *node
 	if staticIndex != nil {
-		staticRoot = staticIndex.class.(*BBTree).root
+		staticRoot = staticIndex.class.(*bBTree).root
 	}
 
-	context := &MarkContext{tree, staticRoot, f, data}
-	tree.root.MarkSubtree(context)
+	context := &markContext{btr, staticRoot, f, data}
+	btr.root.MarkSubtree(context)
 
 	if staticIndex != nil && staticRoot == nil {
-		tree.spatialIndex.CollideStatic(staticIndex, f, data)
+		btr.spatialIndex.CollideStatic(staticIndex, f, data)
 	}
 
-	tree.IncrementStamp()
+	btr.IncrementStamp()
 }
 
-func (tree *BBTree) LeafUpdate(leaf *Node) bool {
-	root := tree.root
-	bb := tree.spatialIndex.bbfunc(leaf.obj)
+func (btr *bBTree) LeafUpdate(leaf *node) bool {
+	root := btr.root
+	bb := btr.spatialIndex.bbfunc(leaf.obj)
 
 	if !leaf.bb.Contains(bb) {
-		leaf.bb = tree.GetBB(leaf.obj)
+		leaf.bb = btr.GetBB(leaf.obj)
 
-		root = tree.SubtreeRemove(root, leaf)
-		tree.root = tree.SubtreeInsert(root, leaf)
+		root = btr.SubtreeRemove(root, leaf)
+		btr.root = btr.SubtreeInsert(root, leaf)
 
-		tree.PairsClear(leaf)
-		leaf.stamp = tree.GetMasterTree().stamp
+		btr.PairsClear(leaf)
+		leaf.stamp = btr.GetMasterTree().stamp
 		return true
 	}
 
 	return false
 }
-func (tree *BBTree) PairsClear(leaf *Node) {
-	pair := leaf.pairs
+func (btr *bBTree) PairsClear(leaf *node) {
+	pr := leaf.pairs
 	leaf.pairs = nil
 
-	for pair != nil {
-		if pair.a.leaf == leaf {
-			next := pair.a.next
-			pair.b.Unlink()
-			tree.RecyclePair(pair)
-			pair = next
+	for pr != nil {
+		if pr.a.leaf == leaf {
+			next := pr.a.next
+			pr.b.Unlink()
+			btr.RecyclePair(pr)
+			pr = next
 		} else {
-			next := pair.b.next
-			pair.a.Unlink()
-			tree.RecyclePair(pair)
-			pair = next
+			next := pr.b.next
+			pr.a.Unlink()
+			btr.RecyclePair(pr)
+			pr = next
 		}
 	}
 }
 
-func (bbt *BBTree) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
-	if bbt.root != nil {
-		bbt.root.SubtreeQuery(obj, bb, f, data)
+func (btr *bBTree) Query(obj any, bb BB, f SpatialIndexQuery, data any) {
+	if btr.root != nil {
+		btr.root.SubtreeQuery(obj, bb, f, data)
 	}
 }
 
-func (bbt *BBTree) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
-	root := bbt.root
+func (btr *bBTree) SegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) {
+	root := btr.root
 	if root != nil {
 		root.SubtreeSegmentQuery(obj, a, b, tExit, f, data)
 	}
 }
 
-func (bbt *BBTree) GetBB(obj *Shape) BB {
-	bb := bbt.spatialIndex.bbfunc(obj)
-	if bbt.velocityFunc != nil {
+func (btr *bBTree) GetBB(obj *Shape) BB {
+	bb := btr.spatialIndex.bbfunc(obj)
+	if btr.velocityFunc != nil {
 		coef := 0.1
 		x := (bb.R - bb.L) * coef
 		y := (bb.T - bb.B) * coef
 
-		v := bbt.velocityFunc(obj).Scale(0.1)
+		v := btr.velocityFunc(obj).Scale(0.1)
 		return BB{
 			bb.L + min(-x, v.X),
 			bb.B + min(-y, v.Y),
@@ -359,175 +359,175 @@ func (bbt *BBTree) GetBB(obj *Shape) BB {
 	return bb
 }
 
-func (bbt *BBTree) NewNode(a, b *Node) *Node {
-	node := bbt.NodeFromPool()
-	node.obj = nil
-	node.bb = a.bb.Merge(b.bb)
-	node.parent = nil
+func (btr *bBTree) NewNode(a, b *node) *node {
+	nd := btr.NodeFromPool()
+	nd.obj = nil
+	nd.bb = a.bb.Merge(b.bb)
+	nd.parent = nil
 
-	NodeSetA(node, a)
-	NodeSetB(node, b)
-	return node
+	nodeSetA(nd, a)
+	nodeSetB(nd, b)
+	return nd
 }
 
-func (tree *BBTree) NewLeaf(obj *Shape) *Node {
-	node := tree.NodeFromPool()
-	node.obj = obj
-	node.bb = tree.GetBB(obj)
-	node.parent = nil
-	node.stamp = 0
-	node.pairs = nil
+func (btr *bBTree) NewLeaf(obj *Shape) *node {
+	nd := btr.NodeFromPool()
+	nd.obj = obj
+	nd.bb = btr.GetBB(obj)
+	nd.parent = nil
+	nd.stamp = 0
+	nd.pairs = nil
 
-	return node
+	return nd
 }
 
-func (tree *BBTree) NodeFromPool() *Node {
-	node := tree.pooledNodes
+func (btr *bBTree) NodeFromPool() *node {
+	nd := btr.pooledNodes
 
-	if node != nil {
-		tree.pooledNodes = node.parent
-		return node
+	if nd != nil {
+		btr.pooledNodes = nd.parent
+		return nd
 	}
 
 	// Pool is exhausted make more
 	for range pooledBufferSize {
-		tree.RecycleNode(&Node{})
+		btr.RecycleNode(&node{})
 	}
 
-	return &Node{
-		parent: tree.pooledNodes,
+	return &node{
+		parent: btr.pooledNodes,
 	}
 }
 
-func (tree *BBTree) RecycleNode(node *Node) {
-	node.parent = tree.pooledNodes
-	tree.pooledNodes = node
+func (btr *bBTree) RecycleNode(nd *node) {
+	nd.parent = btr.pooledNodes
+	btr.pooledNodes = nd
 }
 
-func (tree *BBTree) GetMasterTree() *BBTree {
-	dynamicTree := tree.spatialIndex.dynamicIndex.GetTree()
+func (btr *bBTree) GetMasterTree() *bBTree {
+	dynamicTree := btr.spatialIndex.dynamicIndex.GetTree()
 	if dynamicTree != nil {
 		return dynamicTree
 	}
-	return tree
+	return btr
 }
 
-type Node struct {
+type node struct {
 	obj    *Shape
 	bb     BB
-	parent *Node
+	parent *node
 
-	Children
-	Leaf
+	children
+	leaf
 }
 
-func NodeSetA(node, value *Node) {
-	node.a = value
-	value.parent = node
+func nodeSetA(nd, value *node) {
+	nd.a = value
+	value.parent = nd
 }
 
-func NodeSetB(node, value *Node) {
-	node.b = value
-	value.parent = node
+func nodeSetB(n, value *node) {
+	n.b = value
+	value.parent = n
 }
 
-func (leaf *Node) MarkLeaf(context *MarkContext) {
+func (n *node) markLeaf(context *markContext) {
 	tree := context.tree
-	if leaf.stamp == tree.GetMasterTree().stamp {
+	if n.stamp == tree.GetMasterTree().stamp {
 		staticRoot := context.staticRoot
 		if staticRoot != nil {
-			staticRoot.MarkLeafQuery(leaf, false, context)
+			staticRoot.MarkLeafQuery(n, false, context)
 		}
 
-		for node := leaf; node.parent != nil; node = node.parent {
-			if node == node.parent.a {
-				node.parent.b.MarkLeafQuery(leaf, true, context)
+		for nd := n; nd.parent != nil; nd = nd.parent {
+			if nd == nd.parent.a {
+				nd.parent.b.MarkLeafQuery(n, true, context)
 			} else {
-				node.parent.a.MarkLeafQuery(leaf, false, context)
+				nd.parent.a.MarkLeafQuery(n, false, context)
 			}
 		}
 	} else {
-		pair := leaf.pairs
-		for pair != nil {
-			if leaf == pair.b.leaf {
-				pair.collisionId = context.f(pair.a.leaf.obj, leaf.obj, pair.collisionId, context.data)
-				pair = pair.b.next
+		pr := n.pairs
+		for pr != nil {
+			if n == pr.b.leaf {
+				pr.collisionId = context.f(pr.a.leaf.obj, n.obj, pr.collisionId, context.data)
+				pr = pr.b.next
 			} else {
-				pair = pair.a.next
+				pr = pr.a.next
 			}
 		}
 	}
 }
 
-func (subtree *Node) MarkLeafQuery(leaf *Node, left bool, context *MarkContext) {
-	if leaf.bb.Intersects(subtree.bb) {
-		if subtree.IsLeaf() {
+func (n *node) MarkLeafQuery(leaf *node, left bool, context *markContext) {
+	if leaf.bb.Intersects(n.bb) {
+		if n.IsLeaf() {
 			if left {
-				context.tree.PairInsert(leaf, subtree)
+				context.tree.PairInsert(leaf, n)
 			} else {
-				if subtree.stamp < leaf.stamp {
-					context.tree.PairInsert(subtree, leaf)
+				if n.stamp < leaf.stamp {
+					context.tree.PairInsert(n, leaf)
 				}
-				context.f(leaf.obj, subtree.obj, 0, context.data)
+				context.f(leaf.obj, n.obj, 0, context.data)
 			}
 		} else {
-			subtree.a.MarkLeafQuery(leaf, left, context)
-			subtree.b.MarkLeafQuery(leaf, left, context)
+			n.a.MarkLeafQuery(leaf, left, context)
+			n.b.MarkLeafQuery(leaf, left, context)
 		}
 	}
 }
 
-func (node *Node) Other(child *Node) *Node {
-	if node.a == child {
-		return node.b
+func (n *node) Other(child *node) *node {
+	if n.a == child {
+		return n.b
 	}
-	return node.a
+	return n.a
 }
 
-func (node *Node) IsLeaf() bool {
-	return node.obj != nil
+func (n *node) IsLeaf() bool {
+	return n.obj != nil
 }
 
-func (subtree *Node) SubtreeQuery(obj any, bb BB, query SpatialIndexQuery, data any) {
-	if subtree.bb.Intersects(bb) {
-		if subtree.IsLeaf() {
-			query(obj, subtree.obj, 0, data)
+func (n *node) SubtreeQuery(obj any, bb BB, query SpatialIndexQuery, data any) {
+	if n.bb.Intersects(bb) {
+		if n.IsLeaf() {
+			query(obj, n.obj, 0, data)
 		} else {
-			subtree.a.SubtreeQuery(obj, bb, query, data)
-			subtree.b.SubtreeQuery(obj, bb, query, data)
+			n.a.SubtreeQuery(obj, bb, query, data)
+			n.b.SubtreeQuery(obj, bb, query, data)
 		}
 	}
 }
-func (subtree *Node) MarkSubtree(context *MarkContext) {
-	if subtree.IsLeaf() {
-		subtree.MarkLeaf(context)
+func (n *node) MarkSubtree(context *markContext) {
+	if n.IsLeaf() {
+		n.markLeaf(context)
 	} else {
-		subtree.a.MarkSubtree(context)
-		subtree.b.MarkSubtree(context)
+		n.a.MarkSubtree(context)
+		n.b.MarkSubtree(context)
 	}
 }
 
-func (subtree *Node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) float64 {
-	if subtree.IsLeaf() {
-		return f(obj, subtree.obj, data)
+func (n *node) SubtreeSegmentQuery(obj any, a, b v.Vec, tExit float64, f SpatialIndexSegmentQuery, data any) float64 {
+	if n.IsLeaf() {
+		return f(obj, n.obj, data)
 	}
 
-	tA := subtree.a.bb.SegmentQuery(a, b)
-	tB := subtree.b.bb.SegmentQuery(a, b)
+	tA := n.a.bb.SegmentQuery(a, b)
+	tB := n.b.bb.SegmentQuery(a, b)
 
 	if tA < tB {
 		if tA < tExit {
-			tExit = min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, n.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 		if tB < tExit {
-			tExit = min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, n.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	} else {
 		if tB < tExit {
-			tExit = min(tExit, subtree.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, n.b.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 		if tA < tExit {
-			tExit = min(tExit, subtree.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
+			tExit = min(tExit, n.a.SubtreeSegmentQuery(obj, a, b, tExit, f, data))
 		}
 	}
 
@@ -538,6 +538,6 @@ func VoidQueryFunc(obj1 any, obj2 *Shape, collisionId uint32, data any) uint32 {
 	return collisionId
 }
 
-func leafSetEql(obj *Shape, node *Node) bool {
-	return obj == node.obj
+func leafSetEql(obj *Shape, n *node) bool {
+	return obj == n.obj
 }

@@ -189,7 +189,7 @@ func (body *Body) SetType(bt BodyType) {
 		body.Space.StaticBodies = append(body.Space.StaticBodies, body)
 	}
 
-	var fromIndex, toIndex *SpatialIndex
+	var fromIndex, toIndex *spatialIndex
 	if oldType == Static {
 		fromIndex = body.Space.staticShapes
 	} else {

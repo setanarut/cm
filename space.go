@@ -68,8 +68,8 @@ type Space struct {
 	// private
 	rousedBodies       []*Body
 	sleepingComponents []*Body
-	staticShapes       *SpatialIndex
-	dynamicShapes      *SpatialIndex
+	staticShapes       *spatialIndex
+	dynamicShapes      *spatialIndex
 	stamp              uint
 	currDT             float64
 	shapeIDCounter     uint
@@ -81,7 +81,7 @@ type Space struct {
 	usesWildcards      bool
 	collisionHandlers  *hashSet[*CollisionHandler, *CollisionHandler]
 	defaultHandler     *CollisionHandler
-	postStepCallbacks  []*PostStepCallback
+	postStepCallbacks  []*postStepCallback
 	skipPostStep       bool
 }
 
@@ -103,13 +103,13 @@ func NewSpace() *Space {
 		locked:               false,
 		stamp:                0,
 		shapeIDCounter:       1,
-		staticShapes:         NewBBTree(ShapeGetBB, nil),
+		staticShapes:         newBBTree(ShapeGetBB, nil),
 		sleepingComponents:   []*Body{},
 		rousedBodies:         []*Body{},
-		cachedArbiters:       NewHashSet(arbiterSetEql),
+		cachedArbiters:       newHashSet(arbiterSetEql),
 		pooledArbiters:       sync.Pool{New: func() any { return &Arbiter{} }},
 		constraints:          []*Constraint{},
-		collisionHandlers: NewHashSet(func(a, b *CollisionHandler) bool {
+		collisionHandlers: newHashSet(func(a, b *CollisionHandler) bool {
 			if a.TypeA == b.TypeA && a.TypeB == b.TypeB {
 				return true
 			}
@@ -118,14 +118,14 @@ func NewSpace() *Space {
 			}
 			return false
 		}),
-		postStepCallbacks: []*PostStepCallback{},
+		postStepCallbacks: []*postStepCallback{},
 		defaultHandler:    &CollisionHandlerDoNothing,
 	}
 	for range pooledBufferSize {
 		space.pooledArbiters.Put(&Arbiter{})
 	}
-	space.dynamicShapes = NewBBTree(ShapeGetBB, space.staticShapes)
-	space.dynamicShapes.class.(*BBTree).velocityFunc = BBTreeVelocityFunc(ShapeVelocityFunc)
+	space.dynamicShapes = newBBTree(ShapeGetBB, space.staticShapes)
+	space.dynamicShapes.class.(*bBTree).velocityFunc = bBTreeVelocityFunc(ShapeVelocityFunc)
 	space.StaticBody.SetType(Static)
 	return space
 }
@@ -555,8 +555,8 @@ func (s *Space) Step(dt float64) {
 
 		// Find colliding pairs.
 		s.pushFreshContactBuffer()
-		s.dynamicShapes.class.Each(ShapeUpdateFunc)
-		s.dynamicShapes.class.ReindexQuery(SpaceCollideShapesFunc, s)
+		s.dynamicShapes.class.Each(shapeUpdateFunc)
+		s.dynamicShapes.class.ReindexQuery(spaceCollideShapesFunc, s)
 	}
 	s.unlock(false)
 
@@ -911,11 +911,11 @@ func (s *Space) EachConstraint(f func(*Constraint)) {
 // Query the space at a point and return the nearest shape found. Returns nil if no shapes were found.
 func (s *Space) PointQueryNearest(point v.Vec, maxDistance float64, filter ShapeFilter) *PointQueryInfo {
 	info := &PointQueryInfo{nil, v.Vec{}, maxDistance, v.Vec{}}
-	context := &PointQueryContext{point, maxDistance, filter, nil}
+	context := &pointQueryContext{point, maxDistance, filter, nil}
 
 	bb := NewBBForCircle(point, max(maxDistance, 0))
-	s.dynamicShapes.class.Query(context, bb, NearestPointQueryNearest, info)
-	s.staticShapes.class.Query(context, bb, NearestPointQueryNearest, info)
+	s.dynamicShapes.class.Query(context, bb, nearestPointQueryNearest, info)
+	s.staticShapes.class.Query(context, bb, nearestPointQueryNearest, info)
 
 	return info
 }
@@ -927,6 +927,7 @@ func (s *Space) bbQuery(obj any, shape *Shape, collisionId uint32, data any) uin
 	}
 	return collisionId
 }
+
 func (s *Space) BBQuery(bb BB, filter ShapeFilter, f SpaceBBQueryFunc, data any) {
 	context := BBQueryContext{bb, filter, f}
 	s.staticShapes.class.Query(&context, bb, s.bbQuery, data)
@@ -966,7 +967,7 @@ func (s *Space) TimeStep() float64 {
 	return s.currDT
 }
 
-func (s *Space) PostStepCallback(key any) *PostStepCallback {
+func (s *Space) PostStepCallback(key any) *postStepCallback {
 	for i := range s.postStepCallbacks {
 		callback := s.postStepCallbacks[i]
 		if callback != nil && callback.key == key {
@@ -988,7 +989,7 @@ func (s *Space) PostStepCallback(key any) *PostStepCallback {
 // type PostStepCallbackFunc func(space *Space, key any, data any)
 func (s *Space) AddPostStepCallback(f PostStepCallbackFunc, key, data any) bool {
 	if key == nil || s.PostStepCallback(key) == nil {
-		callback := &PostStepCallback{
+		callback := &postStepCallback{
 			key:  key,
 			data: data,
 		}
@@ -1044,7 +1045,7 @@ func (s *Space) ShapeQuery(shape *Shape, callback func(shape *Shape, points *Con
 
 func PostStepDoNothing(space *Space, key, data any) {}
 
-func SpaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) uint32 {
+func spaceCollideShapesFunc(obj any, b *Shape, collisionId uint32, vspace any) uint32 {
 	a := obj.(*Shape)
 	space := vspace.(*Space)
 
@@ -1190,8 +1191,8 @@ func Contains(bodies []*Body, body *Body) bool {
 	return slices.Contains(bodies, body)
 }
 
-func NearestPointQueryNearest(obj any, shape *Shape, collisionId uint32, out any) uint32 {
-	context := obj.(*PointQueryContext)
+func nearestPointQueryNearest(obj any, shape *Shape, collisionId uint32, out any) uint32 {
+	context := obj.(*pointQueryContext)
 	if !shape.Filter.Reject(context.filter) && !shape.Sensor {
 		info := shape.PointQuery(context.point)
 		if info.Distance < out.(*PointQueryInfo).Distance {
@@ -1240,17 +1241,17 @@ var ShapeVelocityFunc = func(obj any) v.Vec {
 	return obj.(*Shape).Body.velocity
 }
 
-var ShapeUpdateFunc = func(shape *Shape) {
+var shapeUpdateFunc = func(shape *Shape) {
 	shape.CacheBB()
 }
 
-type PostStepCallback struct {
+type postStepCallback struct {
 	callback PostStepCallbackFunc
 	key      any
 	data     any
 }
 
-type PointQueryContext struct {
+type pointQueryContext struct {
 	point       v.Vec
 	maxDistance float64
 	filter      ShapeFilter

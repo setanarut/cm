@@ -8,7 +8,7 @@ import (
 )
 
 type spaceHash struct {
-	*SpatialIndex
+	*spatialIndex
 
 	numCells int
 	celldim  float64
@@ -22,12 +22,12 @@ type spaceHash struct {
 	stamp uint
 }
 
-func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *SpatialIndex) *SpatialIndex {
+func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *spatialIndex) *spatialIndex {
 	spaceHash := &spaceHash{
 		celldim:  celldim,
 		numCells: num,
 		table:    make([]*spaceHashBin, num),
-		handleSet: NewHashSet(func(obj *Shape, elt *handle) bool {
+		handleSet: newHashSet(func(obj *Shape, elt *handle) bool {
 			return obj == elt.obj
 		}),
 		stamp:         1,
@@ -37,7 +37,7 @@ func newSpaceHash(celldim float64, num int, bbfunc SpatialIndexBB, staticIndex *
 		spaceHash.pooledHandles.Put(&handle{})
 	}
 	spatialIndex := NewSpatialIndex(spaceHash, bbfunc, staticIndex)
-	spaceHash.SpatialIndex = spatialIndex
+	spaceHash.spatialIndex = spatialIndex
 	return spatialIndex
 }
 
@@ -172,7 +172,7 @@ func (hash *spaceHash) ReindexQuery(f SpatialIndexQuery, data any) {
 	hash.handleSet.Each(func(hand *handle) {
 		// queryRehashHelper
 
-		bb := hash.SpatialIndex.bbfunc(hand.obj)
+		bb := hash.spatialIndex.bbfunc(hand.obj)
 
 		l := floor(bb.L / hash.celldim)
 		r := floor(bb.R / hash.celldim)

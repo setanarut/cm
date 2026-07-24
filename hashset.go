@@ -20,8 +20,8 @@ type hashSet[T, U comparable] struct {
 	pooledBins *HashSetBin[U]
 }
 
-// NewHashSet is a HashSet constructor
-func NewHashSet[T, U comparable](isEqual func(ptr T, elt U) bool) *hashSet[T, U] {
+// newHashSet is a HashSet constructor
+func newHashSet[T, U comparable](isEqual func(ptr T, elt U) bool) *hashSet[T, U] {
 	size := nextPrime(0)
 	return &hashSet[T, U]{
 		isEqual: isEqual,
