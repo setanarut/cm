@@ -48,8 +48,8 @@ func DrawShape(shape *Shape, drawer IDrawer) {
 	case *Segment:
 		seg := shape.Class.(*Segment)
 		drawer.DrawFatSegment(seg.transformA, seg.transformB, seg.radius, outline, fill, data)
-	case *PolyShape:
-		poly := shape.Class.(*PolyShape)
+	case *Polygon:
+		poly := shape.Class.(*Polygon)
 
 		count := poly.count
 		planes := poly.Planes

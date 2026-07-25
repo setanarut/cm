@@ -10,7 +10,7 @@ import (
 
 func TestShapeMass(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 5, v.Vec{0, 0})
+	cm.NewCircle(body, 5, v.Vec{0, 0})
 
 	mass := 10.0
 	body.ShapeAtIndex(0).SetMass(mass)
@@ -22,7 +22,7 @@ func TestShapeMass(t *testing.T) {
 
 func TestShapeCircleArea(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 2, v.Vec{0, 0})
+	cm.NewCircle(body, 2, v.Vec{0, 0})
 
 	if body.ShapeAtIndex(0).Area() != 4*math.Pi {
 		t.Fail()
@@ -31,7 +31,7 @@ func TestShapeCircleArea(t *testing.T) {
 
 func TestShapeCircleDensity(t *testing.T) {
 	body := cm.NewBody(0, 0)
-	cm.NewCircleShape(body, 1, v.Vec{0, 0})
+	cm.NewCircle(body, 1, v.Vec{0, 0})
 	circle := body.ShapeAtIndex(0)
 	circle.SetMass(math.Pi)
 

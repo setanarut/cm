@@ -10,7 +10,7 @@ import (
 func TestSpaceShapeQuery(t *testing.T) {
 	space := cm.NewSpace()
 	sbody := cm.NewStaticBody()
-	cm.NewCircleShape(sbody, 1, v.Vec{})
+	cm.NewCircle(sbody, 1, v.Vec{})
 	circle := sbody.Shapes[0]
 	space.AddShape(circle)
 
@@ -19,7 +19,7 @@ func TestSpaceShapeQuery(t *testing.T) {
 	})
 
 	b := cm.NewBody(1, 1)
-	cm.NewBoxShape(b, 1, 1, 1)
+	cm.NewBox(b, 1, 1, 1)
 	space.AddShape(b.Shapes[0])
 
 	var called int
@@ -61,7 +61,7 @@ func TestSpaceRemoveBody(t *testing.T) {
 func TestSpace_ReindexShape(t *testing.T) {
 	space := cm.NewSpace()
 	sb := cm.NewStaticBody()
-	cm.NewCircleShape(sb, 1, v.Vec{})
+	cm.NewCircle(sb, 1, v.Vec{})
 	circle := sb.ShapeAtIndex(0)
 	space.AddBodyWithShapes(sb)
 	bb1 := circle.BB

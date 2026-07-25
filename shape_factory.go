@@ -6,7 +6,7 @@ import (
 	"github.com/setanarut/v"
 )
 
-// NewSegmentShape returns a new Segment shape using two points 'a' and 'b'
+// NewSegment returns a new Segment shape using two points 'a' and 'b'
 // and rounding radius 'r'. The shape is attached to the given body.
 //
 // Parameters:
@@ -14,7 +14,7 @@ import (
 //   - a: The first point of the segment.
 //   - b: The second point of the segment.
 //   - r: The radius of the segment shape.
-func NewSegmentShape(body *Body, a, b v.Vec, r float64) *Shape {
+func NewSegment(body *Body, a, b v.Vec, r float64) *Shape {
 	segment := &Segment{
 		a: a,
 		b: b,
@@ -29,7 +29,7 @@ func NewSegmentShape(body *Body, a, b v.Vec, r float64) *Shape {
 	return segment.Shape
 }
 
-// NewBoxShape returns a Box shape with specified width 'w',
+// NewBox returns a Box shape with specified width 'w',
 // height 'h', and rounding radius 'roundingRadius'. The shape is attached to the body.
 //
 // Parameters:
@@ -37,7 +37,7 @@ func NewSegmentShape(body *Body, a, b v.Vec, r float64) *Shape {
 //   - w: The width of the box.
 //   - h: The height of the box.
 //   - r: The rounding radius of the box corners.
-func NewBoxShape(body *Body, w, h, r float64) *Shape {
+func NewBox(body *Body, w, h, r float64) *Shape {
 	hw := w / 2.0
 	hh := h / 2.0
 	bb := &BB{-hw, -hh, hw, hh}
@@ -47,31 +47,31 @@ func NewBoxShape(body *Body, w, h, r float64) *Shape {
 		{bb.L, bb.T},
 		{bb.L, bb.B},
 	}
-	shape := NewPolyShapeRaw(body, 4, verts, r)
+	shape := NewPolygonRaw(body, 4, verts, r)
 	body.AttachShape(shape)
 	return shape
 }
 
-// NewBoxShape2 returns a Box shape using a bounding box 'bb'
+// NewBox2 returns a Box shape using a bounding box 'bb'
 // and a rounding radius 'roundingRadius'. The shape is attached to the body.
 //
 // Parameters:
 //   - body: The body to which the shape will be attached.
 //   - bb: The bounding box defining the shape dimensions.
 //   - r: The rounding radius of the box corners.
-func NewBoxShape2(body *Body, bb BB, r float64) *Shape {
+func NewBox2(body *Body, bb BB, r float64) *Shape {
 	verts := []v.Vec{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
 		{bb.L, bb.B},
 	}
-	shape := NewPolyShapeRaw(body, 4, verts, r)
+	shape := NewPolygonRaw(body, 4, verts, r)
 	body.AttachShape(shape)
 	return shape
 }
 
-// NewCircleShape returns a Circle shape with a specified radius and offset.
+// NewCircle returns a Circle shape with a specified radius and offset.
 //
 // The shape is attached to the given body.
 //
@@ -79,7 +79,7 @@ func NewBoxShape2(body *Body, bb BB, r float64) *Shape {
 //   - b: The body to which the shape will be attached.
 //   - r: The radius of the circle.
 //   - offset: The position of the circle's center.
-func NewCircleShape(b *Body, r float64, offset v.Vec) *Shape {
+func NewCircle(b *Body, r float64, offset v.Vec) *Shape {
 	circle := &Circle{
 		c:      offset,
 		radius: r,
@@ -89,14 +89,14 @@ func NewCircleShape(b *Body, r float64, offset v.Vec) *Shape {
 	return circle.Shape
 }
 
-// NewPolyShape returns a Polygon shape with a given vertices.
+// NewPolygon returns a Polygon shape with a given vertices.
 //
 // Parameters:
 //   - b: The body to which the shape will be attached.
 //   - vertices: The list of vertex positions.
 //   - t: The transformation applied to the vertex positions.
 //   - r: The rounding radius of the polygon corners.
-func NewPolyShape(b *Body, vertices []v.Vec, t Transform, r float64) *Shape {
+func NewPolygon(b *Body, vertices []v.Vec, t Transform, r float64) *Shape {
 
 	hullVerts := []v.Vec{}
 	// Transform the verts before building the hull in case of a negative scale.
@@ -105,20 +105,20 @@ func NewPolyShape(b *Body, vertices []v.Vec, t Transform, r float64) *Shape {
 	}
 
 	hullCount := convexHull(len(vertices), hullVerts, nil, 0)
-	plshape := NewPolyShapeRaw(b, hullCount, hullVerts, r)
+	plshape := NewPolygonRaw(b, hullCount, hullVerts, r)
 	b.AttachShape(plshape)
 	return plshape
 }
 
 // Initialize a polygon shape with rounded corners.
 // The vertexes must be convex with a counter-clockwise winding.
-func NewPolyShapeRaw(
+func NewPolygonRaw(
 	body *Body,
 	count int,
 	verts []v.Vec,
 	roundingRadius float64,
 ) *Shape {
-	poly := &PolyShape{
+	poly := &Polygon{
 		Radius: roundingRadius,
 		count:  count,
 		Planes: []SplittingPlane{},
@@ -169,11 +169,11 @@ func MomentForSegment(mass float64, a, b v.Vec, radius float64) float64 {
 	return mass * ((length*length+4.0*radius*radius)/12.0 + offset.MagSq())
 }
 
-// MomentForPoly calculates the moment of inertia for a solid polygon shape
+// MomentForPolygon calculates the moment of inertia for a solid polygon shape
 // assuming it's center of gravity is at it's centroid.
 //
 // The offset is added to each vertex.
-func MomentForPoly(mass float64, count int, verts []v.Vec, offset v.Vec, r float64) float64 {
+func MomentForPolygon(mass float64, count int, verts []v.Vec, offset v.Vec, r float64) float64 {
 	if count == 2 {
 		return MomentForSegment(mass, verts[0], verts[1], 0)
 	}
@@ -206,10 +206,10 @@ func AreaForSegment(a, b v.Vec, r float64) float64 {
 	return r * (math.Pi*r + 2.0*a.Dist(b))
 }
 
-// AreaForPoly calculates the signed area of a polygon.
+// AreaForPolygon calculates the signed area of a polygon.
 //
 // A Clockwise winding gives positive area. This is probably backwards from what you expect, but matches Chipmunk's the winding for poly shapes.
-func AreaForPoly(count int, verts []v.Vec, r float64) float64 {
+func AreaForPolygon(count int, verts []v.Vec, r float64) float64 {
 	var area float64
 	var perimeter float64
 	for i := range count {
@@ -223,8 +223,8 @@ func AreaForPoly(count int, verts []v.Vec, r float64) float64 {
 	return r*(math.Pi*math.Abs(r)+perimeter) + area/2.0
 }
 
-// CentroidForPoly calculates the natural centroid of a polygon.
-func CentroidForPoly(count int, verts []v.Vec) v.Vec {
+// CentroidForPolygon calculates the natural centroid of a polygon.
+func CentroidForPolygon(count int, verts []v.Vec) v.Vec {
 	var sum float64
 	vsum := v.Vec{}
 

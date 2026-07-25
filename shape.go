@@ -62,7 +62,7 @@ func (s *Shape) Order() int {
 		return 0
 	case *Segment:
 		return 1
-	case *PolyShape:
+	case *Polygon:
 		return 2
 	default:
 		return 3
@@ -175,8 +175,8 @@ func (sh *Shape) point(i uint32) SupportPoint {
 			return newSupportPoint(seg.transformA, i)
 		}
 		return newSupportPoint(seg.transformB, i)
-	case *PolyShape:
-		poly := sh.Class.(*PolyShape)
+	case *Polygon:
+		poly := sh.Class.(*Polygon)
 		// Poly shapes may change vertex count.
 		var index int
 		if i < uint32(poly.count) {

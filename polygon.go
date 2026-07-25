@@ -4,7 +4,7 @@ import (
 	"github.com/setanarut/v"
 )
 
-type PolyShape struct {
+type Polygon struct {
 	*Shape
 	Radius float64
 	count  int
@@ -12,7 +12,7 @@ type PolyShape struct {
 	Planes []SplittingPlane
 }
 
-func (ps *PolyShape) CacheData(transform Transform) BB {
+func (ps *Polygon) CacheData(transform Transform) BB {
 	count := ps.count
 	dst := ps.Planes[0:count]
 	src := ps.Planes[count:]
@@ -40,7 +40,7 @@ func (ps *PolyShape) CacheData(transform Transform) BB {
 	return ps.Shape.BB
 }
 
-func (ps *PolyShape) PointQuery(p v.Vec, info *PointQueryInfo) {
+func (ps *Polygon) PointQuery(p v.Vec, info *PointQueryInfo) {
 	count := ps.count
 	planes := ps.Planes
 	r := ps.Radius
@@ -88,7 +88,7 @@ func (ps *PolyShape) PointQuery(p v.Vec, info *PointQueryInfo) {
 	}
 }
 
-func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo) {
+func (ps *Polygon) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo) {
 	planes := ps.Planes
 	count := ps.count
 	r := ps.Radius
@@ -133,19 +133,19 @@ func (ps *PolyShape) SegmentQuery(a, b v.Vec, r2 float64, info *SegmentQueryInfo
 	}
 }
 
-func (ps *PolyShape) Count() int {
+func (ps *Polygon) Count() int {
 	return ps.count
 }
 
-func (ps *PolyShape) Vert(vertIndex int) v.Vec {
+func (ps *Polygon) Vert(vertIndex int) v.Vec {
 	return ps.Planes[vertIndex+ps.count].V0
 }
 
-func (ps *PolyShape) TransformVert(i int) v.Vec {
+func (ps *Polygon) TransformVert(i int) v.Vec {
 	return ps.Planes[i].V0
 }
 
-func (ps *PolyShape) SetVerts(count int, verts []v.Vec) {
+func (ps *Polygon) SetVerts(count int, verts []v.Vec) {
 	ps.count = count
 	ps.Planes = make([]SplittingPlane, count*2)
 
@@ -159,7 +159,7 @@ func (ps *PolyShape) SetVerts(count int, verts []v.Vec) {
 	}
 }
 
-func (ps *PolyShape) SetVertsUnsafe(count int, verts []v.Vec, transform Transform) {
+func (ps *Polygon) SetVertsUnsafe(count int, verts []v.Vec, transform Transform) {
 	hullVerts := make([]v.Vec, count)
 
 	for i := range count {
@@ -170,7 +170,7 @@ func (ps *PolyShape) SetVertsUnsafe(count int, verts []v.Vec, transform Transfor
 	ps.SetVertsRaw(hullCount, hullVerts)
 }
 
-func (p *PolyShape) SetVertsRaw(count int, verts []v.Vec) {
+func (p *Polygon) SetVertsRaw(count int, verts []v.Vec) {
 	p.SetVerts(count, verts)
 	mass := p.massInfo.m
 	p.massInfo = PolyShapeMassInfo(p.massInfo.m, count, verts, p.Radius)
@@ -286,11 +286,11 @@ func QHullPartition(verts []v.Vec, count int, a, b v.Vec, tol float64) int {
 }
 
 func PolyShapeMassInfo(mass float64, count int, verts []v.Vec, r float64) *ShapeMassInfo {
-	centroid := CentroidForPoly(count, verts)
+	centroid := CentroidForPolygon(count, verts)
 	return &ShapeMassInfo{
 		m:    mass,
-		i:    MomentForPoly(1, count, verts, centroid.Neg(), r),
+		i:    MomentForPolygon(1, count, verts, centroid.Neg(), r),
 		cog:  centroid,
-		area: AreaForPoly(count, verts, r),
+		area: AreaForPolygon(count, verts, r),
 	}
 }

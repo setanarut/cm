@@ -26,7 +26,7 @@ func newSupportPoint(p v.Vec, index uint32) SupportPoint {
 type supportPointFunc func(shape *Shape, n v.Vec) SupportPoint
 
 func polySupportPoint(shape *Shape, n v.Vec) SupportPoint {
-	poly := shape.Class.(*PolyShape)
+	poly := shape.Class.(*Polygon)
 	planes := poly.Planes
 	i := polySupportPointIndex(poly.count, planes, n)
 	return newSupportPoint(planes[i].V0, uint32(i))
@@ -168,7 +168,7 @@ func circleToPoly(info *CollisionInfo) {
 	points := gJK(context, &info.collisionId)
 
 	circle := info.a.Class.(*Circle)
-	poly := info.b.Class.(*PolyShape)
+	poly := info.b.Class.(*Polygon)
 
 	if points.d <= circle.radius+poly.Radius {
 		info.n = points.n
@@ -184,7 +184,7 @@ func segmentToPoly(info *CollisionInfo) {
 	rot := info.a.Body.Rotation()
 
 	segment := info.a.Class.(*Segment)
-	polyshape := info.b.Class.(*PolyShape)
+	polyshape := info.b.Class.(*Polygon)
 
 	// If the closest points are nearer than the sum of the radii...
 	if points.d-segment.radius-polyshape.Radius <= 0 && (
@@ -201,8 +201,8 @@ func PolyToPoly(info *CollisionInfo) {
 
 	// TODO: add debug drawing logic like chipmunk does
 
-	poly1 := info.a.Class.(*PolyShape)
-	poly2 := info.b.Class.(*PolyShape)
+	poly1 := info.a.Class.(*Polygon)
+	poly2 := info.b.Class.(*Polygon)
 	if points.d-poly1.Radius-poly2.Radius <= 0 {
 		contactPoints(supportEdgeForPoly(poly1, points.n), supportEdgeForPoly(poly2, points.n.Neg()), points, info)
 	}
@@ -283,7 +283,7 @@ func supportEdgeForSegment(seg *Segment, n v.Vec) edge {
 	}
 }
 
-func supportEdgeForPoly(poly *PolyShape, n v.Vec) edge {
+func supportEdgeForPoly(poly *Polygon, n v.Vec) edge {
 	count := poly.count
 	i1 := polySupportPointIndex(poly.count, poly.Planes, n)
 
