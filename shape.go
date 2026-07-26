@@ -31,11 +31,36 @@ type Shape struct {
 	// The surface velocity of the object. Useful for creating conveyor belts or
 	// players that move around. This value is only used when calculating friction,
 	// not resolving the collision.
-	SurfaceVelocity      v.Vec
-	Elasticity, Friction float64
-	BB                   BB
-	massInfo             *ShapeMassInfo
-	hashid               HashValue
+	SurfaceVelocity v.Vec
+	// Elasticity of the shape. A value of 0.0 gives no bounce, while a value of 1.0 will give a “perfect” bounce.
+	// However due to inaccuracies in the simulation using 1.0 or greater is not recommended however.
+	// The elasticity for a collision is found by multiplying the elasticity of the individual shapes together.
+	Elasticity float64
+	// Friction coefficient. Chipmunk uses the Coulomb friction model, a value of 0.0 is frictionless.
+	// The friction for a collision is found by multiplying the friction of the individual shapes together.
+	//
+	// 		Material         Other      Friction
+	// 		------------------------------------
+	// 		Aluminium        Steel      0.61
+	// 		Copper           Steel      0.53
+	// 		Brass            Steel      0.51
+	// 		Cast iron        Copper     1.05
+	// 		Cast iron        Zinc       0.85
+	// 		Concrete (wet)   Rubber     0.30
+	// 		Concrete (dry)   Rubber     1.00
+	// 		Concrete         Wood       0.62
+	// 		Copper           Glass      0.68
+	// 		Glass            Glass      0.94
+	// 		Metal            Wood       0.50
+	// 		Polyethene       Steel      0.20
+	// 		Steel            Steel      0.80
+	// 		Steel            Teflon     0.04
+	// 		Teflon (PTFE)    Teflon     0.04
+	// 		Wood             Wood       0.40
+	Friction float64
+	BB       BB
+	massInfo *ShapeMassInfo
+	hashid   HashValue
 }
 
 func NewShape(class IShape, body *Body, massInfo *ShapeMassInfo) *Shape {
